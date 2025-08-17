@@ -8,6 +8,7 @@ import { db } from '../lib/db.js';
 // text for simplicity; do not replicate this in production code.
 export async function register(req, res) {
   const { fullName, username, email, password } = req.body;
+  console.log(`Registration attempt for email: ${email}, username: ${username}`);
   if (!fullName || !username || !email || !password) {
     return res.status(400).json({ status: 'error', message: 'Missing registration fields' });
   }
@@ -21,6 +22,7 @@ export async function register(req, res) {
     });
 
     if (existingUser.rows.length > 0) {
+        console.warn(`Registration failed: Duplicate user for email ${email} or username ${username}`);
         if (existingUser.rows[0].email === email) {
             await tx.rollback();
             return res.status(400).json({ success: false, message: 'Email already registered' });
@@ -57,6 +59,7 @@ export async function register(req, res) {
     });
     
     await tx.commit();
+    console.log(`Registration successful for new user ID: ${userId}`);
     
     const userResult = await db.execute({
         sql: 'SELECT * FROM users WHERE id = ?',
@@ -70,7 +73,7 @@ export async function register(req, res) {
 
   } catch (err) {
       await tx.rollback();
-      console.error('Registration error:', err);
+      console.error(`Registration error for email ${email}:`, err);
       return res.status(500).json({ status: 'error', message: 'Database error during registration.' });
   }
 }
@@ -79,6 +82,7 @@ export async function register(req, res) {
 // simplified access token equal to the user ID and a refresh token stub.
 export async function login(req, res) {
   const { email, password } = req.body;
+  console.log(`Login attempt for email: ${email}`);
   if (!email || !password) {
     return res.status(400).json({ status: 'error', message: 'Email and password required' });
   }
@@ -90,6 +94,7 @@ export async function login(req, res) {
       });
 
       if (result.rows.length === 0) {
+        console.warn(`Login failed: No user found for email ${email}`);
         return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
 
@@ -97,16 +102,18 @@ export async function login(req, res) {
       const passwordMatch = await bcrypt.compare(password, user.passwordHash);
 
       if (!passwordMatch) {
+        console.warn(`Login failed: Password mismatch for email ${email}`);
         return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
 
+      console.log(`Login successful for user ID: ${user.id}`);
       // In lieu of JWTs we return the user ID as the token.
       return res.status(200).json({
         success: true,
         token: user.id,
       });
   } catch (err) {
-      console.error('Login error:', err);
+      console.error(`Login error for email ${email}:`, err);
       return res.status(500).json({ success: false, message: 'Database error during login.' });
   }
 }

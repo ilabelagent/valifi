@@ -14,14 +14,14 @@
     --popover: 22 27 34;
     --popover-foreground: 230 237 243;
 
-    --primary: 12 102 228;     /* Accessible Blue: #0C66E4 */
+    --primary: 56 139 253;     /* Accessible Blue: #388BFD */
     --primary-foreground: 255 255 255;
     
     --secondary: 33 38 45;      /* #21262D */
     --secondary-foreground: 230 237 243;
 
     --muted: 33 38 45;
-    --muted-foreground: 139 148 158; /* #8B949E */
+    --muted-foreground: 173 186 199; /* #ADBAC7 - Increased contrast */
 
     --accent: 33 38 45;           /* #21262D - (was #2D333B) */
     --accent-foreground: 230 237 243;
