@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { KYCStatus } from '../types';
 import { UserCheckIcon, UploadCloudIcon, LockIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from './icons';
 import { countries } from './countries';
+import * as apiService from '../services/api';
 
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
     <div className={`bg-card/50 backdrop-blur-lg border border-border/50 rounded-2xl shadow-2xl shadow-black/20 ${className}`}>
@@ -174,9 +175,15 @@ const KYCView: React.FC<KYCViewProps> = ({ status, setStatus, reason, setReason 
         setIsFormVisible(status === 'Not Started' || status === 'Resubmit Required');
     }, [status]);
     
-    const handleFormSubmit = () => {
-        setStatus('Pending');
-        setIsFormVisible(false);
+    const handleFormSubmit = async () => {
+        try {
+            await apiService.submitKyc();
+            setStatus('Pending');
+            setIsFormVisible(false);
+        } catch (error) {
+            console.error("KYC Submission failed:", error);
+            // Optionally, show an error message to the user
+        }
     };
 
     const handleResubmit = () => {

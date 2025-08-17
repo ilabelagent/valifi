@@ -12,6 +12,7 @@ import kycRoutes from './kyc.js';
 import notificationsRoutes from './notifications.js';
 import p2pRoutes from './p2p.js';
 import aiRoutes from './ai.js';
+import referralRoutes from './referrals.js';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/kyc', kycRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/p2p', p2pRoutes);
 router.use('/ai', aiRoutes);
+router.use('/referrals', referralRoutes);
 
 export default router;

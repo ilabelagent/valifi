@@ -9,7 +9,9 @@ import {
     investNftFractional,
     getStakableStocks,
     getReitProperties,
-    getInvestableNfts
+    getInvestableNfts,
+    getSpectrumPlans,
+    getStakableCrypto,
 } from '../controllers/investmentController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -18,6 +20,8 @@ const router = Router();
 router.get('/stakable-stocks', protect, getStakableStocks);
 router.get('/reit-properties', protect, getReitProperties);
 router.get('/investable-nfts', protect, getInvestableNfts);
+router.get('/spectrum-plans', protect, getSpectrumPlans);
+router.get('/stakable-crypto', protect, getStakableCrypto);
 
 router.post('/swap', protect, swapAssets);
 router.post('/:id/transfer-maturity', protect, transferMaturity);

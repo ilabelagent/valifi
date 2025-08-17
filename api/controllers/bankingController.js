@@ -46,19 +46,6 @@ export async function linkBankAccount(req, res) {
       args: [id, userId, countryCode, nickname, JSON.stringify(details), 'Pending', accountDisplay],
     });
 
-    // Simulate async verification
-    setTimeout(async () => {
-        try {
-            await db.execute({
-                sql: `UPDATE bank_accounts SET status = 'Verified' WHERE id = ? AND status = 'Pending'`,
-                args: [id]
-            });
-            console.log(`Bank account ${id} auto-verified.`);
-        } catch(e) {
-            console.error(`Error auto-verifying bank account ${id}:`, e);
-        }
-    }, 10000);
-
     return res.status(202).json({ status: 'success', data: account });
   } catch (err) {
     console.error('Error adding bank account:', err);

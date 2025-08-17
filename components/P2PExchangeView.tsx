@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useMemo } from 'react';
 import type { P2POffer, KYCStatus, ViewType, PaymentMethod, Asset, UserP2PProfile, P2POrder, TradableAsset, Notification, P2PReview } from '../types';
 import { AssetType } from '../types';

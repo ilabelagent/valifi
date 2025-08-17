@@ -63,52 +63,6 @@ const PrivacyView: React.FC = () => {
     const updateMix = useCallback((id: string, updates: Partial<MixTransaction>) => {
         setMixHistory(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     }, []);
-
-    useEffect(() => {
-        if (!activeMix) return;
-        
-        let timer: number | undefined;
-
-        const simulationStep = () => {
-            switch (activeMix.status) {
-                case 'Awaiting Deposit':
-                    timer = window.setTimeout(() => updateMix(activeMix.id, { status: 'Confirming' }), 12000);
-                    break;
-                case 'Confirming':
-                    if (activeMix.confirmations >= activeMix.requiredConfirmations) {
-                        timer = window.setTimeout(() => updateMix(activeMix.id, { status: 'Mixing' }), 1000);
-                    } else {
-                        timer = window.setInterval(() => {
-                            setMixHistory(prev => prev.map(m => 
-                                m.id === activeMix.id && m.status === 'Confirming' 
-                                ? { ...m, confirmations: m.confirmations + 1 }
-                                : m
-                            ));
-                        }, 4000);
-                    }
-                    break;
-                case 'Mixing':
-                    const mixDuration = 8000 + (activeMix.privacyLevel * 250);
-                    timer = window.setTimeout(() => {
-                        updateMix(activeMix.id, { 
-                            status: 'Completed', 
-                            zkProofHash: `zk_proof_${crypto.randomUUID()}`
-                        });
-                        setTimeout(() => setActiveMixId(null), 5000);
-                    }, mixDuration);
-                    break;
-                default:
-                    break;
-            }
-        };
-
-        simulationStep();
-
-        return () => {
-            clearTimeout(timer);
-            clearInterval(timer);
-        };
-    }, [activeMix, updateMix]);
     
     const handleGenerateDepositAddress = () => {
         const numericAmount = parseFloat(amount);

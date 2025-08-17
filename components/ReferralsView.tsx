@@ -12,29 +12,12 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
     </div>
 );
 
-// Mock Data
-const mockReferralTree: ReferralNode = {
-    id: 'root', name: 'You', avatarUrl: 'https://i.pravatar.cc/40?u=valifi-user', level: 0,
-    children: [
-        { id: '1', name: 'Alice', avatarUrl: 'https://i.pravatar.cc/40?u=alice', level: 1, children: [
-            { id: '1-1', name: 'Charlie', avatarUrl: 'https://i.pravatar.cc/40?u=charlie', level: 2, children: [] },
-            { id: '1-2', name: 'David', avatarUrl: 'https://i.pravatar.cc/40?u=david', level: 2, children: [] },
-        ]},
-        { id: '2', name: 'Bob', avatarUrl: 'https://i.pravatar.cc/40?u=bob', level: 1, children: [] },
-        { id: '3', name: 'Eve', avatarUrl: 'https://i.pravatar.cc/40?u=eve', level: 1, children: [
-            { id: '3-1', name: 'Frank', avatarUrl: 'https://i.pravatar.cc/40?u=frank', level: 2, children: [
-                { id: '3-1-1', name: 'Grace', avatarUrl: 'https://i.pravatar.cc/40?u=grace', level: 3, children: [] },
-            ]},
-        ]},
-    ]
-};
-
-const mockReferralActivities: ReferralActivity[] = [
-    { id: 'a1', date: '2024-07-30', description: 'Grace signed up', earningsUSD: 0.50 },
-    { id: 'a2', date: '2024-07-29', description: 'Frank signed up', earningsUSD: 2.10 },
-    { id: 'a3', date: '2024-07-28', description: 'David invested $100', earningsUSD: 3.00 },
-    { id: 'a4', date: '2024-07-27', description: 'Bob signed up', earningsUSD: 10.00 },
-];
+interface ReferralsViewProps {
+    summary: {
+        tree: ReferralNode | null;
+        activities: ReferralActivity[];
+    };
+}
 
 const StatCard: React.FC<{ title: string; value: string; Icon: React.FC<any> }> = ({ title, value, Icon }) => (
     <Card className="p-6 flex items-center gap-4">
@@ -118,7 +101,7 @@ const TreeNode: React.FC<{ node: ReferralNode, isLast: boolean }> = ({ node, isL
 );
 
 
-const ReferralsView: React.FC = () => {
+const ReferralsView: React.FC<ReferralsViewProps> = ({ summary }) => {
     const { t } = useTranslation('referrals');
     const { formatCurrency } = useCurrency();
     const tiers = [
@@ -126,11 +109,17 @@ const ReferralsView: React.FC = () => {
         { gen: '4-5', rate: 1 }, { gen: 'Rank Bonus', rate: 25 },
     ];
 
+    const totalReferrals = summary.tree ? (function countNodes(node: ReferralNode): number {
+        return 1 + node.children.reduce((acc, child) => acc + countNodes(child), 0);
+    })(summary.tree) - 1 : 0; // Subtract self
+
+    const totalEarnings = summary.activities.reduce((sum, act) => sum + act.earningsUSD, 0);
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-8 view-container">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <StatCard title={t('total_referrals')} value="8" Icon={UsersIcon} />
-                <StatCard title={t('total_earnings')} value={formatCurrency(4520.50)} Icon={UsdIcon} />
+                <StatCard title={t('total_referrals')} value={totalReferrals.toString()} Icon={UsersIcon} />
+                <StatCard title={t('total_earnings')} value={formatCurrency(totalEarnings)} Icon={UsdIcon} />
             </div>
             
             <ReferralLinkCard username="DemoUser" />
@@ -139,7 +128,11 @@ const ReferralsView: React.FC = () => {
                 <Card className="lg:col-span-2">
                     <h3 className="text-lg font-semibold text-foreground p-6 border-b border-border">{t('referral_tree')}</h3>
                     <div className="p-6">
-                        <TreeNode node={mockReferralTree} isLast={true} />
+                        {summary.tree ? (
+                            <TreeNode node={summary.tree} isLast={true} />
+                        ) : (
+                            <p className="text-center text-muted-foreground py-10">Your referral tree will appear here once you invite someone.</p>
+                        )}
                     </div>
                 </Card>
 
@@ -157,19 +150,23 @@ const ReferralsView: React.FC = () => {
                     </Card>
                     <Card>
                         <h3 className="text-lg font-semibold text-foreground p-6 border-b border-border">{t('recent_activity')}</h3>
-                        <ul className="divide-y divide-border">
-                            {mockReferralActivities.map(activity => (
-                                <li key={activity.id} className="flex justify-between items-center px-6 py-4 hover:bg-accent">
-                                    <div>
-                                        <p className="font-semibold text-foreground">{activity.description}</p>
-                                        <p className="text-sm text-muted-foreground">{new Date(activity.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <p className="font-semibold text-emerald-400">
-                                        <span className="blur-balance">+{formatCurrency(activity.earningsUSD)}</span>
-                                    </p>
-                                </li>
-                            ))}
-                        </ul>
+                        {summary.activities.length > 0 ? (
+                            <ul className="divide-y divide-border">
+                                {summary.activities.map(activity => (
+                                    <li key={activity.id} className="flex justify-between items-center px-6 py-4 hover:bg-accent">
+                                        <div>
+                                            <p className="font-semibold text-foreground">{activity.description}</p>
+                                            <p className="text-sm text-muted-foreground">{new Date(activity.date).toLocaleDateString()}</p>
+                                        </div>
+                                        <p className="font-semibold text-emerald-400">
+                                            <span className="blur-balance">+{formatCurrency(activity.earningsUSD)}</span>
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-center text-muted-foreground p-10">Your referral activity will be shown here.</p>
+                        )}
                     </Card>
                 </div>
             </div>

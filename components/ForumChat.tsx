@@ -22,18 +22,11 @@ Your responsibilities:
 5.  **Personalized Analysis:** Use the user's portfolio context to provide personalized and relevant analysis, but do not explicitly restate their portfolio details unless asked.
 Your tone should be professional, confident, persuasive, and helpful.`;
 
-const initialMessages: ChatMessage[] = [
-    {
-        id: '1', author: 'ai', authorName: 'Valifi AI', Icon: SparklesIcon,
-        text: 'Welcome to the Investor\'s Forum! This is an exclusive space for our top-tier members. Feel free to discuss market trends, ask complex financial questions, or share strategies.',
-        timestamp: new Date().toISOString(),
-    },
-    {
-        id: '2', author: 'other_user', authorName: 'CryptoKing', avatarUrl: 'https://i.pravatar.cc/40?u=p2p1',
-        text: 'With the recent dip, is now a good time to increase my position in ETH?',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    }
-];
+const welcomeMessage: ChatMessage = {
+    id: '1', author: 'ai', authorName: 'Valifi AI', Icon: SparklesIcon,
+    text: 'Welcome to the Investor\'s Forum! This is an exclusive space for our top-tier members. Feel free to discuss market trends, ask complex financial questions, or share strategies.',
+    timestamp: new Date().toISOString(),
+};
 
 interface ForumChatProps {
     portfolio: Portfolio;
@@ -42,7 +35,7 @@ interface ForumChatProps {
 
 const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api }) => {
     const isEligible = portfolio.totalValueUSD >= 100000;
-    const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,7 +57,6 @@ const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api }) => {
             avatarUrl: 'https://i.pravatar.cc/40?u=valifi-user',
             text: newMessage,
             timestamp: new Date().toISOString(),
-            status: 'Pending',
         };
 
         setMessages(prev => [...prev, userMessage]);
@@ -88,12 +80,6 @@ ${stakingOptionsSummary}
 User question: "${newMessage}"
 `;
         setNewMessage('');
-
-        setTimeout(() => {
-            setMessages(prev => prev.map(msg => 
-                msg.id === userMessage.id ? { ...msg, status: undefined } : msg
-            ));
-        }, 3000);
 
         try {
             const result = await api(fullPrompt, SYSTEM_INSTRUCTION);
@@ -140,6 +126,8 @@ User question: "${newMessage}"
             </Card>
         );
     }
+    
+    const displayMessages = [welcomeMessage, ...messages];
 
     return (
         <Card className="flex flex-col h-[28rem] min-h-[28rem]">
@@ -149,7 +137,7 @@ User question: "${newMessage}"
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map(msg => (
+                {displayMessages.map(msg => (
                     <div key={msg.id} className={`flex items-end gap-2.5 ${msg.author === 'user' ? 'justify-end' : 'justify-start'} ${msg.status === 'Pending' ? 'opacity-70' : ''}`}>
                          {msg.author !== 'user' && (
                             msg.Icon ? <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 flex-shrink-0"><msg.Icon className="w-5 h-5 text-primary" /></div> :

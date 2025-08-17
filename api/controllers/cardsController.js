@@ -57,25 +57,6 @@ export async function applyForCard(req, res) {
         args: [id, user.id, 'Pending Approval', type, currency, theme || 'default']
     });
 
-    // Simulate async approval
-    setTimeout(async () => {
-      try {
-        await db.execute({
-          sql: `UPDATE valifi_cards SET status = 'Approved', cardNumberHash = ?, expiry = ?, cvvHash = ? WHERE id = ? AND status = 'Pending Approval'`,
-          args: [
-            crypto.createHash('sha256').update('2637841234567890').digest('hex'),
-            '12/28', // This should be encrypted in a real app
-            crypto.createHash('sha256').update('123').digest('hex'),
-            id,
-          ]
-        });
-        console.log(`Card ${id} auto-approved.`);
-      } catch(e) {
-        console.error(`Error auto-approving card ${id}:`, e);
-      }
-    }, 10000);
-
-
     return res.status(202).json({ status: 'success', data: { cardDetails: newCard } });
   } catch(err) {
       console.error('Error applying for card:', err);

@@ -8,123 +8,6 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
     </div>
 );
 
-// New data structure and mock data as per user request
-export const newPlans: InvestmentPlan[] = [
-  {
-    id: 'corestart',
-    name: 'CoreStart',
-    investmentRange: '$500 – $4,999',
-    dailyReturns: '2%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '7 Times',
-    cancellation: 'Within 59 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-sky-900/50',
-    borderColor: 'border-sky-500',
-    buttonColor: 'bg-sky-700 hover:bg-sky-600',
-    shadowColor: 'shadow-sky-500/20'
-  },
-  {
-    id: 'poweredge',
-    name: 'PowerEdge',
-    investmentRange: '$5,000 – $9,999',
-    dailyReturns: '2.2%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '14 Times',
-    cancellation: 'Within 40 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-teal-900/50',
-    borderColor: 'border-teal-400',
-    buttonColor: 'bg-teal-700 hover:bg-teal-600',
-    shadowColor: 'shadow-teal-400/20'
-  },
-  {
-    id: 'alphaplus',
-    name: 'AlphaPlus',
-    investmentRange: '$10,000 – $14,999',
-    dailyReturns: '2.5%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '21 Times',
-    cancellation: 'Within 59 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-indigo-900/50',
-    borderColor: 'border-indigo-400',
-    buttonColor: 'bg-indigo-600 hover:bg-indigo-500',
-    shadowColor: 'shadow-indigo-400/20'
-  },
-  {
-    id: 'titancore',
-    name: 'TitanCore',
-    investmentRange: '$15,000 – $39,999',
-    dailyReturns: '2.7%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '28 Times',
-    cancellation: 'Within 50 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-purple-900/50',
-    borderColor: 'border-purple-400',
-    buttonColor: 'bg-purple-600 hover:bg-purple-500',
-    shadowColor: 'shadow-purple-400/20'
-  },
-  {
-    id: 'goldtrust',
-    name: 'GoldTrust',
-    investmentRange: '$40,000 – $79,999',
-    dailyReturns: '3%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '42 Times',
-    cancellation: 'Within 56 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-amber-800/40',
-    borderColor: 'border-amber-400',
-    buttonColor: 'bg-amber-600 hover:bg-amber-500',
-    shadowColor: 'shadow-amber-400/20'
-  },
-  {
-    id: 'globalrise',
-    name: 'GlobalRise',
-    investmentRange: '$80,000 – $399,999',
-    dailyReturns: '4.5%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '21 Times',
-    cancellation: 'Within 59 Minutes',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-emerald-900/50',
-    borderColor: 'border-emerald-400',
-    buttonColor: 'bg-emerald-600 hover:bg-emerald-500',
-    shadowColor: 'shadow-emerald-400/20'
-  },
-  {
-    id: 'ironhold',
-    name: 'IronHold',
-    investmentRange: '$400,000 – $1,000,000',
-    dailyReturns: '6%',
-    capitalReturn: 'Yes',
-    returnType: 'Period',
-    totalPeriods: '28 Times',
-    cancellation: 'Not Allowed',
-    totalRevenue: 'Unlimited Earning Potential',
-    note: 'No Profit Holidays',
-    colorClass: 'bg-red-900/50',
-    borderColor: 'border-red-400',
-    buttonColor: 'bg-red-600 hover:bg-red-500',
-    shadowColor: 'shadow-red-400/20'
-  },
-];
-
-
 const PlanDetailRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
     <div className="flex justify-between items-center py-3.5 border-b border-border/50">
         <span className="text-sm text-muted-foreground">{label}:</span>
@@ -169,12 +52,13 @@ const NewPlanCard: React.FC<{ plan: InvestmentPlan, onInvestClick: () => void }>
 
 
 interface SpectrumPlansViewProps {
+    plans: InvestmentPlan[];
     onInvest: (plan: InvestmentPlan, amount: number) => void;
     cashBalance: number;
 }
 
 
-const SpectrumPlansView: React.FC<SpectrumPlansViewProps> = ({ onInvest, cashBalance }) => {
+const SpectrumPlansView: React.FC<SpectrumPlansViewProps> = ({ plans, onInvest, cashBalance }) => {
     const [isInvestModalOpen, setInvestModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
 
@@ -197,11 +81,19 @@ const SpectrumPlansView: React.FC<SpectrumPlansViewProps> = ({ onInvest, cashBal
                     Remember, the bigger the investment, the bigger the return.
                 </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {newPlans.map(plan => (
-                    <NewPlanCard key={plan.id} plan={plan} onInvestClick={() => handleInvestClick(plan)} />
-                ))}
-            </div>
+            {plans.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    {plans.map(plan => (
+                        <NewPlanCard key={plan.id} plan={plan} onInvestClick={() => handleInvestClick(plan)} />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center text-muted-foreground py-16">
+                    <p>No investment plans are available at this moment.</p>
+                    <p>Please check back later.</p>
+                </div>
+            )}
+
 
             {selectedPlan && (
                 <InvestModal

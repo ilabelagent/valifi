@@ -1,4 +1,4 @@
-import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod } from '../types';
+import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -107,8 +107,9 @@ export const register = async (fullName: string, username: string, email: string
              return { success: false, message: authData.message };
         }
         
-        const user = await getUserProfile(authData.user.token);
-        return { success: true, user: { ...user, token: authData.user.token } };
+        // After successful registration, we log the user in to get a full profile
+        const loginResult = await login(email, password);
+        return loginResult;
     } catch (e: any) {
         return { success: false, message: e.message };
     }
@@ -134,6 +135,19 @@ export const getPaymentMethods = async (): Promise<{ paymentMethods: PaymentMeth
 export const getReitProperties = async (): Promise<{ reitProperties: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/reit-properties`, { headers: getAuthHeaders() }));
 export const getStakableStocks = async (): Promise<{ stakableStocks: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/stakable-stocks`, { headers: getAuthHeaders() }));
 export const getInvestableNfts = async (): Promise<{ investableNFTs: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/investable-nfts`, { headers: getAuthHeaders() }));
+export const getSpectrumPlans = async (): Promise<{ plans: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/spectrum-plans`, { headers: getAuthHeaders() }));
+export const getStakableCrypto = async (): Promise<{ assets: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/stakable-crypto`, { headers: getAuthHeaders() }));
+export const getReferralSummary = async (): Promise<{ tree: ReferralNode, activities: ReferralActivity[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/referrals/summary`, { headers: getAuthHeaders() }));
+
+// --- KYC ---
+export const submitKyc = async (): Promise<{ message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/kyc/submit`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders() }
+    });
+    return handleRootResponse(response);
+}
+
 
 // --- AI & OTHER ACTIONS ---
 export const callCoPilot = async (prompt: string, systemInstruction?: string) => {

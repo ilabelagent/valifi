@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import { db } from '../lib/db.js';
-import { stakableStocks, mockReitProperties, investableNFTs } from '../data.js';
 
 // Helper to process asset data from DB
 const processAsset = (asset) => {
@@ -50,13 +49,19 @@ export async function transferMaturity(req, res) {
 
 // --- Read-only endpoints for fetching investment options ---
 export function getStakableStocks(req, res) {
-    res.status(200).json({ success: true, data: { stakableStocks } });
+    res.status(200).json({ success: true, stakableStocks: [] });
 }
 export function getReitProperties(req, res) {
-    res.status(200).json({ success: true, data: { reitProperties: mockReitProperties } });
+    res.status(200).json({ success: true, reitProperties: [] });
 }
 export function getInvestableNfts(req, res) {
-    res.status(200).json({ success: true, data: { investableNFTs } });
+    res.status(200).json({ success: true, investableNFTs: [] });
+}
+export function getSpectrumPlans(req, res) {
+    res.status(200).json({ success: true, plans: [] });
+}
+export function getStakableCrypto(req, res) {
+    res.status(200).json({ success: true, assets: [] });
 }
 
 // --- Placeholder functions for other investment types ---

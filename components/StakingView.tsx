@@ -9,21 +9,11 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
     </div>
 );
 
-export const mockStakableAssets: Omit<StakableAsset, 'stakedAmountUSD' | 'totalStakedInPoolUSD'>[] = [
-    { id: 'eth', name: 'Ethereum', ticker: 'ETH', Icon: EthIcon, apr: 4.5, minDuration: 30, maxDuration: 365, payoutCycle: 'Monthly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: '0xAdminEthStakingWallet123456789' },
-    { id: 'sol', name: 'Solana', ticker: 'SOL', Icon: SolanaIcon, apr: 7.2, minDuration: 14, maxDuration: 180, payoutCycle: 'Bi-weekly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: 'So1AdminSo1StakingWa11etSo1111111' },
-    { id: 'dot', name: 'Polkadot', ticker: 'DOT', Icon: PolkadotIcon, apr: 14.8, minDuration: 15, maxDuration: 90, payoutCycle: 'Weekly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: '1AdminDotStakingWa11et111111111111' },
-    { id: 'avax', name: 'Avalanche', ticker: 'AVAX', Icon: AvalancheIcon, apr: 9.1, minDuration: 30, maxDuration: 180, payoutCycle: 'Monthly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: '0xAdminAvaxStakingWalletABCDEF123' },
-    { id: 'ada', name: 'Cardano', ticker: 'ADA', Icon: CardanoIcon, apr: 3.8, minDuration: 60, maxDuration: 365, payoutCycle: 'Monthly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: 'addr1AdminAdaStakingWalletAddress' },
-    { id: 'btc', name: 'Bitcoin', ticker: 'BTC', Icon: BtcIcon, apr: 5.2, minDuration: 45, maxDuration: 180, payoutCycle: 'Monthly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: 'bc1qAdminBtcStakingWalletAddress' },
-    { id: 'usdt', name: 'USDT', ticker: 'USDT', Icon: UsdtIcon, apr: 6.9, minDuration: 7, maxDuration: 60, payoutCycle: 'Weekly', minAmount: 20000, maxAmount: 1000000, adminWalletAddress: '0xAdminUsdtStakingWalletAddress' },
-];
-
 // MODALS
 interface StakeModalProps {
     isOpen: boolean;
     onClose: () => void;
-    plan: Omit<StakableAsset, 'stakedAmountUSD' | 'totalStakedInPoolUSD'>;
+    plan: StakableAsset;
     cashBalance: number;
     onStake: (plan: StakableAsset, amount: number, duration: number, payoutDestination: 'wallet' | 'balance') => void;
     prefillData?: { amount: number; duration: number; payoutDestination: 'wallet' | 'balance' };
@@ -110,17 +100,16 @@ interface ManageStakeModalProps {
     isOpen: boolean;
     onClose: () => void;
     asset: Asset;
+    planDetails: StakableAsset | undefined;
     onRequestWithdrawal: (assetId: string) => void;
     onReStake: (oldAsset: Asset, newAmount: number, newDuration: number, newDestination: 'wallet' | 'balance') => void;
 }
 
-const ManageStakeModal: React.FC<ManageStakeModalProps> = ({ isOpen, onClose, asset, onRequestWithdrawal, onReStake }) => {
+const ManageStakeModal: React.FC<ManageStakeModalProps> = ({ isOpen, onClose, asset, planDetails, onRequestWithdrawal, onReStake }) => {
     const { formatCurrency } = useCurrency();
-    const planDetails = mockStakableAssets.find(p => p.ticker === asset.ticker);
 
     const handleReStakeClick = () => {
         onClose(); // Close this modal
-        // This will be handled by parent opening the stake modal with prefill
         onReStake(asset, asset.valueUSD, planDetails?.minDuration || 30, asset.payoutDestination || 'balance');
     };
     
@@ -209,6 +198,7 @@ const StakingHistoryTable: React.FC<{ stakedAssets: Asset[] }> = ({ stakedAssets
 
 // MAIN COMPONENT
 interface StakingViewProps {
+    stakableAssets: StakableAsset[];
     assets: Asset[];
     cashBalance: number;
     onStake: (plan: StakableAsset, amount: number, duration: number, payoutDestination: 'wallet' | 'balance') => void;
@@ -216,17 +206,17 @@ interface StakingViewProps {
     onReStake: (oldAsset: Asset, newAmount: number, newDuration: number, newDestination: 'wallet' | 'balance') => void;
 }
 
-const StakingView: React.FC<StakingViewProps> = ({ assets, cashBalance, onStake, onRequestWithdrawal, onReStake }) => {
+const StakingView: React.FC<StakingViewProps> = ({ stakableAssets, assets, cashBalance, onStake, onRequestWithdrawal, onReStake }) => {
     const [stakeModalOpen, setStakeModalOpen] = useState(false);
     const [manageModalOpen, setManageModalOpen] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState<Omit<StakableAsset, 'stakedAmountUSD' | 'totalStakedInPoolUSD'> | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<StakableAsset | null>(null);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
     const [prefillData, setPrefillData] = useState<any>(null);
     const { formatCurrency } = useCurrency();
 
     const userStakedAssets = useMemo(() => assets.filter(a => a.name.includes('Staking')), [assets]);
 
-    const handleStakeClick = (plan: Omit<StakableAsset, 'stakedAmountUSD' | 'totalStakedInPoolUSD'>) => {
+    const handleStakeClick = (plan: StakableAsset) => {
         setPrefillData(null);
         setSelectedPlan(plan);
         setStakeModalOpen(true);
@@ -238,13 +228,10 @@ const StakingView: React.FC<StakingViewProps> = ({ assets, cashBalance, onStake,
     };
 
     const handleReStakeProxy = (oldAsset: Asset, newAmount: number, newDuration: number, newDestination: 'wallet' | 'balance') => {
-        const plan = mockStakableAssets.find(p => p.ticker === oldAsset.ticker);
+        const plan = stakableAssets.find(p => p.ticker === oldAsset.ticker);
         if(plan){
             setPrefillData({ amount: oldAsset.valueUSD, duration: plan.minDuration, payoutDestination: oldAsset.payoutDestination });
             setSelectedPlan(plan);
-            // This is a proxy to open the StakeModal with pre-filled data, the actual re-stake logic is in App.tsx
-            // The onStake from the modal will need to be adapted or a new handler created.
-            // For now, let's just open the modal with pre-filled values. The final re-stake action will be handled by the parent.
             setStakeModalOpen(true);
         }
     };
@@ -261,7 +248,7 @@ const StakingView: React.FC<StakingViewProps> = ({ assets, cashBalance, onStake,
         <div className="space-y-8">
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground px-2">Staking Pools</h3>
-                {mockStakableAssets.map(plan => {
+                {stakableAssets.map(plan => {
                     const existingStake = userStakedAssets.find(a => a.ticker === plan.ticker && (a.status === 'Active' || a.status === 'Matured'));
                     return (
                         <Card key={plan.id} className="p-4 flex items-center justify-between">
@@ -307,6 +294,7 @@ const StakingView: React.FC<StakingViewProps> = ({ assets, cashBalance, onStake,
                     isOpen={manageModalOpen}
                     onClose={() => setManageModalOpen(false)}
                     asset={selectedAsset}
+                    planDetails={stakableAssets.find(p => p.ticker === selectedAsset.ticker)}
                     onRequestWithdrawal={onRequestWithdrawal}
                     onReStake={handleReStakeProxy}
                 />

@@ -18,12 +18,6 @@ const StatCard: React.FC<{ title: string; value: string; isPositive?: boolean }>
     </Card>
 );
 
-const mockTaxDocs: TaxDocument[] = [
-    { id: 'doc1', year: 2024, name: 'Form 8949', description: 'Sales and Other Dispositions of Capital Assets' },
-    { id: 'doc2', year: 2024, name: 'Transaction History', description: 'Complete record of all trades and transfers' },
-    { id: 'doc3', year: 2024, name: 'Gains & Losses', description: 'Detailed report on capital gains and losses' },
-];
-
 interface TaxViewProps {
     transactions: Transaction[];
     api: (prompt: string) => Promise<{ text: string }>;
@@ -116,25 +110,6 @@ const TaxView: React.FC<TaxViewProps> = ({ transactions, api }) => {
                                 Get Started with Iris
                             </button>
                         </div>
-                    </Card>
-
-                    <Card>
-                        <h3 className="text-lg font-semibold text-foreground p-6 border-b border-border">Your Tax Documents</h3>
-                        <ul className="divide-y divide-border">
-                            {mockTaxDocs.map(doc => (
-                                <li key={doc.id} className="flex items-center justify-between p-4 hover:bg-accent transition-colors">
-                                    <div>
-                                        <p className="font-semibold text-foreground">{doc.name} ({doc.year})</p>
-
-                                        <p className="text-sm text-muted-foreground">{doc.description}</p>
-                                    </div>
-                                    <button className="flex items-center gap-2 bg-secondary hover:bg-accent text-secondary-foreground font-semibold py-2 px-3 rounded-lg transition-colors text-sm">
-                                        <DownloadIcon className="w-4 h-4" />
-                                        <span>Download</span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
                     </Card>
                 </div>
                 

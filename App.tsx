@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import DepositModal from './components/DepositModal';
 import WithdrawModal from './components/WithdrawModal';
 import InvestmentDetailModal from './components/InvestmentDetailModal';
-import type { ViewType, Portfolio, Asset, KYCStatus, CardDetails, CardApplicationData, P2POffer, P2POrder, UserSettings, Language, Notification, UserActivity, NewsItem, PaymentMethod, UserP2PProfile, REITProperty, StakableAsset, InvestableNFT, StakableStock, BankAccount, LoanApplication } from './types';
+import type { ViewType, Portfolio, Asset, KYCStatus, CardDetails, CardApplicationData, P2POffer, P2POrder, UserSettings, Language, Notification, UserActivity, NewsItem, PaymentMethod, UserP2PProfile, REITProperty, StakableAsset, InvestableNFT, StakableStock, BankAccount, LoanApplication, InvestmentPlan, ReferralNode, ReferralActivity } from './types';
 import { AssetType } from './types';
 import { 
     BtcIcon, EthIcon, UsdIcon, AppleIcon, SolanaIcon, CardanoIcon, PolkadotIcon, ChainlinkIcon, AvalancheIcon, NvidiaIcon, GoogleIcon, AmazonIcon, TeslaIcon, 
@@ -99,6 +99,13 @@ const processStakableStocks = (stocks: any[]): StakableStock[] => {
     }));
 };
 
+const processStakableAssets = (assets: any[]): StakableAsset[] => {
+    return assets.map(asset => ({
+        ...asset,
+        Icon: iconMap[asset.Icon as string] || UsdIcon
+    }));
+};
+
 const AppContent: React.FC = () => {
     const { i18n } = useTranslation();
     const [user, setUser] = useState<any | null>(null);
@@ -110,7 +117,8 @@ const AppContent: React.FC = () => {
     const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
     const [isInvestmentDetailModalOpen, setInvestmentDetailModalOpen] = useState(false);
     const [selectedInvestment, setSelectedInvestment] = useState<Asset | null>(null);
-    const [kycReason, setKycReason] = useState('');
+    
+    // Production Data States
     const [cardDetails, setCardDetails] = useState<CardDetails>({ status: 'Not Applied', type: 'Virtual', currency: 'USD', theme: 'Obsidian', isFrozen: false });
     const [linkedBankAccounts, setLinkedBankAccounts] = useState<BankAccount[]>([]);
     const [loanApplications, setLoanApplications] = useState<LoanApplication[]>([]);
@@ -120,6 +128,10 @@ const AppContent: React.FC = () => {
     const [reitProperties, setReitProperties] = useState<REITProperty[]>([]);
     const [investableNFTs, setInvestableNFTs] = useState<InvestableNFT[]>([]);
     const [stakableStocks, setStakableStocks] = useState<StakableStock[]>([]);
+    const [stakableCrypto, setStakableCrypto] = useState<StakableAsset[]>([]);
+    const [spectrumPlans, setSpectrumPlans] = useState<InvestmentPlan[]>([]);
+    const [referralSummary, setReferralSummary] = useState<{ tree: ReferralNode | null; activities: ReferralActivity[] }>({ tree: null, activities: [] });
+
     const [isLiveUpdating, setIsLiveUpdating] = useState(true);
     const [isWalletConnectOpen, setIsWalletConnectOpen] = useState(false);
     const [isWalletConnectQRModalOpen, setWalletConnectQRModalOpen] = useState(false);
@@ -149,11 +161,13 @@ const AppContent: React.FC = () => {
             setNewsItems(ni);
 
             const [
-                cards, banks, loans, offers, orders, payments, reits, stocks, nfts
+                cards, banks, loans, offers, orders, payments, 
+                reits, stocks, nfts, plans, crypto, referrals
             ] = await Promise.all([
                 apiService.getCardDetails(), apiService.getBankAccounts(), apiService.getLoans(),
                 apiService.getP2POffers(), apiService.getMyP2POrders(), apiService.getPaymentMethods(),
-                apiService.getReitProperties(), apiService.getStakableStocks(), apiService.getInvestableNfts()
+                apiService.getReitProperties(), apiService.getStakableStocks(), apiService.getInvestableNfts(),
+                apiService.getSpectrumPlans(), apiService.getStakableCrypto(), apiService.getReferralSummary()
             ]);
             setCardDetails(cards);
             setLinkedBankAccounts(banks);
@@ -164,6 +178,9 @@ const AppContent: React.FC = () => {
             setReitProperties(reits.reitProperties);
             setStakableStocks(processStakableStocks(stocks.stakableStocks));
             setInvestableNFTs(nfts.investableNFTs);
+            setSpectrumPlans(plans.plans);
+            setStakableCrypto(processStakableAssets(crypto.assets));
+            setReferralSummary(referrals);
 
         } catch (error) {
             console.error("Failed to load user data:", error);
@@ -206,7 +223,7 @@ const AppContent: React.FC = () => {
     const onTransferToMain = useCallback(async (assetId: string) => {
         console.log(`Transferring ${assetId} to main...`);
         // await apiService.transferToMain(assetId);
-        loadAppData(user.token);
+        if (user?.token) loadAppData(user.token);
     }, [loadAppData, user?.token]);
 
     const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
@@ -240,8 +257,8 @@ const AppContent: React.FC = () => {
         const cashBalance = portfolio.assets.find(a => a.type === AssetType.CASH)?.balance || 0;
         switch (currentView) {
             case 'dashboard': return <DetailViewModal {...commonProps} />;
-            case 'investments': return <InvestmentsView assets={portfolio.assets} onTradeClick={(ticker) => { setExchangeDefaultAssetTicker(ticker); setCurrentView('exchange'); }} onInvest={()=>{}} cashBalance={cashBalance} onViewInvestment={handlers.onViewInvestment} onReinvest={()=>{}} onTransferToMain={onTransferToMain} onStake={()=>{}} onRequestStakeWithdrawal={()=>{}} onReStake={()=>{}} reitProperties={reitProperties} onReitInvest={()=>{}} stakableStocks={stakableStocks} onStockStake={()=>{}} investableNFTs={investableNFTs} onNFTInvest={()=>{}} onNFTStake={()=>{}} onNFTSell={()=>{}} onNFTClaim={()=>{}} initialTab={"all"}/>;
-            case 'referrals': return <ReferralsView />;
+            case 'investments': return <InvestmentsView assets={portfolio.assets} onTradeClick={(ticker) => { setExchangeDefaultAssetTicker(ticker); setCurrentView('exchange'); }} onInvest={()=>{}} cashBalance={cashBalance} onViewInvestment={handlers.onViewInvestment} onReinvest={()=>{}} onTransferToMain={onTransferToMain} onStake={()=>{}} onRequestStakeWithdrawal={()=>{}} onReStake={()=>{}} reitProperties={reitProperties} onReitInvest={()=>{}} stakableStocks={stakableStocks} onStockStake={()=>{}} investableNFTs={investableNFTs} onNFTInvest={()=>{}} onNFTStake={()=>{}} onNFTSell={()=>{}} onNFTClaim={()=>{}} initialTab={"all"} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
+            case 'referrals': return <ReferralsView summary={referralSummary} />;
             case 'privacy': return <PrivacyView />;
             case 'exchange': return <ExchangeView assets={portfolio!.assets} onSwap={() => {}} defaultFromAssetTicker={exchangeDefaultAssetTicker} setExchangeDefaultAssetTicker={setExchangeDefaultAssetTicker} />;
             case 'p2p': return <P2PExchangeView kycStatus={userSettings.profile.kycStatus!} setCurrentView={setCurrentView} assets={portfolio!.assets} currentUser={user} offers={p2pOffers} orders={p2pOrders} userPaymentMethods={userPaymentMethods} setUserPaymentMethods={setUserPaymentMethods} onInitiateTrade={onInitiateTrade} onUpdateOrder={(order) => setP2POrders(prev => prev.map(o => o.id === order.id ? order : o))} addNotification={addNotification} />;

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo } from 'react';
 import { ArrowUpDownIcon, SearchIcon, TrendingUpIcon, InvestmentsIcon, UsdIcon } from './icons';
 import type { Asset, InvestmentPlan, StakableAsset, REITProperty, StakableStock, InvestableNFT } from '../types';
@@ -11,6 +8,7 @@ import ActionsDropdown from './ActionsDropdown';
 import REITsView from './REITsView';
 import { useCurrency } from './CurrencyContext';
 import StockStakingView from './StockStakingView';
+import NFTInvestmentView from './NFTInvestmentView';
 
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
     <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
@@ -140,10 +138,16 @@ interface InvestmentsViewProps {
     onNFTSell: () => void;
     onNFTClaim: () => void;
     initialTab: string;
+    spectrumPlans: InvestmentPlan[];
+    stakableCrypto: StakableAsset[];
 }
 
 const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
-    const { assets, onInvest, cashBalance, onViewInvestment, onReinvest, onTransferToMain, onStake, onRequestStakeWithdrawal, onReStake, reitProperties, onReitInvest, stakableStocks, onStockStake } = props;
+    const { 
+        assets, onInvest, cashBalance, onViewInvestment, onReinvest, onTransferToMain, onStake, 
+        onRequestStakeWithdrawal, onReStake, reitProperties, onReitInvest, stakableStocks, onStockStake,
+        spectrumPlans, stakableCrypto, investableNFTs, onNFTInvest, onNFTStake, onNFTSell, onNFTClaim
+    } = props;
     
     const [activeTab, setActiveTab] = useState(() => {
         const tabMap: Record<string, string> = {
@@ -344,7 +348,7 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                             <p className="text-muted-foreground mt-1">Choose an investment plan that suits you.</p>
                         </div>
                         <div className="p-6">
-                            <SpectrumPlansView onInvest={onInvest} cashBalance={cashBalance} />
+                            <SpectrumPlansView plans={spectrumPlans} onInvest={onInvest} cashBalance={cashBalance} />
                         </div>
                         <div className="p-6 border-t border-border">
                             <h3 className="text-xl font-bold text-foreground tracking-tight">Crypto Staking</h3>
@@ -352,6 +356,7 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                         </div>
                         <div className="p-6">
                             <StakingView
+                                stakableAssets={stakableCrypto}
                                 assets={assets}
                                 cashBalance={cashBalance}
                                 onStake={onStake}
@@ -369,21 +374,19 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                             cashBalance={cashBalance}
                             onInvest={onReitInvest}
                         />
-                        <div className="p-6 border-t border-border">
-                            <h3 className="text-xl font-bold text-foreground tracking-tight">My NFT Gallery</h3>
-                            <p className="text-muted-foreground mt-1">A preview of your digital collectibles.</p>
+                         <div className="p-6 border-t border-border">
+                            <h3 className="text-xl font-bold text-foreground tracking-tight">NFT Investments</h3>
+                            <p className="text-muted-foreground mt-1">Invest in fractional shares of high-value digital art.</p>
                         </div>
-                        <div className="p-6">
-                            {nftAssets.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                   {nftAssets.map(nft => <NftCard key={nft.id} nft={nft} />)}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    You don't own any NFTs yet.
-                                </div>
-                            )}
-                        </div>
+                        <NFTInvestmentView 
+                            investableNFTs={investableNFTs}
+                            userNFTAssets={nftAssets}
+                            cashBalance={cashBalance}
+                            onInvest={onNFTInvest}
+                            onStake={onNFTStake}
+                            onSell={onNFTSell}
+                            onClaim={onNFTClaim}
+                        />
                     </>
                 )}
 
@@ -391,13 +394,14 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                 
                 {activeTab === 'spectrum' && (
                     <div className="p-0">
-                        <SpectrumPlansView onInvest={onInvest} cashBalance={cashBalance} />
+                        <SpectrumPlansView plans={spectrumPlans} onInvest={onInvest} cashBalance={cashBalance} />
                     </div>
                 )}
 
                 {activeTab === 'staking' && (
                     <div className="p-6">
                         <StakingView
+                            stakableAssets={stakableCrypto}
                             assets={assets}
                             cashBalance={cashBalance}
                             onStake={onStake}
