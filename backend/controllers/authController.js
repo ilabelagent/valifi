@@ -37,18 +37,21 @@ export async function register(req, res) {
     const passwordHash = password;
 
     await tx.execute({
-        sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        args: [userId, fullName, username, email, passwordHash, 'Not Started', now, now]
+        sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt, kycRejectionReason, isAdmin, profilePhotoUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [userId, fullName, username, email, passwordHash, 'Not Started', now, now, null, false, `https://i.pravatar.cc/40?u=${username}`]
     });
 
     const defaultPreferences = { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false };
+    const defaultPrivacy = { emailMarketing: false, platformMessages: true, contactAccess: false };
+    const defaultVaultRecovery = { email: '', phone: '', pin: '' };
+    
     await tx.execute({
-        sql: 'INSERT INTO user_settings (id, userId, preferences) VALUES (?, ?, ?)',
-        args: [settingsId, userId, JSON.stringify(defaultPreferences)]
+        sql: 'INSERT INTO user_settings (id, userId, twoFactorEnabled, twoFactorMethod, loginAlerts, preferences, privacy, vaultRecovery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [settingsId, userId, false, 'none', false, JSON.stringify(defaultPreferences), JSON.stringify(defaultPrivacy), JSON.stringify(defaultVaultRecovery)]
     });
 
     await tx.execute({
-        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}')`,
+        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details, balanceInEscrow, change24h, allocation) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}', 0, 0, 0)`,
         args: [assetId, userId]
     });
     
