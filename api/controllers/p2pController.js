@@ -27,25 +27,24 @@ export async function createOffer(req, res) {
     return res.status(400).json({ success: false, message: 'Missing required fields for offer' });
   }
   
-  let tx;
   try {
-      tx = await db.transaction('write');
+      await db.execute('BEGIN');
       if (type.toUpperCase() === 'SELL') {
-          const assetResult = await tx.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND ticker = ?', args: [user.id, assetTicker]});
+          const assetResult = await db.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND ticker = ?', args: [user.id, assetTicker]});
           if (assetResult.rows.length === 0 || Number(assetResult.rows[0].balance) < Number(totalAmount)) {
-              await tx.rollback();
+              await db.execute('ROLLBACK');
               return res.status(400).json({ success: false, message: 'Insufficient asset balance.' });
           }
-          await tx.execute({
+          await db.execute({
               sql: 'UPDATE assets SET balance = balance - ?, balanceInEscrow = balanceInEscrow + ? WHERE userId = ? AND ticker = ?',
               args: [Number(totalAmount), Number(totalAmount), user.id, assetTicker]
           });
       }
       // ... (rest of insert logic)
-      await tx.commit();
+      await db.execute('COMMIT');
       return res.status(201).json({ success: true, message: 'Offer created.' });
   } catch(err) {
-      if (tx) await tx.rollback();
+      try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
       console.error('Error creating P2P offer:', err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }

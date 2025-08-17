@@ -18,17 +18,16 @@ export async function register(req, res) {
     return res.status(400).json({ success: false, message: 'All registration fields are required.' });
   }
 
-  let tx;
   try {
-    tx = await db.transaction('write');
+    await db.execute('BEGIN');
 
-    const existingUser = await tx.execute({
+    const existingUser = await db.execute({
         sql: 'SELECT email FROM users WHERE email = ? OR username = ?',
         args: [email, username]
     });
 
     if (existingUser.rows.length > 0) {
-        await tx.rollback();
+        await db.execute('ROLLBACK');
         return res.status(400).json({ success: false, message: 'Email or username is already taken.' });
     }
 
@@ -40,24 +39,24 @@ export async function register(req, res) {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    await tx.execute({
+    await db.execute({
         sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt, isAdmin, profilePhotoUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         args: [userId, fullName, username, email, passwordHash, 'Not Started', now, now, false, `https://i.pravatar.cc/40?u=${username}`]
     });
 
     const defaultPreferences = { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false };
     
-    await tx.execute({
+    await db.execute({
         sql: 'INSERT INTO user_settings (id, userId, preferences) VALUES (?, ?, ?)',
         args: [settingsId, userId, JSON.stringify(defaultPreferences)]
     });
 
-    await tx.execute({
+    await db.execute({
         sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [assetId, userId, 'Cash', 'USD', 'Cash', 0, 0]
     });
     
-    await tx.commit();
+    await db.execute('COMMIT');
     
     const userResult = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
     const newUser = processUser(userResult.rows[0]);
@@ -66,8 +65,10 @@ export async function register(req, res) {
     return res.status(201).json({ success: true, user: { ...newUser, token: userId } });
 
   } catch (err) {
-      if (tx) {
-        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      try {
+        await db.execute('ROLLBACK');
+      } catch (e) {
+        console.error('Failed to rollback transaction:', e);
       }
       console.error('Registration Error:', err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred during registration.' });

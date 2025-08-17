@@ -7,46 +7,45 @@ export async function reviewLoan(req, res) {
     return res.status(400).json({ success: false, message: 'loanId and approve flag are required' });
   }
 
-  let tx;
   try {
-    tx = await db.transaction('write');
-    const loanResult = await tx.execute({
+    await db.execute('BEGIN');
+    const loanResult = await db.execute({
       sql: 'SELECT * FROM loan_applications WHERE id = ?',
       args: [loanId],
     });
 
     if (loanResult.rows.length === 0) {
-      await tx.rollback();
+      await db.execute('ROLLBACK');
       return res.status(404).json({ success: false, message: 'Loan not found.' });
     }
     const loan = loanResult.rows[0];
     const loanAmount = Number(loan.amount);
 
     if (approve) {
-      await tx.execute({
+      await db.execute({
         sql: `UPDATE loan_applications SET status = 'Active', details = json_set(details, '$.startDate', ?) WHERE id = ?`,
         args: [new Date().toISOString(), loanId],
       });
-      await tx.execute({
+      await db.execute({
         sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`,
         args: [loanAmount, loanAmount, loan.userId],
       });
     } else {
-      await tx.execute({
+      await db.execute({
         sql: `UPDATE loan_applications SET status = 'Rejected' WHERE id = ?`,
         args: [loanId],
       });
       // Return collateralized asset to active status
-      await tx.execute({
+      await db.execute({
           sql: `UPDATE assets SET status = 'Active' WHERE id = ? AND status = 'Collateralized'`,
           args: [loan.collateralAssetId]
       });
     }
 
-    await tx.commit();
+    await db.execute('COMMIT');
     return res.status(200).json({ success: true, message: `Loan ${approve ? 'approved' : 'rejected'}.` });
   } catch (err) {
-    if (tx) await tx.rollback();
+    try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
     console.error('Error reviewing loan:', err);
     return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }

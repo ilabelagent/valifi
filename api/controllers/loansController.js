@@ -28,7 +28,6 @@ export async function applyForLoan(req, res) {
     return res.status(403).json({ success: false, message: 'KYC approval required.' });
   }
   
-  let tx;
   try {
     // --- Full Eligibility Check from business-logic.md ---
     const assetsResult = await db.execute({ sql: 'SELECT type, status, valueUSD FROM assets WHERE userId = ?', args: [user.id] });
@@ -51,24 +50,22 @@ export async function applyForLoan(req, res) {
     }
     // --- End Eligibility Check ---
 
-    tx = await db.transaction('write');
+    await db.execute('BEGIN');
     const id = crypto.randomUUID();
     const loan = {
         id, userId: user.id, amount: amt, term: Number(term), interestRate: 5.0, collateralAssetId,
         status: 'Pending', reason, createdAt: new Date().toISOString(), details: {}
     };
 
-    await tx.execute({
+    await db.execute({
         sql: `INSERT INTO loan_applications (id, userId, amount, term, interestRate, collateralAssetId, status, reason, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [id, user.id, amt, Number(term), 5.0, collateralAssetId, 'Pending', reason, '{}']
     });
     
-    await tx.commit();
+    await db.execute('COMMIT');
     return res.status(202).json({ success: true, data: loan });
   } catch(err) {
-      if (tx) {
-        try { await tx.rollback(); } catch(e) { console.error('Failed to rollback transaction:', e); }
-      }
+      try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
       console.error('Error applying for loan:', err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }

@@ -52,18 +52,17 @@ export async function updateUserSettings(req, res) {
   const userId = req.user.id;
   const { profile, settings } = req.body;
   
-  let tx;
   try {
-      tx = await db.transaction('write');
+      await db.execute('BEGIN');
       if (profile) {
-        await tx.execute({
+        await db.execute({
             sql: 'UPDATE users SET fullName = ?, username = ?, profilePhotoUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
             args: [profile.fullName, profile.username, profile.profilePhotoUrl, userId]
         });
       }
 
       if (settings) {
-          await tx.execute({
+          await db.execute({
               sql: `UPDATE user_settings SET 
                 twoFactorEnabled = ?, twoFactorMethod = ?, loginAlerts = ?, 
                 preferences = ?, privacy = ? WHERE userId = ?`,
@@ -74,10 +73,10 @@ export async function updateUserSettings(req, res) {
               ]
           });
       }
-      await tx.commit();
+      await db.execute('COMMIT');
       return getUserProfile(req, res);
   } catch(err) {
-      if (tx) await tx.rollback();
+      try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
       console.error('Error updating settings:', err);
       return res.status(500).json({ success: false, message: 'Database error updating settings.' });
   }
