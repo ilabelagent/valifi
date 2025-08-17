@@ -26,10 +26,10 @@ export async function getInvestments(req, res) {
 
   try {
     const result = await db.execute({ sql, args });
-    return res.status(200).json({ status: 'success', data: { investments: result.rows } });
+    return res.status(200).json({ success: true, data: { investments: result.rows } });
   } catch(err) {
     console.error('Error getting investments:', err);
-    return res.status(500).json({ status: 'error', message: 'Database error.' });
+    return res.status(500).json({ success: false, message: 'Database error.' });
   }
 }
 
@@ -40,15 +40,16 @@ export async function investSpectrumPlan(req, res) {
   const amt = Number(amount);
 
   if (!plan || !amt || amt <= 0) {
-    return res.status(400).json({ status: 'error', message: 'Invalid plan or amount' });
+    return res.status(400).json({ success: false, message: 'Invalid plan or amount' });
   }
 
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     const cashResult = await tx.execute({ sql: `SELECT balance FROM assets WHERE userId = ? AND type = 'Cash'`, args: [user.id] });
     if (cashResult.rows.length === 0 || cashResult.rows[0].balance < amt) {
         await tx.rollback();
-        return res.status(400).json({ status: 'error', message: 'Insufficient cash balance' });
+        return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
     }
     
     await tx.execute({ sql: `UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = 'Cash'`, args: [amt, amt, user.id] });
@@ -73,11 +74,13 @@ export async function investSpectrumPlan(req, res) {
     });
 
     await tx.commit();
-    return res.status(201).json({ status: 'success', data: { newInvestment: newAsset } });
+    return res.status(201).json({ success: true, data: { newInvestment: newAsset } });
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error investing in spectrum plan:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error.' });
+      return res.status(500).json({ success: false, message: 'Database error.' });
   }
 }
 
@@ -89,39 +92,40 @@ export async function stakeCrypto(req, res) {
     // 3. Insert new 'Crypto' asset with 'Staking' in name and details JSON
     // 4. Insert transaction log
     // 5. Commit
-    return res.status(501).json({ status: 'error', message: 'Not implemented' });
+    return res.status(501).json({ success: false, message: 'Not implemented' });
 }
 
 export async function stakeStock(req, res) {
     // Similar transaction logic
-    return res.status(501).json({ status: 'error', message: 'Not implemented' });
+    return res.status(501).json({ success: false, message: 'Not implemented' });
 }
 
 export async function investReit(req, res) {
     // Similar transaction logic
-    return res.status(501).json({ status: 'error', message: 'Not implemented' });
+    return res.status(501).json({ success: false, message: 'Not implemented' });
 }
 
 export async function investNftFractional(req, res) {
     // Similar transaction logic
-    return res.status(501).json({ status: 'error', message: 'Not implemented' });
+    return res.status(501).json({ success: false, message: 'Not implemented' });
 }
 
 export async function transferMaturity(req, res) {
   const { id } = req.params;
   const user = req.user;
   
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     const assetResult = await tx.execute({ sql: 'SELECT * FROM assets WHERE id = ? AND userId = ?', args: [id, user.id] });
     if (assetResult.rows.length === 0) {
         await tx.rollback();
-        return res.status(404).json({ status: 'error', message: 'Investment not found' });
+        return res.status(404).json({ success: false, message: 'Investment not found' });
     }
     const asset = assetResult.rows[0];
     if (asset.status !== 'Matured') {
         await tx.rollback();
-        return res.status(400).json({ status: 'error', message: 'Asset has not matured' });
+        return res.status(400).json({ success: false, message: 'Asset has not matured' });
     }
 
     await tx.execute({
@@ -140,30 +144,32 @@ export async function transferMaturity(req, res) {
     });
     
     await tx.commit();
-    return res.status(200).json({ status: 'success', message: 'Maturity transferred successfully.' });
+    return res.status(200).json({ success: true, message: 'Maturity transferred successfully.' });
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error transferring maturity:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error.' });
+      return res.status(500).json({ success: false, message: 'Database error.' });
   }
 }
 
 export async function swapAssets(req, res) {
     // This is a complex operation that requires a reliable price feed.
     // The existing mock logic is sufficient for this exercise.
-    return res.status(501).json({ status: 'error', message: 'Not implemented' });
+    return res.status(501).json({ success: false, message: 'Not implemented' });
 }
 
 // --- Read-only endpoints for fetching investment options ---
 
 export function getStakableStocks(req, res) {
-    res.status(200).json({ status: 'success', data: { stakableStocks } });
+    res.status(200).json({ success: true, data: { stakableStocks } });
 }
 
 export function getReitProperties(req, res) {
-    res.status(200).json({ status: 'success', data: { reitProperties: mockReitProperties } });
+    res.status(200).json({ success: true, data: { reitProperties: mockReitProperties } });
 }
 
 export function getInvestableNfts(req, res) {
-    res.status(200).json({ status: 'success', data: { investableNFTs } });
+    res.status(200).json({ success: true, data: { investableNFTs } });
 }

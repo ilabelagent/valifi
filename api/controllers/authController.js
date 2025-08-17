@@ -10,11 +10,13 @@ export async function register(req, res) {
   const { fullName, username, email, password } = req.body;
   console.log(`Registration attempt for email: ${email}, username: ${username}`);
   if (!fullName || !username || !email || !password) {
-    return res.status(400).json({ status: 'error', message: 'Missing registration fields' });
+    return res.status(400).json({ success: false, message: 'Missing registration fields' });
   }
   
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
+    
     // Check for uniqueness of username and email
     const existingUser = await tx.execute({
         sql: 'SELECT email, username FROM users WHERE email = ? OR username = ?',
@@ -72,9 +74,11 @@ export async function register(req, res) {
     return res.status(201).json({ success: true, user: { ...newUser, token: userId } });
 
   } catch (err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error(`Registration error for email ${email}:`, err);
-      return res.status(500).json({ status: 'error', message: 'Database error during registration.' });
+      return res.status(500).json({ success: false, message: 'A server error occurred during registration. Please try again.' });
   }
 }
 
@@ -84,7 +88,7 @@ export async function login(req, res) {
   const { email, password } = req.body;
   console.log(`Login attempt for email: ${email}`);
   if (!email || !password) {
-    return res.status(400).json({ status: 'error', message: 'Email and password required' });
+    return res.status(400).json({ success: false, message: 'Email and password required' });
   }
   
   try {
@@ -114,7 +118,7 @@ export async function login(req, res) {
       });
   } catch (err) {
       console.error(`Login error for email ${email}:`, err);
-      return res.status(500).json({ success: false, message: 'Database error during login.' });
+      return res.status(500).json({ success: false, message: 'A server error occurred during login.' });
   }
 }
 
@@ -123,8 +127,8 @@ export const forgotPassword = async (req, res) => {
     // For this mock, we just acknowledge the request.
     const { email } = req.body;
     if (!email) {
-        return res.status(400).json({ status: 'error', message: 'Email is required.' });
+        return res.status(400).json({ success: false, message: 'Email is required.' });
     }
     console.log(`Password reset requested for: ${email}`);
-    return res.status(200).json({ status: 'success', message: 'If an account with that email exists, a reset link has been sent.' });
+    return res.status(200).json({ success: true, message: 'If an account with that email exists, a reset link has been sent.' });
 };

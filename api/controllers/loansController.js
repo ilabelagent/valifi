@@ -10,10 +10,10 @@ export async function getLoans(req, res) {
         args: [userId]
     });
     const loans = result.rows.map(loan => ({...loan, details: JSON.parse(loan.details)}));
-    return res.status(200).json({ status: 'success', data: loans });
+    return res.status(200).json({ success: true, data: loans });
   } catch(err) {
       console.error('Error fetching loans:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error fetching loans.' });
+      return res.status(500).json({ success: false, message: 'Database error fetching loans.' });
   }
 }
 
@@ -27,11 +27,12 @@ export async function applyLoan(req, res) {
   const amt = Number(amount);
   const termDays = Number(term);
   if (!amt || amt <= 0 || !termDays || termDays <= 0 || !collateralAssetId) {
-    return res.status(400).json({ status: 'error', message: 'Invalid loan application parameters' });
+    return res.status(400).json({ success: false, message: 'Invalid loan application parameters' });
   }
 
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     // Business logic checks
     const portfolioStats = await tx.execute({
         sql: `SELECT SUM(valueUSD) as totalValue, COUNT(CASE WHEN type != 'Cash' AND status = 'Active' THEN 1 END) as activeInvestments FROM assets WHERE userId = ?`,
@@ -41,14 +42,17 @@ export async function applyLoan(req, res) {
     const { totalValue, activeInvestments } = portfolioStats.rows[0];
 
     if (activeInvestments === 0) {
-        return res.status(400).json({ status: 'error', message: 'At least one active investment is required' });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'At least one active investment is required' });
     }
     if (totalValue < 100000) {
-        return res.status(400).json({ status: 'error', message: 'Portfolio value below loan eligibility threshold' });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'Portfolio value below loan eligibility threshold' });
     }
     const maxAllowed = totalValue * 0.5;
     if (amt > maxAllowed) {
-        return res.status(400).json({ status: 'error', message: `Requested amount exceeds maximum allowed ($${maxAllowed.toFixed(2)})` });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: `Requested amount exceeds maximum allowed ($${maxAllowed.toFixed(2)})` });
     }
     
     const collateralResult = await tx.execute({
@@ -57,7 +61,8 @@ export async function applyLoan(req, res) {
     });
 
     if (collateralResult.rows.length === 0 || collateralResult.rows[0].status !== 'Active') {
-        return res.status(400).json({ status: 'error', message: 'Invalid or non-active collateral asset' });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'Invalid or non-active collateral asset' });
     }
 
     await tx.execute({
@@ -78,11 +83,13 @@ export async function applyLoan(req, res) {
     });
     
     await tx.commit();
-    return res.status(202).json({ status: 'success', data: loan });
+    return res.status(202).json({ success: true, data: loan });
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error applying for loan:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error during loan application.' });
+      return res.status(500).json({ success: false, message: 'Database error during loan application.' });
   }
 }
 
@@ -96,28 +103,32 @@ export async function repayLoan(req, res) {
   const { paymentAmount } = req.body;
   const amount = Number(paymentAmount);
   if (!amount || amount <= 0) {
-    return res.status(400).json({ status: 'error', message: 'Invalid repayment amount' });
+    return res.status(400).json({ success: false, message: 'Invalid repayment amount' });
   }
 
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     const loanResult = await tx.execute({
         sql: 'SELECT * FROM loan_applications WHERE id = ? AND userId = ?',
         args: [id, user.id]
     });
     if (loanResult.rows.length === 0) {
-        return res.status(404).json({ status: 'error', message: 'Loan not found' });
+        await tx.rollback();
+        return res.status(404).json({ success: false, message: 'Loan not found' });
     }
     let loan = loanResult.rows[0];
     loan.details = JSON.parse(loan.details);
 
     if (loan.status !== 'Active') {
-        return res.status(400).json({ status: 'error', message: 'Loan is not active for repayment.' });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'Loan is not active for repayment.' });
     }
 
     const cashResult = await tx.execute({ sql: `SELECT balance FROM assets WHERE userId = ? AND type = 'Cash'`, args: [user.id] });
     if (cashResult.rows.length === 0 || cashResult.rows[0].balance < amount) {
-        return res.status(400).json({ status: 'error', message: 'Insufficient cash balance' });
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
     }
     
     await tx.execute({ sql: `UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = 'Cash'`, args: [amount, amount, user.id] });
@@ -142,10 +153,12 @@ export async function repayLoan(req, res) {
     });
 
     await tx.commit();
-    return res.status(200).json({ status: 'success', data: { loan } });
+    return res.status(200).json({ success: true, data: { loan } });
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error repaying loan:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error during loan repayment.' });
+      return res.status(500).json({ success: false, message: 'Database error during loan repayment.' });
   }
 }

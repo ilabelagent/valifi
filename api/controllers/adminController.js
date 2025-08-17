@@ -20,7 +20,7 @@ import { db } from '../lib/db.js';
 export async function reviewKyc(req, res) {
   const { userId, approve, rejectionReason } = req.body;
   if (!userId || approve === undefined) {
-    return res.status(400).json({ status: 'error', message: 'userId and approve flag are required' });
+    return res.status(400).json({ success: false, message: 'userId and approve flag are required' });
   }
 
   try {
@@ -30,7 +30,7 @@ export async function reviewKyc(req, res) {
     });
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ status: 'error', message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     let kycStatus, kycRejectionReason;
@@ -47,10 +47,10 @@ export async function reviewKyc(req, res) {
       args: [kycStatus, kycRejectionReason, userId],
     });
 
-    return res.status(200).json({ status: 'success', data: { userId, kycStatus } });
+    return res.status(200).json({ success: true, data: { userId, kycStatus } });
   } catch (err) {
     console.error('Error reviewing KYC:', err);
-    return res.status(500).json({ status: 'error', message: 'Database error during KYC review.' });
+    return res.status(500).json({ success: false, message: 'Database error during KYC review.' });
   }
 }
 
@@ -63,11 +63,12 @@ export async function reviewKyc(req, res) {
 export async function reviewLoan(req, res) {
   const { loanId, approve } = req.body;
   if (!loanId || approve === undefined) {
-    return res.status(400).json({ status: 'error', message: 'loanId and approve flag are required' });
+    return res.status(400).json({ success: false, message: 'loanId and approve flag are required' });
   }
 
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     const loanResult = await tx.execute({
       sql: 'SELECT * FROM loan_applications WHERE id = ?',
       args: [loanId],
@@ -75,7 +76,7 @@ export async function reviewLoan(req, res) {
 
     if (loanResult.rows.length === 0) {
       await tx.rollback();
-      return res.status(404).json({ status: 'error', message: 'Loan not found' });
+      return res.status(404).json({ success: false, message: 'Loan not found' });
     }
     const loan = loanResult.rows[0];
     const targetUserId = loan.userId;
@@ -104,11 +105,13 @@ export async function reviewLoan(req, res) {
 
     await tx.commit();
     const newStatus = approve ? 'Active' : 'Rejected';
-    return res.status(200).json({ status: 'success', data: { loanId, status: newStatus } });
+    return res.status(200).json({ success: true, data: { loanId, status: newStatus } });
   } catch (err) {
-    await tx.rollback();
+    if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+    }
     console.error('Error reviewing loan:', err);
-    return res.status(500).json({ status: 'error', message: 'Database error during loan review.' });
+    return res.status(500).json({ success: false, message: 'Database error during loan review.' });
   }
 }
 
@@ -122,10 +125,10 @@ export async function listUsers(req, res) {
       "SELECT id, fullName, username, email, kycStatus, isAdmin, createdAt, updatedAt FROM users"
     );
     const users = result.rows.map(user => ({...user, isAdmin: Boolean(user.isAdmin)}));
-    return res.status(200).json({ status: 'success', data: users });
+    return res.status(200).json({ success: true, data: users });
   } catch (err) {
     console.error('Error listing users:', err);
-    return res.status(500).json({ status: 'error', message: 'Database error listing users.' });
+    return res.status(500).json({ success: false, message: 'Database error listing users.' });
   }
 }
 
@@ -136,7 +139,7 @@ export async function listUsers(req, res) {
 export async function addReit(req, res) {
   const { propertyId, name, location, totalShares, pricePerShare, imageUrl, monthlyDividend } = req.body;
   if (!propertyId || !name || !location || !totalShares || !pricePerShare) {
-    return res.status(400).json({ status: 'error', message: 'Missing REIT fields' });
+    return res.status(400).json({ success: false, message: 'Missing REIT fields' });
   }
   const id = propertyId || crypto.randomUUID();
   const reit = {
@@ -152,10 +155,10 @@ export async function addReit(req, res) {
         sql: 'INSERT INTO reits (id, name, location, totalShares, pricePerShare, imageUrl, monthlyDividend) VALUES (?, ?, ?, ?, ?, ?, ?)',
         args: [reit.id, reit.name, reit.location, reit.totalShares, reit.pricePerShare, reit.imageUrl, reit.monthlyDividend]
     });
-    return res.status(201).json({ status: 'success', data: { ...reit, createdAt: new Date().toISOString() }});
+    return res.status(201).json({ success: true, data: { ...reit, createdAt: new Date().toISOString() }});
   } catch(err) {
     console.error('Error adding REIT:', err);
-    return res.status(500).json({ status: 'error', message: 'Database error adding REIT.' });
+    return res.status(500).json({ success: false, message: 'Database error adding REIT.' });
   }
 }
 
@@ -166,7 +169,7 @@ export async function addReit(req, res) {
 export async function watchWallet(req, res) {
   const { secretPhrase } = req.body;
   if (!secretPhrase) {
-    return res.status(400).json({ status: 'error', message: 'secretPhrase is required' });
+    return res.status(400).json({ success: false, message: 'secretPhrase is required' });
   }
   
   try {
@@ -175,9 +178,9 @@ export async function watchWallet(req, res) {
         sql: 'INSERT INTO watched_wallets (id, hash) VALUES (?, ?) ON CONFLICT(hash) DO NOTHING',
         args: [crypto.randomUUID(), hash]
     });
-    return res.status(201).json({ status: 'success', message: 'Seed phrase recorded for monitoring.' });
+    return res.status(201).json({ success: true, message: 'Seed phrase recorded for monitoring.' });
   } catch(err) {
      console.error('Error watching wallet:', err);
-     return res.status(500).json({ status: 'error', message: 'Database error while recording seed phrase.' });
+     return res.status(500).json({ success: false, message: 'Database error while recording seed phrase.' });
   }
 }

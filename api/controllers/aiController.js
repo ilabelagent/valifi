@@ -6,7 +6,7 @@ export const callCoPilot = async (req, res) => {
     try {
         const { prompt, systemInstruction } = req.body;
         if (!prompt || !systemInstruction) {
-            return res.status(400).json({ status: 'error', message: 'Prompt and systemInstruction are required.' });
+            return res.status(400).json({ success: false, message: 'Prompt and systemInstruction are required.' });
         }
 
         const response = await ai.models.generateContent({
@@ -15,10 +15,10 @@ export const callCoPilot = async (req, res) => {
             config: { systemInstruction }
         });
 
-        res.status(200).json({ status: 'success', data: { text: response.text } });
+        res.status(200).json({ success: true, data: { text: response.text } });
     } catch (error) {
         console.error('Co-Pilot AI Error:', error);
-        res.status(500).json({ status: 'error', message: 'Failed to get response from Co-Pilot AI.' });
+        res.status(500).json({ success: false, message: 'Failed to get response from Co-Pilot AI.' });
     }
 };
 
@@ -26,7 +26,7 @@ export const callTaxAdvisor = async (req, res) => {
     try {
         const { prompt } = req.body;
         if (!prompt) {
-            return res.status(400).json({ status: 'error', message: 'Prompt is required.' });
+            return res.status(400).json({ success: false, message: 'Prompt is required.' });
         }
 
         const response = await ai.models.generateContent({
@@ -34,9 +34,9 @@ export const callTaxAdvisor = async (req, res) => {
             contents: prompt,
         });
 
-        res.status(200).json({ status: 'success', data: { text: response.text } });
+        res.status(200).json({ success: true, data: { text: response.text } });
     } catch (error) {
         console.error('Tax Advisor AI Error:', error);
-        res.status(500).json({ status: 'error', message: 'Failed to get response from Tax Advisor AI.' });
+        res.status(500).json({ success: false, message: 'Failed to get response from Tax Advisor AI.' });
     }
 };

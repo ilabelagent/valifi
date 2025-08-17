@@ -11,7 +11,7 @@ export async function getUserProfile(req, res) {
     });
     
     if (userResult.rows.length === 0) {
-        return res.status(404).json({ status: 'error', message: 'User not found.' });
+        return res.status(404).json({ success: false, message: 'User not found.' });
     }
     const profile = userResult.rows[0];
 
@@ -47,10 +47,10 @@ export async function getUserProfile(req, res) {
         sessions: sessionsResult.rows
     };
 
-    return res.status(200).json({ status: 'success', data: responseData });
+    return res.status(200).json({ success: true, data: responseData });
   } catch(err) {
       console.error('Error fetching user profile:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error fetching user data.' });
+      return res.status(500).json({ success: false, message: 'Database error fetching user data.' });
   }
 }
 
@@ -59,8 +59,9 @@ export async function updateUserSettings(req, res) {
   const userId = req.user.id;
   const { profile, settings } = req.body;
   
-  const tx = await db.transaction('write');
+  let tx;
   try {
+      tx = await db.transaction('write');
       if (profile) {
         await tx.execute({
             sql: 'UPDATE users SET fullName = ?, username = ?, profilePhotoUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
@@ -94,8 +95,10 @@ export async function updateUserSettings(req, res) {
       return getUserProfile(req, res);
 
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error updating settings:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error updating settings.' });
+      return res.status(500).json({ success: false, message: 'Database error updating settings.' });
   }
 }

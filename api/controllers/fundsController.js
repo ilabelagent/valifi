@@ -7,20 +7,20 @@ export function depositIntent(req, res) {
   const user = req.user;
   const { type, assetTicker, network } = req.body;
   if (!type) {
-    return res.status(400).json({ status: 'error', message: 'Deposit type required' });
+    return res.status(400).json({ success: false, message: 'Deposit type required' });
   }
   if (type === 'crypto') {
     const ticker = assetTicker ? assetTicker.toUpperCase() : 'USDT';
     const depositAddress = `${ticker}-DEPOSIT-${Date.now()}`;
-    return res.status(201).json({ status: 'success', data: { depositAddress } });
+    return res.status(201).json({ success: true, data: { depositAddress } });
   } else if (type === 'fiat') {
     const bankDetails = {
       beneficiary: user.fullName,
       reference: `VLF-${Date.now()}`,
     };
-    return res.status(201).json({ status: 'success', data: { bankDetails } });
+    return res.status(201).json({ success: true, data: { bankDetails } });
   } else {
-    return res.status(400).json({ status: 'error', message: 'Invalid deposit type' });
+    return res.status(400).json({ success: false, message: 'Invalid deposit type' });
   }
 }
 
@@ -31,7 +31,7 @@ export async function withdrawRequest(req, res) {
   const user = req.user;
   const { type, amountUSD, destination } = req.body;
   if (!type || !amountUSD || !destination) {
-    return res.status(400).json({ status: 'error', message: 'Missing withdrawal parameters' });
+    return res.status(400).json({ success: false, message: 'Missing withdrawal parameters' });
   }
   
   // KYC gating handled by middleware
@@ -43,7 +43,7 @@ export async function withdrawRequest(req, res) {
     });
     
     if (cashResult.rows.length === 0 || cashResult.rows[0].balance < amount) {
-        return res.status(400).json({ status: 'error', message: 'Insufficient cash balance' });
+        return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
     }
 
     // Record a pending transaction (no immediate debit)
@@ -52,10 +52,10 @@ export async function withdrawRequest(req, res) {
         args: [crypto.randomUUID(), user.id, `Withdrawal request of $${amount} to ${destination}`, -amount]
     });
 
-    return res.status(202).json({ status: 'success', message: 'Withdrawal request submitted for review.' });
+    return res.status(202).json({ success: true, message: 'Withdrawal request submitted for review.' });
   } catch(err) {
       console.error('Withdrawal request error:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error during withdrawal request.' });
+      return res.status(500).json({ success: false, message: 'Database error during withdrawal request.' });
   }
 }
 
@@ -66,16 +66,17 @@ export async function internalTransfer(req, res) {
   const senderId = req.user.id;
   const { recipientIdentifier, amountUSD, note } = req.body;
   if (!recipientIdentifier || !amountUSD) {
-    return res.status(400).json({ status: 'error', message: 'Recipient and amount are required' });
+    return res.status(400).json({ success: false, message: 'Recipient and amount are required' });
   }
   
   const amount = Number(amountUSD);
   if (amount <= 0) {
-    return res.status(400).json({ status: 'error', message: 'Amount must be positive' });
+    return res.status(400).json({ success: false, message: 'Amount must be positive' });
   }
 
-  const tx = await db.transaction('write');
+  let tx;
   try {
+    tx = await db.transaction('write');
     const [senderResult, recipientResult] = await Promise.all([
         tx.execute({ sql: `SELECT a.balance, u.username FROM assets a JOIN users u ON u.id = a.userId WHERE a.userId = ? AND a.type = 'Cash'`, args: [senderId] }),
         tx.execute({ sql: `SELECT id, username FROM users WHERE username = ? OR email = ?`, args: [recipientIdentifier, recipientIdentifier] })
@@ -83,13 +84,13 @@ export async function internalTransfer(req, res) {
 
     if (recipientResult.rows.length === 0) {
         await tx.rollback();
-        return res.status(404).json({ status: 'error', message: 'Recipient not found' });
+        return res.status(404).json({ success: false, message: 'Recipient not found' });
     }
     const recipient = recipientResult.rows[0];
 
     if (senderResult.rows.length === 0 || senderResult.rows[0].balance < amount) {
         await tx.rollback();
-        return res.status(400).json({ status: 'error', message: 'Insufficient cash balance' });
+        return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
     }
     const sender = senderResult.rows[0];
 
@@ -123,11 +124,13 @@ export async function internalTransfer(req, res) {
     const assetsResult = await db.execute({ sql: 'SELECT * FROM assets WHERE userId = ?', args: [senderId]});
     const updatedPortfolio = { ...req.user.portfolio, assets: assetsResult.rows }; // simplified portfolio return
 
-    return res.status(200).json({ status: 'success', data: { updatedPortfolio } });
+    return res.status(200).json({ success: true, data: { updatedPortfolio } });
 
   } catch(err) {
-      await tx.rollback();
+      if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Internal transfer error:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error during internal transfer.' });
+      return res.status(500).json({ success: false, message: 'Database error during internal transfer.' });
   }
 }

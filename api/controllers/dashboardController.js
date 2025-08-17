@@ -77,9 +77,9 @@ export async function getDashboardData(req, res) {
       newsItems: newsResult.rows,
     };
     
-    return res.status(200).json({ status: 'success', data: dashboardData });
+    return res.status(200).json({ success: true, data: dashboardData });
   } catch (err) {
     console.error('Error fetching dashboard data', err);
-    return res.status(500).json({ status: 'error', message: 'Failed to retrieve dashboard data.' });
+    return res.status(500).json({ success: false, message: 'Failed to retrieve dashboard data.' });
   }
 }
