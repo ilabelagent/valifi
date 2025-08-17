@@ -761,8 +761,8 @@ interface TestimonialCardProps {
 }
 
 const TestimonialCard: React.FC<TestimonialCardProps> = ({ id, quote, name, title, avatar, rating, likes, isLiked, onLike }) => (
-    <figure className="relative bg-card/70 p-6 rounded-2xl border border-border transition-all duration-300 hover:border-primary/50 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/10 backdrop-blur-sm flex flex-col h-full">
-        <span className="absolute top-4 left-5 text-7xl font-serif text-secondary" aria-hidden="true">“</span>
+    <figure className="relative bg-card p-6 rounded-2xl border border-border transition-all duration-300 hover:border-primary/50 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/10 backdrop-blur-sm flex flex-col h-full">
+        <span className="absolute top-4 left-5 text-7xl font-serif text-muted-foreground/50" aria-hidden="true">“</span>
         <blockquote className="text-muted-foreground mt-4 flex-grow relative z-10 pt-8">
             <p>{quote}</p>
         </blockquote>
@@ -771,7 +771,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ id, quote, name, titl
                 <img src={avatar} alt={name} className="w-12 h-12 rounded-full object-cover border-2 border-border shadow-lg"/>
                 <div>
                     <div className="font-bold text-foreground text-base">{name}</div>
-                    <div className="text-sm font-semibold text-primary">{title}</div>
+                    <div className="text-sm font-semibold text-muted-foreground">{title}</div>
                 </div>
             </div>
             <div className="flex items-center gap-4">

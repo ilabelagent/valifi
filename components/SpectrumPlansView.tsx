@@ -23,7 +23,7 @@ export const newPlans: InvestmentPlan[] = [
     note: 'No Profit Holidays',
     colorClass: 'bg-sky-900/50',
     borderColor: 'border-sky-500',
-    buttonColor: 'bg-sky-600 hover:bg-sky-500',
+    buttonColor: 'bg-sky-700 hover:bg-sky-600',
     shadowColor: 'shadow-sky-500/20'
   },
   {
@@ -39,7 +39,7 @@ export const newPlans: InvestmentPlan[] = [
     note: 'No Profit Holidays',
     colorClass: 'bg-teal-900/50',
     borderColor: 'border-teal-400',
-    buttonColor: 'bg-teal-600 hover:bg-teal-500',
+    buttonColor: 'bg-teal-700 hover:bg-teal-600',
     shadowColor: 'shadow-teal-400/20'
   },
   {
