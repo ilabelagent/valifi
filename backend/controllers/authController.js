@@ -21,21 +21,24 @@ export async function register(req, res) {
 
     if (existingUser.rows.length > 0) {
         if (existingUser.rows[0].email === email) {
+            await tx.rollback();
             return res.status(400).json({ status: 'error', message: 'Email already registered' });
         }
+        await tx.rollback();
         return res.status(400).json({ status: 'error', message: 'Username already taken' });
     }
 
     const userId = crypto.randomUUID();
     const settingsId = crypto.randomUUID();
     const assetId = crypto.randomUUID();
+    const now = new Date().toISOString();
     
     // In a production system this would be a hashed password.
     const passwordHash = password;
 
     await tx.execute({
-        sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus) VALUES (?, ?, ?, ?, ?, ?)',
-        args: [userId, fullName, username, email, passwordHash, 'Not Started']
+        sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [userId, fullName, username, email, passwordHash, 'Not Started', now, now]
     });
 
     const defaultPreferences = { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false };
@@ -45,13 +48,21 @@ export async function register(req, res) {
     });
 
     await tx.execute({
-        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0)`,
+        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}')`,
         args: [assetId, userId]
     });
     
     await tx.commit();
+    
+    const userResult = await db.execute({
+        sql: 'SELECT * FROM users WHERE id = ?',
+        args: [userId]
+    });
+    const newUser = userResult.rows[0];
+    delete newUser.passwordHash;
+
     // Use user ID as token for simplicity as per existing logic
-    return res.status(201).json({ status: 'success', token: userId });
+    return res.status(201).json({ success: true, user: { ...newUser, token: userId } });
 
   } catch (err) {
       await tx.rollback();
@@ -75,24 +86,34 @@ export async function login(req, res) {
       });
 
       if (result.rows.length === 0) {
-        return res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
 
       const user = result.rows[0];
       const passwordMatch = user.passwordHash === password;
 
       if (!passwordMatch) {
-        return res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
 
       // In lieu of JWTs we return the user ID as the token.
       return res.status(200).json({
-        status: 'success',
+        success: true,
         token: user.id,
-        refreshToken: `refresh-${user.id}`,
       });
   } catch (err) {
       console.error('Login error:', err);
-      return res.status(500).json({ status: 'error', message: 'Database error during login.' });
+      return res.status(500).json({ success: false, message: 'Database error during login.' });
   }
 }
+
+export const forgotPassword = async (req, res) => {
+    // In a real app, this would generate a reset token and send an email.
+    // For this mock, we just acknowledge the request.
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ status: 'error', message: 'Email is required.' });
+    }
+    console.log(`Password reset requested for: ${email}`);
+    return res.status(200).json({ status: 'success', message: 'If an account with that email exists, a reset link has been sent.' });
+};

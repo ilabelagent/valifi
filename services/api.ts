@@ -52,7 +52,8 @@ const handleRootResponse = async (response: Response) => {
         return response.json();
     }
     
-    throw new Error('Expected JSON response but received a different format.');
+    // Fallback for non-json success responses if any
+    return response.text();
 };
 
 
@@ -80,6 +81,10 @@ export const login = async (email: string, password: string): Promise<{ success:
             body: JSON.stringify({ email, password }),
         });
         const authData = await handleRootResponse(response);
+
+        if (!authData.success) {
+            return { success: false, message: authData.message };
+        }
         
         const user = await getUserProfile(authData.token);
         
@@ -98,12 +103,12 @@ export const register = async (fullName: string, username: string, email: string
         });
         
         const authData = await handleRootResponse(response);
-        if(!authData.token) {
+        if(!authData.success) {
              return { success: false, message: authData.message };
         }
         
-        const user = await getUserProfile(authData.token);
-        return { success: true, user: { ...user, token: authData.token } };
+        const user = await getUserProfile(authData.user.token);
+        return { success: true, user: { ...user, token: authData.user.token } };
     } catch (e: any) {
         return { success: false, message: e.message };
     }
