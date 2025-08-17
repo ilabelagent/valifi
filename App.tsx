@@ -19,7 +19,7 @@ import * as apiService from './services/api';
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Lazy load view components for code-splitting
-const DetailViewModal = React.lazy(() => import('./components/DetailViewModal'));
+const DashboardView = React.lazy(() => import('./components/DashboardView'));
 const InvestmentsView = React.lazy(() => import('./components/InvestmentsView'));
 const ReferralsView = React.lazy(() => import('./components/ReferralsView'));
 const PrivacyView = React.lazy(() => import('./components/PrivacyView'));
@@ -201,9 +201,9 @@ const AppContent: React.FC = () => {
 
     const handleLogin = async (email: string, password: string) => {
         const result = await apiService.login(email, password);
-        if (result.success && result.user) {
-            localStorage.setItem('valifi_token', result.user.token);
-            await loadAppData(result.user.token);
+        if (result.success && result.token) {
+            localStorage.setItem('valifi_token', result.token);
+            await loadAppData(result.token);
             return { success: true };
         }
         return { success: false, message: result.message };
@@ -211,9 +211,9 @@ const AppContent: React.FC = () => {
 
     const handleSignUp = async (fullName: string, username: string, email: string, password: string) => {
         const result = await apiService.register(fullName, username, email, password);
-        if (result.success && result.user) {
-            localStorage.setItem('valifi_token', result.user.token);
-            await loadAppData(result.user.token);
+        if (result.success && result.token) {
+            localStorage.setItem('valifi_token', result.token);
+            await loadAppData(result.token);
             return { success: true };
         }
         return { success: false, message: result.message };
@@ -254,7 +254,7 @@ const AppContent: React.FC = () => {
         const commonProps = { portfolio, setCurrentView, ...handlers };
         const cashBalance = portfolio.assets.find(a => a.type === AssetType.CASH)?.balance || 0;
         switch (currentView) {
-            case 'dashboard': return <DetailViewModal {...commonProps} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
+            case 'dashboard': return <DashboardView {...commonProps} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
             case 'investments': return <InvestmentsView assets={portfolio.assets} onTradeClick={(ticker) => { setExchangeDefaultAssetTicker(ticker); setCurrentView('exchange'); }} onInvest={()=>{}} cashBalance={cashBalance} onViewInvestment={handlers.onViewInvestment} onReinvest={()=>{}} onTransferToMain={onTransferToMain} onStake={()=>{}} onRequestStakeWithdrawal={()=>{}} onReStake={()=>{}} reitProperties={reitProperties} onReitInvest={()=>{}} stakableStocks={stakableStocks} onStockStake={()=>{}} investableNFTs={investableNFTs} onNFTInvest={()=>{}} onNFTStake={()=>{}} onNFTSell={()=>{}} onNFTClaim={()=>{}} initialTab={"all"} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
             case 'referrals': return <ReferralsView summary={referralSummary} />;
             case 'privacy': return <PrivacyView />;

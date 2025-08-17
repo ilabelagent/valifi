@@ -145,7 +145,7 @@ const TopMovers: React.FC<{ assets: Asset[] }> = ({ assets }) => {
                 {movers.length > 0 ? (
                     <ul className="space-y-1">{movers.map(a => <MoverItem key={a.id} asset={a}/>)}</ul>
                 ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No assets match the filter.</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">{t('no_assets_match')}</p>
                 )}
             </div>
         </Card>

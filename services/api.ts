@@ -73,28 +73,21 @@ export const getUserProfile = async (token: string): Promise<any> => {
     };
 };
 
-export const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; user?: any; }> => {
+export const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         });
-        const authData = await handleRootResponse(response);
-
-        if (!authData.success) {
-            return { success: false, message: authData.message };
-        }
-        
-        const user = await getUserProfile(authData.token);
-        
-        return { success: true, user: { ...user, token: authData.token } };
+        // Returns { success, token, message }
+        return await handleRootResponse(response);
     } catch (e: any) {
         return { success: false, message: e.message };
     }
 };
 
-export const register = async (fullName: string, username: string, email: string, password: string): Promise<{ success: boolean; message?: string; user?: any; }> => {
+export const register = async (fullName: string, username: string, email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
      try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
@@ -102,14 +95,8 @@ export const register = async (fullName: string, username: string, email: string
             body: JSON.stringify({ fullName, username, email, password }),
         });
         
-        const authData = await handleRootResponse(response);
-        if(!authData.success) {
-             return { success: false, message: authData.message };
-        }
-        
-        // After successful registration, we log the user in to get a full profile
-        const loginResult = await login(email, password);
-        return loginResult;
+        // Returns { success, token, message }
+        return await handleRootResponse(response);
     } catch (e: any) {
         return { success: false, message: e.message };
     }
@@ -139,40 +126,22 @@ export const getSpectrumPlans = async (): Promise<{ plans: any[] }> => handleDat
 export const getStakableCrypto = async (): Promise<{ assets: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/stakable-crypto`, { headers: getAuthHeaders() }));
 export const getReferralSummary = async (): Promise<{ tree: ReferralNode, activities: ReferralActivity[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/referrals/summary`, { headers: getAuthHeaders() }));
 
-// --- KYC ---
-export const submitKyc = async (): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/kyc/submit`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders() }
-    });
-    return handleRootResponse(response);
-}
+// --- NEWLY ADDED FUNCTIONS TO FIX ERRORS ---
 
-
-// --- AI & OTHER ACTIONS ---
-export const callCoPilot = async (prompt: string, systemInstruction?: string) => {
-    const response = await fetch(`${API_BASE_URL}/ai/copilot`, {
+export const onInitiateTrade = async (offerId: string, amount: number, paymentMethodId: string): Promise<P2POrder> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/orders`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, systemInstruction }),
+        body: JSON.stringify({ offerId, amount, paymentMethodId }),
     });
     return handleDataResponse(response);
 };
 
-export const callTaxAdvisor = async (prompt: string) => {
+export const callTaxAdvisor = async (prompt: string): Promise<{ text: string }> => {
     const response = await fetch(`${API_BASE_URL}/ai/tax-advisor`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
-    });
-    return handleDataResponse(response);
-};
-
-export const internalTransfer = async (recipient: string, amount: number, note: string) => {
-    const response = await fetch(`${API_BASE_URL}/funds/internal-transfer`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientIdentifier: recipient, amountUSD: amount, note }),
     });
     return handleDataResponse(response);
 };
@@ -184,32 +153,38 @@ export const applyForCard = async (data: CardApplicationData): Promise<{ cardDet
         body: JSON.stringify(data),
     });
     return handleDataResponse(response);
-}
+};
 
-export const linkBankAccount = async (accountData: Omit<BankAccount, 'id'|'status'>): Promise<BankAccount> => {
-     const response = await fetch(`${API_BASE_URL}/banking/accounts`, {
+export const linkBankAccount = async (data: Omit<BankAccount, 'id' | 'status'>): Promise<BankAccount> => {
+    const response = await fetch(`${API_BASE_URL}/banking/accounts`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(accountData),
+        body: JSON.stringify(data),
     });
     return handleDataResponse(response);
-}
+};
 
-export const applyForLoan = async (application: Omit<LoanApplication, 'id'|'date'|'status'>): Promise<LoanApplication> => {
+export const applyForLoan = async (data: Omit<LoanApplication, 'id' | 'date' | 'status'>): Promise<LoanApplication> => {
     const response = await fetch(`${API_BASE_URL}/loans/apply`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(application),
+        body: JSON.stringify(data),
     });
     return handleDataResponse(response);
-}
+};
 
-export const onInitiateTrade = async (offerId: string, amount: number, paymentMethodId: string): Promise<P2POrder> => {
-     const response = await fetch(`${API_BASE_URL}/p2p/orders`, {
+export const submitKyc = async (): Promise<void> => {
+    await fetch(`${API_BASE_URL}/kyc/submit`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+};
+
+export const callCoPilot = async (prompt: string, systemInstruction: string): Promise<{ text: string }> => {
+    const response = await fetch(`${API_BASE_URL}/ai/copilot`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId, amount, paymentMethodId }),
+        body: JSON.stringify({ prompt, systemInstruction }),
     });
-    const data = await handleDataResponse(response);
-    return data.order;
+    return handleDataResponse(response);
 };
