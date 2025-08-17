@@ -338,6 +338,9 @@ const AppContent: React.FC<{
                 onWithdrawClick={() => setWithdrawModalOpen(true)}
                 isMobileMenuOpen={isMobileMenuOpen}
                 setIsMobileMenuOpen={setIsMobileMenuOpen}
+                stakableStocks={availableStakableStocks}
+                reitProperties={reitProperties}
+                investableNFTs={availableInvestableNFTs}
             >
                 {
                     {

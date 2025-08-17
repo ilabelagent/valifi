@@ -6,7 +6,7 @@ import ImportSeedPhraseModal from './ImportSeedPhraseModal';
 import WalletConnectQRModal from './WalletConnectQRModal';
 import NotificationPanel from './NotificationPanel';
 import ValifiCoPilot from './ValifiCoPilot';
-import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio } from '../types';
+import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio, StakableStock, REITProperty, InvestableNFT } from '../types';
 import * as apiService from '../services/api';
 
 
@@ -41,6 +41,9 @@ interface LayoutProps {
   onWithdrawClick: () => void;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  stakableStocks: StakableStock[];
+  reitProperties: REITProperty[];
+  investableNFTs: InvestableNFT[];
 }
 
 const Layout: React.FC<LayoutProps> = (props) => {
@@ -56,6 +59,9 @@ const Layout: React.FC<LayoutProps> = (props) => {
     setUserSettings,
     isMobileMenuOpen,
     setIsMobileMenuOpen,
+    stakableStocks,
+    reitProperties,
+    investableNFTs,
   } = props;
   
   const notificationPanelRef = useRef<HTMLDivElement>(null);
@@ -119,6 +125,9 @@ const Layout: React.FC<LayoutProps> = (props) => {
             onTransferToMain={props.onTransferToMain}
             userSettings={userSettings}
             onDepositClick={props.onDepositClick}
+            stakableStocks={stakableStocks}
+            reitProperties={reitProperties}
+            investableNFTs={investableNFTs}
             api={apiService.callCoPilot}
         />
       </div>

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,7 +100,7 @@
   }
   .mobile-menu-sheet {
     background-color: rgb(var(--background));
-    @apply shadow-[ -10px_0_30px_rgb(0,0,0,0.2) ];
+    @apply shadow-[-10px_0_30px_rgb(0_0_0_/_0.2)];
   }
 
   /* Testimonial Marquee */

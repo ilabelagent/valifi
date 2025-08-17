@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SparklesIcon, SendIcon, CloseIcon, LightbulbIcon, ChatBubbleIcon, UsersIcon } from './icons';
-import type { Portfolio, ViewType, UserSettings, CoPilotMessage } from '../types';
+import type { Portfolio, ViewType, UserSettings, CoPilotMessage, StakableStock, REITProperty, InvestableNFT } from '../types';
 import { AssetType } from '../types';
 import { newPlans } from './SpectrumPlansView';
 import { mockStakableAssets } from './StakingView';
-import { stakableStocks as allStakableStocks } from '../data/stakable-stocks';
-import { mockReitProperties, investableNFTs as initialInvestableNFTs } from './reit-data';
 
 declare global {
   interface Window {
@@ -38,10 +36,13 @@ interface ValifiCoPilotProps {
     onTransferToMain: (assetId: string) => void;
     userSettings: UserSettings;
     onDepositClick: () => void;
+    stakableStocks: StakableStock[];
+    reitProperties: REITProperty[];
+    investableNFTs: InvestableNFT[];
     api: (prompt: string, systemInstruction: string) => Promise<{ text: string }>;
 }
 
-const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, setCurrentView, onTransferToMain, userSettings, onDepositClick, api }) => {
+const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, setCurrentView, onTransferToMain, userSettings, onDepositClick, stakableStocks, reitProperties, investableNFTs, api }) => {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [messages, setMessages] = useState<CoPilotMessage[]>([]);
@@ -161,12 +162,15 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
 
         const spectrumPlansSummary = `Available 'Spectrum Equity Plans':\n${newPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}`).join('\n')}`;
         const stakingOptionsSummary = `Available 'Crypto Staking' options:\n${mockStakableAssets.map(s => `- Asset: ${s.name}, APR: ${s.apr}%`).join('\n')}`;
-        const stakableStocks = allStakableStocks.slice(0, 5);
-        const stockStakingSummary = `Available 'Stock Staking' options:\n${stakableStocks.map(s => `- Stock: ${s.name} (${s.ticker}), Sector: ${s.sector}`).join('\n')}`;
-        const reitProperties = mockReitProperties.slice(0, 3);
-        const reitSummary = `Available 'REIT Properties':\n${reitProperties.map(r => `- Property: ${r.name}, Location: ${r.address}, Monthly ROI: ${r.monthlyROI}%`).join('\n')}`;
-        const investableNFTs = initialInvestableNFTs.slice(0, 3);
-        const nftSummary = `Available 'NFT Investments':\n${investableNFTs.map(n => `- NFT: ${n.title}, Collection: ${n.collection}, APY: ${n.apyAnnual}%`).join('\n')}`;
+        
+        const topStakableStocks = stakableStocks.slice(0, 5);
+        const stockStakingSummary = `Available 'Stock Staking' options:\n${topStakableStocks.map(s => `- Stock: ${s.name} (${s.ticker}), Sector: ${s.sector}`).join('\n')}`;
+        
+        const topReitProperties = reitProperties.slice(0, 3);
+        const reitSummary = `Available 'REIT Properties':\n${topReitProperties.map(r => `- Property: ${r.name}, Location: ${r.address}, Monthly ROI: ${r.monthlyROI}%`).join('\n')}`;
+        
+        const topInvestableNFTs = investableNFTs.slice(0, 3);
+        const nftSummary = `Available 'NFT Investments':\n${topInvestableNFTs.map(n => `- NFT: ${n.title}, Collection: ${n.collection}, APY: ${n.apyAnnual}%`).join('\n')}`;
 
         const fullContext = `
             User is on the "${currentView}" view.
