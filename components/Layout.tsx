@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, Suspense } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import WalletConnectModal from './WalletConnectModal';
@@ -8,6 +8,7 @@ import NotificationPanel from './NotificationPanel';
 import ValifiCoPilot from './ValifiCoPilot';
 import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio, StakableStock, REITProperty, InvestableNFT } from '../types';
 import * as apiService from '../services/api';
+import LoadingSpinner from './LoadingSpinner';
 
 
 interface LayoutProps {
@@ -110,7 +111,9 @@ const Layout: React.FC<LayoutProps> = (props) => {
         />
         <main className="flex-1 overflow-y-auto">
           <div key={currentView}>
-            {children}
+            <Suspense fallback={<LoadingSpinner />}>
+              {children}
+            </Suspense>
           </div>
         </main>
         <NotificationPanel
