@@ -41,13 +41,46 @@ const MiniRoiChart: React.FC<MiniRoiChartProps> = ({ data, className = '' }) => 
     }, [data, width, height, padding]);
 
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+        if (!points || points.length === 0) return;
+
         const svgRect = e.currentTarget.getBoundingClientRect();
         const svgX = e.clientX - svgRect.left;
         
-        const closestPoint = points.reduce((prev, curr) => 
-            Math.abs(curr.x - svgX) < Math.abs(prev.x - svgX) ? curr : prev
-        );
+        // Optimized point finding with binary search
+        let low = 0;
+        let high = points.length - 1;
 
+        if (svgX <= points[0].x) {
+            setTooltip(points[0]);
+            return;
+        }
+        if (svgX >= points[high].x) {
+            setTooltip(points[high]);
+            return;
+        }
+
+        while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            if (!points[mid]) break;
+            if (points[mid].x < svgX) {
+                low = mid + 1;
+            } else if (points[mid].x > svgX) {
+                high = mid - 1;
+            } else {
+                setTooltip(points[mid]);
+                return;
+            }
+        }
+        
+        const p1 = points[low - 1];
+        const p2 = points[low];
+        
+        if (!p1 || !p2) {
+            setTooltip(points[low] || points[high]);
+            return;
+        }
+
+        const closestPoint = (svgX - p1.x) < (p2.x - svgX) ? p1 : p2;
         setTooltip(closestPoint);
     };
 

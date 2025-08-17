@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GlobeIcon, ArrowUpIcon, ArrowDownIcon } from './icons';
 import { useCurrency } from './CurrencyContext';
 import { mockFxRates } from './fxService';
@@ -23,7 +23,7 @@ const financialHubs: MarketTime[] = [
     { city: 'Hong Kong', timeZone: 'Asia/Hong_Kong', marketOpen: 9, marketClose: 16 },
 ];
 
-const Clock: React.FC<{ hub: MarketTime }> = ({ hub }) => {
+const Clock: React.FC<{ hub: MarketTime }> = React.memo(({ hub }) => {
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -31,38 +31,48 @@ const Clock: React.FC<{ hub: MarketTime }> = ({ hub }) => {
         return () => clearInterval(timerId);
     }, []);
 
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: hub.timeZone,
-    });
-    
-    const localTimeParts = formatter.formatToParts(time);
-    const localHourPart = localTimeParts.find(p => p.type === 'hour');
-    const periodPart = localTimeParts.find(p => p.type === 'dayPeriod');
-    
-    let hour24 = 0;
-    if (localHourPart && periodPart) {
-        const localHour = parseInt(localHourPart.value, 10);
-        const period = periodPart.value;
-        hour24 = period === 'PM' && localHour !== 12 ? localHour + 12 : (period === 'AM' && localHour === 12 ? 0 : localHour);
-    }
-    
-    const dayOfWeek = new Date().toLocaleString('en-us', { timeZone: hub.timeZone, weekday: 'short' });
-    const isWeekend = dayOfWeek === 'Sat' || dayOfWeek === 'Sun';
-    const isMarketOpen = !isWeekend && hour24 >= hub.marketOpen && hour24 < hub.marketClose;
+    const { formattedTime, isMarketOpen } = useMemo(() => {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: hub.timeZone,
+        });
+        
+        const localTimeParts = formatter.formatToParts(time);
+        const localHourPart = localTimeParts.find(p => p.type === 'hour');
+        const periodPart = localTimeParts.find(p => p.type === 'dayPeriod');
+        
+        let hour24 = 0;
+        if (localHourPart && periodPart) {
+            const localHour = parseInt(localHourPart.value, 10);
+            const period = periodPart.value;
+            if (period === 'PM' && localHour !== 12) hour24 = localHour + 12;
+            else if (period === 'AM' && localHour === 12) hour24 = 0;
+            else hour24 = localHour;
+        }
+        
+        const dayOfWeek = new Date().toLocaleString('en-us', { timeZone: hub.timeZone, weekday: 'short' });
+        const isWeekend = dayOfWeek === 'Sat' || dayOfWeek === 'Sun';
+        const isMarketOpenCalc = !isWeekend && hour24 >= hub.marketOpen && hour24 < hub.marketClose;
+
+        return {
+            formattedTime: formatter.format(time),
+            isMarketOpen: isMarketOpenCalc
+        };
+
+    }, [time, hub.timeZone, hub.marketOpen, hub.marketClose]);
 
     return (
         <div className="text-center">
             <p className="text-sm font-semibold text-foreground">{hub.city}</p>
-            <p className="font-mono text-lg text-muted-foreground tracking-wider">{formatter.format(time)}</p>
+            <p className="font-mono text-lg text-muted-foreground tracking-wider">{formattedTime}</p>
             <div className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full inline-block ${isMarketOpen ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                 {isMarketOpen ? 'Open' : 'Closed'}
             </div>
         </div>
     );
-};
+});
 
 const WorldClockFXTicker: React.FC = () => {
     const { currency } = useCurrency();
