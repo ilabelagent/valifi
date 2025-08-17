@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { db } from '../lib/db.js';
 
 // Registers a new user.  Duplicate emails or usernames are rejected.  A
@@ -33,8 +34,8 @@ export async function register(req, res) {
     const assetId = crypto.randomUUID();
     const now = new Date().toISOString();
     
-    // In a production system this would be a hashed password.
-    const passwordHash = password;
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     await tx.execute({
         sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt, kycRejectionReason, isAdmin, profilePhotoUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -93,7 +94,7 @@ export async function login(req, res) {
       }
 
       const user = result.rows[0];
-      const passwordMatch = user.passwordHash === password;
+      const passwordMatch = await bcrypt.compare(password, user.passwordHash);
 
       if (!passwordMatch) {
         return res.status(401).json({ success: false, message: 'Invalid email or password' });

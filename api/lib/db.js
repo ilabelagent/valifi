@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { initialPortfolio, initialNotifications, initialNewsItems } from '../data.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,9 +43,10 @@ const seedTestUser = async () => {
         
         // 1. Create User and Settings
         const userId = 'user-1'; // Use a deterministic ID for the test user
+        const hashedPassword = await bcrypt.hash('password', 10);
         await tx.execute({
             sql: `INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, isAdmin) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            args: [userId, 'Test User', 'testuser', testUserEmail, 'password', 'Approved', TRUE]
+            args: [userId, 'Test User', 'testuser', testUserEmail, hashedPassword, 'Approved', true]
         });
         await tx.execute({
             sql: `INSERT INTO user_settings (id, userId, preferences, privacy, vaultRecovery) VALUES (?, ?, ?, ?, ?)`,
@@ -94,6 +96,75 @@ const seedTestUser = async () => {
     }
 }
 
+const seedExtraUsers = async () => {
+    const tx = await db.transaction('write');
+    try {
+        const usersToSeed = [
+            {
+                id: 'user-admin-seeded',
+                fullName: 'Platform Admin',
+                username: 'platformadmin',
+                email: 'admin@valifi.com',
+                password: 'password_admin',
+                isAdmin: true,
+            },
+            {
+                id: 'user-starter-seeded',
+                fullName: 'Starter User',
+                username: 'starteruser',
+                email: 'user@valifi.com',
+                password: 'password_user',
+                isAdmin: false,
+            }
+        ];
+
+        for (const user of usersToSeed) {
+            const userCheck = await tx.execute({
+                sql: 'SELECT id FROM users WHERE email = ?',
+                args: [user.email],
+            });
+
+            if (userCheck.rows.length > 0) {
+                console.log(`User ${user.email} already exists.`);
+                continue;
+            }
+
+            console.log(`Seeding user: ${user.email}`);
+
+            const now = new Date().toISOString();
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            
+            await tx.execute({
+                sql: `INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, isAdmin, profilePhotoUrl, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [user.id, user.fullName, user.username, user.email, hashedPassword, 'Not Started', user.isAdmin, `https://i.pravatar.cc/40?u=${user.username}`, now, now]
+            });
+
+            const settingsId = crypto.randomUUID();
+            const defaultPreferences = { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false };
+            const defaultPrivacy = { emailMarketing: false, platformMessages: true, contactAccess: false };
+            const defaultVaultRecovery = { email: '', phone: '', pin: '' };
+            
+            await tx.execute({
+                sql: 'INSERT INTO user_settings (id, userId, twoFactorEnabled, twoFactorMethod, loginAlerts, preferences, privacy, vaultRecovery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                args: [settingsId, user.id, false, 'none', false, JSON.stringify(defaultPreferences), JSON.stringify(defaultPrivacy), JSON.stringify(defaultVaultRecovery)]
+            });
+
+            const assetId = crypto.randomUUID();
+            await tx.execute({
+                sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details, balanceInEscrow, change24h, allocation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [assetId, user.id, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}', 0, 0, 0]
+            });
+        }
+
+        await tx.commit();
+        console.log("Extra users seeded successfully.");
+
+    } catch (err) {
+        console.error("Error seeding extra users:", err);
+        await tx.rollback();
+    }
+};
+
 
 // A function to initialize the database schema from an SQL file
 export const initializeSchema = async () => {
@@ -114,6 +185,7 @@ export const initializeSchema = async () => {
                 
                 // Seed the database with the test user after schema creation
                 await seedTestUser();
+                await seedExtraUsers();
 
             } catch (initErr) {
                 console.error("Error during schema initialization:", initErr);

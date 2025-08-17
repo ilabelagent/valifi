@@ -1,7 +1,7 @@
 import { db } from '../lib/db.js';
 
 // Fetches the profile and settings for the authenticated user.
-export async function getMe(req, res) {
+export async function getUserProfile(req, res) {
   const userId = req.user.id;
   try {
     // The user object from the middleware might be stale, so we refetch.
@@ -55,7 +55,7 @@ export async function getMe(req, res) {
 }
 
 // Updates the user's settings.
-export async function updateSettings(req, res) {
+export async function updateUserSettings(req, res) {
   const userId = req.user.id;
   const { profile, settings } = req.body;
   
@@ -91,7 +91,7 @@ export async function updateSettings(req, res) {
       await tx.commit();
       
       // Refetch the updated data to send back
-      return getMe(req, res);
+      return getUserProfile(req, res);
 
   } catch(err) {
       await tx.rollback();

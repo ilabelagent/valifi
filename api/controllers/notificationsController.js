@@ -17,7 +17,7 @@ export async function markAsRead(req, res) {
 }
 
 // Delete a single notification.
-export async function deleteNotification(req, res) {
+export async function dismissNotification(req, res) {
   const userId = req.user.id;
   const { id } = req.params;
   try {
@@ -33,7 +33,7 @@ export async function deleteNotification(req, res) {
 }
 
 // Mark all notifications as read.
-export async function markAllAsRead(req, res) {
+export async function markAllRead(req, res) {
   const userId = req.user.id;
   try {
     await db.execute({
@@ -48,7 +48,7 @@ export async function markAllAsRead(req, res) {
 }
 
 // Clear all read notifications.
-export async function clearAll(req, res) {
+export async function clearAllRead(req, res) {
   const userId = req.user.id;
   try {
     await db.execute({

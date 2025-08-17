@@ -21,7 +21,7 @@ export async function getBankAccounts(req, res) {
 }
 
 // Link a new bank account. The account is added with a status of 'Pending'.
-export async function addBankAccount(req, res) {
+export async function linkBankAccount(req, res) {
   const userId = req.user.id;
   const { countryCode, nickname, details, accountDisplay } = req.body;
 
