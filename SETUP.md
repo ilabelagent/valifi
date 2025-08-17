@@ -7,7 +7,7 @@ This guide provides comprehensive instructions for setting up the Valifi platfor
 Valifi is a modern full-stack application built with:
 
 -   **Frontend**: A static React application served directly. It uses ES modules loaded via `esm.sh`.
--   **Backend**: A Node.js/Express API server located in the `/backend` directory, designed to run as Vercel Serverless Functions.
+-   **Backend**: A Node.js/Express API server located in the `/api` directory, designed to run as Vercel Serverless Functions.
 -   **Database**: [Turso](https://turso.tech/), a distributed SQLite-compatible database.
 
 ## 2. Prerequisites
@@ -42,7 +42,7 @@ From the **root directory** of the project, run the following commands to instal
 ```bash
 # In project root
 npm install       # Installs root dev dependencies (concurrently, serve)
-npm run install   # Installs backend dependencies (runs "npm install --prefix backend")
+npm run install   # Installs backend dependencies (runs "npm install --prefix api")
 ```
 
 ### Step 3: Set Up Turso Database
@@ -68,12 +68,12 @@ npm run install   # Installs backend dependencies (runs "npm install --prefix ba
 
 ### Step 4: Configure Backend Environment
 
-1.  Navigate to the backend directory: `cd backend`
+1.  Navigate to the api directory: `cd api`
 2.  Create a new file named `.env` by copying the example file: `cp .env.example .env`
 3.  Open the `.env` file and add your Turso credentials and Google AI API key:
 
     ```ini
-    # backend/.env
+    # api/.env
 
     # From Turso CLI step 3
     TURSO_DATABASE_URL="libsql://your-turso-db-url.turso.io"
@@ -121,7 +121,7 @@ Vercel automatically detects the project structure. Confirm the following settin
 -   **Build and Output Settings**: Leave these **blank**.
 -   **Root Directory**: Should be the repository root.
 
-Vercel will automatically detect the `/backend` directory and deploy your Express app as Serverless Functions. Any request from the frontend to `/api/*` will be correctly rewritten and handled.
+Vercel will automatically detect the `/api` directory and deploy your Express app as Serverless Functions. Any request from the frontend to `/api/*` will be correctly rewritten and handled.
 
 ### Step 3: Add Environment Variables
 
@@ -144,9 +144,9 @@ The first time you deploy, your production database will be empty. Vercel does n
     # Get your production database shell
     turso db shell valifi-prod
     
-    # Paste the entire content of backend/lib/schema.sql into the shell and press Enter.
+    # Paste the entire content of api/lib/schema.sql into the shell and press Enter.
     # This will create all the necessary tables.
-    .read backend/lib/schema.sql
+    .read api/lib/schema.sql
     ```
 2.  **(Crucial) Designate an Admin User**:
     The admin account is a regular user account that has been granted special privileges. The password is set during the standard sign-up process.

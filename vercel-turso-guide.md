@@ -72,7 +72,7 @@ Vercel will build and deploy your application using the new production environme
 
 ### Step 5: Initialize the Production Database Schema
 
-Your new production database is empty. Since Vercel's serverless environment does not automatically run the schema initialization script from `backend/lib/db.js`, you must do this manually **one time**.
+Your new production database is empty. Since Vercel's serverless environment does not automatically run the schema initialization script from `api/lib/db.js`, you must do this manually **one time**.
 
 1.  **Connect to your production database shell**:
     ```bash
@@ -80,7 +80,7 @@ Your new production database is empty. Since Vercel's serverless environment doe
     ```
 2.  **Run the schema file**: Once you are in the Turso shell (you will see a `>` prompt), execute the `.read` command. You must run this command from the **root directory of your local project**.
     ```sql
-    .read backend/lib/schema.sql
+    .read api/lib/schema.sql
     ```
     This command will execute all the `CREATE TABLE` statements and set up your database structure.
 

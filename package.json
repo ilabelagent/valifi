@@ -4,7 +4,7 @@
   "description": "AI-Powered Financial Platform",
   "private": true,
   "scripts": {
-    "postinstall": "npm install --prefix backend",
+    "postinstall": "npm install --prefix api",
     "dev": "vite",
     "build": "vite build",
     "start": "vercel deploy --prod"

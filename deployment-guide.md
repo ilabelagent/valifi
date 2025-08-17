@@ -19,19 +19,19 @@ The backend is a Node.js application that serves the API.
 
 ### Step 1: Clone and Install Dependencies
 
-Navigate to the `backend` directory of the project and install the required npm packages.
+Navigate to the `api` directory of the project and install the required npm packages.
 
 ```bash
-cd /path/to/your/project/backend
+cd /path/to/your/project/api
 npm install
 ```
 
 ### Step 2: Configure Environment Variables
 
-Create a `.env` file in the `backend` directory. This file will store your secret keys and configuration variables.
+Create a `.env` file in the `api` directory. This file will store your secret keys and configuration variables.
 
 ```bash
-# backend/.env
+# api/.env
 
 # The port for the backend server to run on.
 PORT=3001
@@ -56,13 +56,13 @@ For a production environment, it is highly recommended to use a process manager 
 
 ```bash
 # Start the application with PM2
-pm2 start index.js --name "valifi-backend"
+pm2 start index.js --name "valifi-api"
 
 # To view logs
-pm2 logs valifi-backend
+pm2 logs valifi-api
 
 # To stop
-pm2 stop valifi-backend
+pm2 stop valifi-api
 ```
 
 The backend server will now be running (e.g., on `http://localhost:3001`).
@@ -75,7 +75,7 @@ The frontend consists of static files (`index.html`, `index.tsx`, etc.) that nee
 
 ### Step 1: Place Files on Server
 
-Copy all the frontend files and directories (everything in the project root *except* the `backend` directory and `deployment-guide.md`) to your web server's root directory (e.g., `/var/www/valifi`).
+Copy all the frontend files and directories (everything in the project root *except* the `api` directory and `deployment-guide.md`) to your web server's root directory (e.g., `/var/www/valifi`).
 
 ### Step 2: Configure the Web Server (Nginx Example)
 
