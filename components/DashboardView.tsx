@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Portfolio, Asset, Transaction, ViewType, InvestmentStatus, AssetType as AssetTypeEnum, InvestmentPlan, StakableAsset } from '../types';
+import type { Portfolio, Asset, Transaction, ViewType, InvestmentStatus, InvestmentPlan, StakableAsset } from '../types';
 import { AssetType } from '../types';
 import { ArrowUpIcon, ArrowDownIcon, ClockIcon, ArrowUpRightIcon, DownloadIcon, CheckCircleIcon, XCircleIcon, LockIcon, RefreshIcon, InvestmentsIcon, SwapIcon, CardIcon, LoanIcon } from './icons';
 import ForumChat from './ForumChat';

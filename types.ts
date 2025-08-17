@@ -549,3 +549,14 @@ export interface CoPilotMessage {
   suggestions?: CoPilotSuggestion[];
   isLoading?: boolean;
 }
+
+export interface Feature {
+    Icon: React.FC<any>;
+    title: string;
+    description: string;
+    details: {
+        headline: string;
+        body: string;
+        points: string[];
+    };
+}

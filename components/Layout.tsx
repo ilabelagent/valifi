@@ -8,7 +8,7 @@ import NotificationPanel from './NotificationPanel';
 import ValifiCoPilot from './ValifiCoPilot';
 import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio, StakableStock, REITProperty, InvestableNFT, InvestmentPlan, StakableAsset } from '../types';
 import * as apiService from '../services/api';
-import LoadingSpinner from './components/LoadingSpinner';
+import LoadingSpinner from './LoadingSpinner';
 
 
 interface LayoutProps {
