@@ -72,10 +72,6 @@ const InternalTransfer: React.FC<InternalTransferProps> = ({ portfolio, onIntern
             setError('You cannot send funds to yourself.');
             return;
         }
-        if (!mockValidRecipients.includes(recipientTrimmed.toLowerCase())) {
-            setError(`User "${recipientTrimmed}" not found. Please check the username or email.`);
-            return;
-        }
         if (isNaN(numericAmount) || numericAmount <= 0) {
             setError('Please enter a valid positive amount.');
             return;

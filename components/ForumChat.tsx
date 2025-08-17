@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Portfolio, ChatMessage } from '../types';
+import type { Portfolio, ChatMessage, InvestmentPlan, StakableAsset } from '../types';
 import { SparklesIcon, MessageCircleIcon, LockIcon, SendIcon, ClockIcon } from './icons';
-import { newPlans } from './SpectrumPlansView';
-import { mockStakableAssets } from './StakingView';
 
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
     <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
@@ -22,18 +20,14 @@ Your responsibilities:
 5.  **Personalized Analysis:** Use the user's portfolio context to provide personalized and relevant analysis, but do not explicitly restate their portfolio details unless asked.
 Your tone should be professional, confident, persuasive, and helpful.`;
 
-const welcomeMessage: ChatMessage = {
-    id: '1', author: 'ai', authorName: 'Valifi AI', Icon: SparklesIcon,
-    text: 'Welcome to the Investor\'s Forum! This is an exclusive space for our top-tier members. Feel free to discuss market trends, ask complex financial questions, or share strategies.',
-    timestamp: new Date().toISOString(),
-};
-
 interface ForumChatProps {
     portfolio: Portfolio;
     api: (prompt: string, systemInstruction: string) => Promise<{ text: string }>;
+    spectrumPlans: InvestmentPlan[];
+    stakableCrypto: StakableAsset[];
 }
 
-const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api }) => {
+const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api, spectrumPlans, stakableCrypto }) => {
     const isEligible = portfolio.totalValueUSD >= 100000;
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -68,10 +62,10 @@ const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api }) => {
 - Cash Balance: $${portfolio.assets.find(a => a.type === 'Cash')?.valueUSD.toFixed(2) || '0.00'}`;
 
         const spectrumPlansSummary = `Available 'Spectrum Equity Plans' (for your analysis and recommendation):
-${newPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}, Total Periods: ${p.totalPeriods}`).join('\n')}`;
+${spectrumPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}, Total Periods: ${p.totalPeriods}`).join('\n')}`;
 
         const stakingOptionsSummary = `Available 'Crypto Staking' options (for your analysis and recommendation):
-${mockStakableAssets.map(s => `- Asset: ${s.name} (${s.ticker}), APR: ${s.apr}%`).join('\n')}`;
+${stakableCrypto.map(s => `- Asset: ${s.name} (${s.ticker}), APR: ${s.apr}%`).join('\n')}`;
 
         const fullPrompt = `
 ${portfolioSummary}
@@ -94,7 +88,6 @@ User question: "${newMessage}"
             };
             setMessages(prev => [...prev, aiMessage]);
         } catch (error) {
-            console.error("Error generating content:", error);
             const errorMessage: ChatMessage = {
                 id: Date.now().toString() + '-error',
                 author: 'ai',
@@ -127,7 +120,7 @@ User question: "${newMessage}"
         );
     }
     
-    const displayMessages = [welcomeMessage, ...messages];
+    const displayMessages = messages;
 
     return (
         <Card className="flex flex-col h-[28rem] min-h-[28rem]">

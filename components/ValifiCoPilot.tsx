@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SparklesIcon, SendIcon, CloseIcon, LightbulbIcon, ChatBubbleIcon, UsersIcon } from './icons';
-import type { Portfolio, ViewType, UserSettings, CoPilotMessage, StakableStock, REITProperty, InvestableNFT } from '../types';
+import type { Portfolio, ViewType, UserSettings, CoPilotMessage, StakableStock, REITProperty, InvestableNFT, InvestmentPlan, StakableAsset } from '../types';
 import { AssetType } from '../types';
-import { newPlans } from './SpectrumPlansView';
-import { mockStakableAssets } from './StakingView';
 
 declare global {
   interface Window {
@@ -39,10 +37,12 @@ interface ValifiCoPilotProps {
     stakableStocks: StakableStock[];
     reitProperties: REITProperty[];
     investableNFTs: InvestableNFT[];
+    spectrumPlans: InvestmentPlan[];
+    stakableCrypto: StakableAsset[];
     api: (prompt: string, systemInstruction: string) => Promise<{ text: string }>;
 }
 
-const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, setCurrentView, onTransferToMain, userSettings, onDepositClick, stakableStocks, reitProperties, investableNFTs, api }) => {
+const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, setCurrentView, onTransferToMain, userSettings, onDepositClick, stakableStocks, reitProperties, investableNFTs, spectrumPlans, stakableCrypto, api }) => {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [messages, setMessages] = useState<CoPilotMessage[]>([]);
@@ -56,8 +56,6 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
     const openSmartsuppChat = () => {
         if (window.smartsupp) {
             window.smartsupp('chat:open');
-        } else {
-            console.warn("Smartsupp script not loaded.");
         }
     };
 
@@ -112,7 +110,7 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
                     }
                 case 'spectrum':
                 default:
-                    const suitablePlan = newPlans.find(p => cashBalance >= parseFloat(p.investmentRange.split('–')[0].replace(/[\$,]/g, '')));
+                    const suitablePlan = spectrumPlans.find(p => cashBalance >= parseFloat(p.investmentRange.split('–')[0].replace(/[\$,]/g, '')));
                     prompt = `Context: The user is on the Dashboard.
                     Portfolio Situation: The user has a significant cash balance of $${cashBalance.toFixed(2)} sitting idle.
                     Available Investment Plan: ${suitablePlan ? `${suitablePlan.name} (${suitablePlan.investmentRange}) with ${suitablePlan.dailyReturns} daily returns.` : 'Multiple Spectrum Plans are available.'}
@@ -143,9 +141,9 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
             setCurrentSuggestion(suggestion);
             localStorage.setItem('seenSuggestion', suggestionId);
         } catch (error) {
-            console.error("Co-Pilot suggestion error:", error);
+            // Error is intentionally ignored as per request
         }
-    }, [api, portfolio, setCurrentView, onTransferToMain, onDepositClick, stakableStocks, reitProperties]);
+    }, [api, portfolio, setCurrentView, onTransferToMain, onDepositClick, stakableStocks, reitProperties, spectrumPlans]);
     
      useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -188,8 +186,8 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
         setInputValue('');
         setIsLoading(true);
 
-        const spectrumPlansSummary = `Available 'Spectrum Equity Plans':\n${newPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}`).join('\n')}`;
-        const stakingOptionsSummary = `Available 'Crypto Staking' options:\n${mockStakableAssets.map(s => `- Asset: ${s.name}, APR: ${s.apr}%`).join('\n')}`;
+        const spectrumPlansSummary = `Available 'Spectrum Equity Plans':\n${spectrumPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}`).join('\n')}`;
+        const stakingOptionsSummary = `Available 'Crypto Staking' options:\n${stakableCrypto.map(s => `- Asset: ${s.name}, APR: ${s.apr}%`).join('\n')}`;
         
         const topStakableStocks = stakableStocks.slice(0, 5);
         const stockStakingSummary = `Available 'Stock Staking' options:\n${topStakableStocks.map(s => `- Stock: ${s.name} (${s.ticker}), Sector: ${s.sector}`).join('\n')}`;
@@ -226,7 +224,6 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
             setMessages(prev => [...prev, aiMessage]);
 
         } catch (error) {
-            console.error("Co-Pilot chat error:", error);
              const errorMessage: CoPilotMessage = {
                 id: `msg-${Date.now()}-err`,
                 author: 'ai',

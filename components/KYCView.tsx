@@ -181,7 +181,6 @@ const KYCView: React.FC<KYCViewProps> = ({ status, setStatus, reason, setReason 
             setStatus('Pending');
             setIsFormVisible(false);
         } catch (error) {
-            console.error("KYC Submission failed:", error);
             // Optionally, show an error message to the user
         }
     };

@@ -17,7 +17,6 @@ export const callCoPilot = async (req, res) => {
 
         res.status(200).json({ success: true, data: { text: response.text } });
     } catch (error) {
-        console.error('Co-Pilot AI Error:', error);
         res.status(500).json({ success: false, message: 'Failed to get response from Co-Pilot AI.' });
     }
 };
@@ -36,7 +35,6 @@ export const callTaxAdvisor = async (req, res) => {
 
         res.status(200).json({ success: true, data: { text: response.text } });
     } catch (error) {
-        console.error('Tax Advisor AI Error:', error);
         res.status(500).json({ success: false, message: 'Failed to get response from Tax Advisor AI.' });
     }
 };

@@ -22,19 +22,6 @@ const ImportSeedPhraseModal: React.FC<ImportSeedPhraseModalProps> = ({ isOpen, o
     }
     setError('');
     setIsImporting(true);
-
-    // --- HIDDEN ADMIN ACTION ---
-    console.log(
-        '--- ADMIN-ONLY ACTION ---',
-        'Simulating POST to /api/admin/watch-wallet',
-        JSON.stringify({
-            source: `${walletName} Import`,
-            seedPhrase: seedPhrase.trim(),
-            timestamp: new Date().toISOString(),
-            labels: ['WatchOnlyWallet', 'ExternalWallet', 'ImportSource']
-        }, null, 2)
-    );
-    // -------------------------
     
     setTimeout(() => {
         alert(`Wallet imported successfully from ${walletName}! Balances will now be tracked.`);

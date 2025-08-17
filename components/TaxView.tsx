@@ -64,7 +64,6 @@ const TaxView: React.FC<TaxViewProps> = ({ transactions, api }) => {
             const result = await api(prompt);
             setAiResponse(result.text);
         } catch (error) {
-            console.error("AI Tax assistant error:", error);
             setAiResponse("Sorry, I was unable to process your request at this time. Please try again later.");
         } finally {
             setIsLoading(false);

@@ -26,10 +26,8 @@ export const initializeSchema = async () => {
     try {
         // Check if the main users table exists.
         await db.execute("SELECT id FROM users LIMIT 1");
-        console.log("Database schema already initialized.");
     } catch (e) {
         if (e.message.includes('no such table')) {
-            console.log("Initializing database schema...");
             try {
                 const schemaPath = path.join(__dirname, 'schema.sql');
                 const schema = await fs.readFile(schemaPath, 'utf-8');
@@ -41,20 +39,16 @@ export const initializeSchema = async () => {
                     await db.execute(statement);
                 }
                 await db.execute('COMMIT');
-                
-                console.log("Schema initialized successfully.");
 
             } catch (initErr) {
-                console.error("Error during schema initialization:", initErr);
                 try {
                   await db.execute('ROLLBACK');
                 } catch (rollbackErr) {
-                  console.error("Failed to rollback schema initialization transaction:", rollbackErr);
+                  // silent
                 }
                 throw initErr;
             }
         } else {
-             console.error("Error checking database schema:", e);
              throw e;
         }
     }

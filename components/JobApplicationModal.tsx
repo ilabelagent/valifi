@@ -81,7 +81,6 @@ const JobApplicationModal: React.FC<JobApplicationModalProps> = ({ isOpen, onClo
         setSubmissionStatus('submitting');
         // Simulate API call
         setTimeout(() => {
-            console.log("Form Submitted:", formState);
             setSubmissionStatus('success');
         }, 1500);
     };

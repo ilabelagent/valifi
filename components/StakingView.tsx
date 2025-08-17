@@ -16,10 +16,10 @@ interface StakeModalProps {
     plan: StakableAsset;
     cashBalance: number;
     onStake: (plan: StakableAsset, amount: number, duration: number, payoutDestination: 'wallet' | 'balance') => void;
-    prefillData?: { amount: number; duration: number; payoutDestination: 'wallet' | 'balance' };
+    isReStake?: boolean;
 }
 
-const StakeModal: React.FC<StakeModalProps> = ({ isOpen, onClose, plan, cashBalance, onStake, prefillData }) => {
+const StakeModal: React.FC<StakeModalProps> = ({ isOpen, onClose, plan, cashBalance, onStake, isReStake }) => {
     const [amount, setAmount] = useState('');
     const [duration, setDuration] = useState('');
     const [payoutDestination, setPayoutDestination] = useState<'wallet' | 'balance'>('balance');
@@ -28,12 +28,12 @@ const StakeModal: React.FC<StakeModalProps> = ({ isOpen, onClose, plan, cashBala
 
     useEffect(() => {
         if (plan) {
-            setDuration(prefillData?.duration.toString() || plan.minDuration.toString());
-            setAmount(prefillData?.amount.toString() || '');
-            setPayoutDestination(prefillData?.payoutDestination || 'balance');
+            setDuration(plan.minDuration.toString());
+            setAmount('');
+            setPayoutDestination('balance');
             setError('');
         }
-    }, [plan, isOpen, prefillData]);
+    }, [plan, isOpen]);
     
     useEffect(() => {
         setError('');
@@ -62,7 +62,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ isOpen, onClose, plan, cashBala
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4" onClick={onClose}>
             <div className="bg-popover border border-border rounded-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-6 border-b border-border">
-                    <h2 className="text-xl font-bold text-popover-foreground">{prefillData ? 'Re-stake' : 'Stake'} {plan.name}</h2>
+                    <h2 className="text-xl font-bold text-popover-foreground">{isReStake ? 'Re-stake' : 'Stake'} {plan.name}</h2>
                     <button onClick={onClose} className="text-muted-foreground hover:text-popover-foreground"><CloseIcon className="w-6 h-6"/></button>
                 </div>
                 <div className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
@@ -88,7 +88,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ isOpen, onClose, plan, cashBala
                     </div>
                     {error && <p className="text-destructive text-sm text-center bg-destructive/10 p-2 rounded-md">{error}</p>}
                     <button onClick={handleSubmit} disabled={!!error || !amount} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-lg disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
-                       {prefillData ? 'Confirm Re-stake' : 'Confirm Stake'}
+                       {isReStake ? 'Confirm Re-stake' : 'Confirm Stake'}
                     </button>
                 </div>
             </div>
@@ -211,13 +211,15 @@ const StakingView: React.FC<StakingViewProps> = ({ stakableAssets, assets, cashB
     const [manageModalOpen, setManageModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<StakableAsset | null>(null);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-    const [prefillData, setPrefillData] = useState<any>(null);
+    const [isReStaking, setIsReStaking] = useState(false);
+    const [assetToReStake, setAssetToReStake] = useState<Asset | null>(null);
     const { formatCurrency } = useCurrency();
 
     const userStakedAssets = useMemo(() => assets.filter(a => a.name.includes('Staking')), [assets]);
 
     const handleStakeClick = (plan: StakableAsset) => {
-        setPrefillData(null);
+        setIsReStaking(false);
+        setAssetToReStake(null);
         setSelectedPlan(plan);
         setStakeModalOpen(true);
     };
@@ -230,18 +232,21 @@ const StakingView: React.FC<StakingViewProps> = ({ stakableAssets, assets, cashB
     const handleReStakeProxy = (oldAsset: Asset, newAmount: number, newDuration: number, newDestination: 'wallet' | 'balance') => {
         const plan = stakableAssets.find(p => p.ticker === oldAsset.ticker);
         if(plan){
-            setPrefillData({ amount: oldAsset.valueUSD, duration: plan.minDuration, payoutDestination: oldAsset.payoutDestination });
+            setIsReStaking(true);
+            setAssetToReStake(oldAsset);
             setSelectedPlan(plan);
             setStakeModalOpen(true);
         }
     };
     
     const handleModalStake = (plan: StakableAsset, amount: number, duration: number, payoutDestination: 'wallet' | 'balance') => {
-        if(prefillData && selectedAsset) {
-            onReStake(selectedAsset, amount, duration, payoutDestination);
+        if(isReStaking && assetToReStake) {
+            onReStake(assetToReStake, amount, duration, payoutDestination);
         } else {
             onStake(plan, amount, duration, payoutDestination);
         }
+        setIsReStaking(false);
+        setAssetToReStake(null);
     }
 
     return (
@@ -282,11 +287,11 @@ const StakingView: React.FC<StakingViewProps> = ({ stakableAssets, assets, cashB
             {stakeModalOpen && selectedPlan && (
                 <StakeModal 
                     isOpen={stakeModalOpen}
-                    onClose={() => { setStakeModalOpen(false); setPrefillData(null); }}
+                    onClose={() => { setStakeModalOpen(false); }}
                     plan={selectedPlan}
                     cashBalance={cashBalance}
                     onStake={handleModalStake}
-                    prefillData={prefillData}
+                    isReStake={isReStaking}
                 />
             )}
             {manageModalOpen && selectedAsset && (

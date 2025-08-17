@@ -18,7 +18,6 @@ const PORT = process.env.PORT || 3001;
 // You need to manually initialize the schema via the Turso shell for production.
 if (process.env.NODE_ENV !== 'production') {
     initializeSchema().catch(err => {
-        console.error("Failed to initialize database schema:", err);
         process.exit(1);
     });
 }
@@ -37,7 +36,7 @@ app.use(baseUrl, apiRoutes);
 // Start listening for connections.  The callback logs the URL to the
 // console for convenience when running locally.
 app.listen(PORT, () => {
-  console.log(`Valifi backend running on http://localhost:${PORT}${baseUrl}`);
+  // Intentionally silent in production
 });
 
 export default app;

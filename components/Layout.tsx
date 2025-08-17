@@ -6,9 +6,9 @@ import ImportSeedPhraseModal from './ImportSeedPhraseModal';
 import WalletConnectQRModal from './WalletConnectQRModal';
 import NotificationPanel from './NotificationPanel';
 import ValifiCoPilot from './ValifiCoPilot';
-import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio, StakableStock, REITProperty, InvestableNFT } from '../types';
+import type { ViewType, Notification, UserActivity, NewsItem, UserSettings, Portfolio, StakableStock, REITProperty, InvestableNFT, InvestmentPlan, StakableAsset } from '../types';
 import * as apiService from '../services/api';
-import LoadingSpinner from './LoadingSpinner';
+import LoadingSpinner from './components/LoadingSpinner';
 
 
 interface LayoutProps {
@@ -45,6 +45,8 @@ interface LayoutProps {
   stakableStocks: StakableStock[];
   reitProperties: REITProperty[];
   investableNFTs: InvestableNFT[];
+  spectrumPlans: InvestmentPlan[];
+  stakableCrypto: StakableAsset[];
 }
 
 const Layout: React.FC<LayoutProps> = (props) => {
@@ -63,6 +65,8 @@ const Layout: React.FC<LayoutProps> = (props) => {
     stakableStocks,
     reitProperties,
     investableNFTs,
+    spectrumPlans,
+    stakableCrypto,
   } = props;
   
   const notificationPanelRef = useRef<HTMLDivElement>(null);
@@ -131,6 +135,8 @@ const Layout: React.FC<LayoutProps> = (props) => {
             stakableStocks={stakableStocks}
             reitProperties={reitProperties}
             investableNFTs={investableNFTs}
+            spectrumPlans={spectrumPlans}
+            stakableCrypto={stakableCrypto}
             api={apiService.callCoPilot}
         />
       </div>

@@ -139,12 +139,6 @@ const LoansView: React.FC<LoansViewProps> = ({ portfolio, kycStatus, loanApplica
             setFormError('Please upload your contacts file as you have authorized access.');
             return;
         }
-
-        if (contactAccess && contactsFile) {
-            console.log('--- ADMIN-ONLY ACTION ---');
-            console.log('Uploading contact file to secure storage with loan application metadata:', contactsFile.name);
-            console.log('-------------------------');
-        }
         
         onApplyForLoan({
             amount,

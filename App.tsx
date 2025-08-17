@@ -183,7 +183,6 @@ const AppContent: React.FC = () => {
             setReferralSummary(referrals);
 
         } catch (error) {
-            console.error("Failed to load user data:", error);
             localStorage.removeItem('valifi_token');
             setUser(null);
         } finally {
@@ -221,7 +220,6 @@ const AppContent: React.FC = () => {
     }
 
     const onTransferToMain = useCallback(async (assetId: string) => {
-        console.log(`Transferring ${assetId} to main...`);
         // await apiService.transferToMain(assetId);
         if (user?.token) loadAppData(user.token);
     }, [loadAppData, user?.token]);
@@ -256,7 +254,7 @@ const AppContent: React.FC = () => {
         const commonProps = { portfolio, setCurrentView, ...handlers };
         const cashBalance = portfolio.assets.find(a => a.type === AssetType.CASH)?.balance || 0;
         switch (currentView) {
-            case 'dashboard': return <DetailViewModal {...commonProps} />;
+            case 'dashboard': return <DetailViewModal {...commonProps} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
             case 'investments': return <InvestmentsView assets={portfolio.assets} onTradeClick={(ticker) => { setExchangeDefaultAssetTicker(ticker); setCurrentView('exchange'); }} onInvest={()=>{}} cashBalance={cashBalance} onViewInvestment={handlers.onViewInvestment} onReinvest={()=>{}} onTransferToMain={onTransferToMain} onStake={()=>{}} onRequestStakeWithdrawal={()=>{}} onReStake={()=>{}} reitProperties={reitProperties} onReitInvest={()=>{}} stakableStocks={stakableStocks} onStockStake={()=>{}} investableNFTs={investableNFTs} onNFTInvest={()=>{}} onNFTStake={()=>{}} onNFTSell={()=>{}} onNFTClaim={()=>{}} initialTab={"all"} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />;
             case 'referrals': return <ReferralsView summary={referralSummary} />;
             case 'privacy': return <PrivacyView />;
@@ -310,6 +308,8 @@ const AppContent: React.FC = () => {
             stakableStocks={stakableStocks}
             reitProperties={reitProperties}
             investableNFTs={investableNFTs}
+            spectrumPlans={spectrumPlans}
+            stakableCrypto={stakableCrypto}
         >
             {renderView()}
 

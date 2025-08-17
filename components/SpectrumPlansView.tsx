@@ -2,6 +2,73 @@ import React, { useState } from 'react';
 import type { InvestmentPlan } from '../types';
 import InvestModal from './InvestModal';
 
+export const newPlans: InvestmentPlan[] = [
+    {
+        id: 'corestart',
+        name: 'CoreStart Plan',
+        investmentRange: '$500 – $4,999',
+        dailyReturns: '2.5%',
+        capitalReturn: 'After 10 days',
+        returnType: 'Daily',
+        totalPeriods: '10 Days',
+        cancellation: 'Not Available',
+        totalRevenue: '125%',
+        note: 'Ideal for beginners.',
+        colorClass: 'bg-gradient-to-br from-emerald-500 to-green-600',
+        borderColor: 'border-emerald-400',
+        buttonColor: 'bg-emerald-500 hover:bg-emerald-600',
+        shadowColor: 'shadow-emerald-500/30'
+    },
+    {
+        id: 'alphaplus',
+        name: 'AlphaPlus Plan',
+        investmentRange: '$5,000 – $49,999',
+        dailyReturns: '3.0%',
+        capitalReturn: 'After 20 days',
+        returnType: 'Daily',
+        totalPeriods: '20 Days',
+        cancellation: 'After 10 days',
+        totalRevenue: '160%',
+        note: 'Balanced growth and returns.',
+        colorClass: 'bg-gradient-to-br from-sky-500 to-blue-600',
+        borderColor: 'border-sky-400',
+        buttonColor: 'bg-sky-500 hover:bg-sky-600',
+        shadowColor: 'shadow-sky-500/30'
+    },
+    {
+        id: 'poweredge',
+        name: 'PowerEdge Plan',
+        investmentRange: '$50,000 – $499,999',
+        dailyReturns: '3.5%',
+        capitalReturn: 'After 30 days',
+        returnType: 'Daily',
+        totalPeriods: '30 Days',
+        cancellation: 'After 15 days',
+        totalRevenue: '205%',
+        note: 'For serious investors.',
+        colorClass: 'bg-gradient-to-br from-amber-500 to-orange-600',
+        borderColor: 'border-amber-400',
+        buttonColor: 'bg-amber-500 hover:bg-amber-600',
+        shadowColor: 'shadow-amber-500/30'
+    },
+    {
+        id: 'quantum',
+        name: 'Quantum Leap Plan',
+        investmentRange: '$500,000+',
+        dailyReturns: '4.5%',
+        capitalReturn: 'After 45 days',
+        returnType: 'Daily',
+        totalPeriods: '45 Days',
+        cancellation: 'After 22 days',
+        totalRevenue: '302.5%',
+        note: 'Maximum yield for top-tier investors.',
+        colorClass: 'bg-gradient-to-br from-purple-600 to-indigo-700',
+        borderColor: 'border-purple-500',
+        buttonColor: 'bg-purple-600 hover:bg-purple-700',
+        shadowColor: 'shadow-purple-500/30'
+    }
+];
+
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
     <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
       {children}

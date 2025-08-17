@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Portfolio, Asset, Transaction, ViewType, InvestmentStatus, AssetType as AssetTypeEnum } from '../types';
+import type { Portfolio, Asset, Transaction, ViewType, InvestmentStatus, AssetType as AssetTypeEnum, InvestmentPlan, StakableAsset } from '../types';
 import { AssetType } from '../types';
 import { ArrowUpIcon, ArrowDownIcon, ClockIcon, ArrowUpRightIcon, DownloadIcon, CheckCircleIcon, XCircleIcon, LockIcon, RefreshIcon, InvestmentsIcon, SwapIcon, CardIcon, LoanIcon } from './icons';
 import ForumChat from './ForumChat';
@@ -309,9 +309,11 @@ interface DetailViewModalProps {
   onTransferToMain: (assetId: string) => void;
   onDepositClick: () => void;
   onWithdrawClick: () => void;
+  spectrumPlans: InvestmentPlan[];
+  stakableCrypto: StakableAsset[];
 }
 
-const DetailViewModal: React.FC<DetailViewModalProps> = ({ portfolio, setCurrentView, onTransferToMain, onDepositClick, onWithdrawClick }) => {
+const DetailViewModal: React.FC<DetailViewModalProps> = ({ portfolio, setCurrentView, onTransferToMain, onDepositClick, onWithdrawClick, spectrumPlans, stakableCrypto }) => {
   const mainBalance = portfolio.assets.find(a => a.type === AssetType.CASH)?.valueUSD || 0;
   const investmentBalance = portfolio.totalValueUSD - mainBalance;
   const investmentAssets = portfolio.assets.filter(a => a.type !== AssetType.CASH);
@@ -338,7 +340,7 @@ const DetailViewModal: React.FC<DetailViewModalProps> = ({ portfolio, setCurrent
         </div>
         <div className="lg:col-span-1 space-y-8">
             <PortfolioPerformanceChart portfolio={portfolio} />
-            <ForumChat portfolio={portfolio} api={apiService.callCoPilot} />
+            <ForumChat portfolio={portfolio} api={apiService.callCoPilot} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />
             <WorldClockFXTicker />
             <TopMovers assets={portfolio.assets} />
         </div>

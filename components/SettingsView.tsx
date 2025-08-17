@@ -55,7 +55,7 @@ const TwoFactorAuthSetup: React.FC<{ settings: UserSettings, setSettings: React.
 
         QRCode.toDataURL(totp.toString())
             .then(url => setQrCodeDataUrl(url))
-            .catch(err => console.error("QR Code generation failed:", err));
+            .catch(() => {});
     }, [settings.profile.username, settings.settings.twoFactorAuth.secret]);
 
     const handleVerify = () => {

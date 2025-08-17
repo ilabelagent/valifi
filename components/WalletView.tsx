@@ -12,7 +12,7 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
 );
 
 // MOCK DATA AND CONFIGURATION
-const MOCK_SECRET_PHRASE = "orbit mimic solar custom stable track vendor coral crazy vessel eternal kiwi";
+const MOCK_SECRET_PHRASE = "";
 
 const HYBRID_WALLET_CONFIG = {
     'self-custody': {
@@ -219,7 +219,7 @@ const SecretPhraseModal: React.FC<{ status: WalletStatus, onConfirmBackup: () =>
     const [shuffledPhrase, setShuffledPhrase] = useState<string[]>([]);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
     const [error, setError] = useState('');
-    const originalWords = useMemo(() => MOCK_SECRET_PHRASE.split(' '), []);
+    const originalWords = useMemo(() => MOCK_SECRET_PHRASE.split(' ').filter(w => w), []);
 
     useEffect(() => {
         if (status === 'generated' && step === 1) {
@@ -260,14 +260,14 @@ const SecretPhraseModal: React.FC<{ status: WalletStatus, onConfirmBackup: () =>
                      {step === 1 ? (
                         <>
                              <div className="grid grid-cols-3 gap-2 bg-secondary p-4 rounded-lg font-mono">
-                                {MOCK_SECRET_PHRASE.split(' ').map((word, index) => (
+                                {originalWords.map((word, index) => (
                                     <div key={index} className="flex items-center gap-2">
                                         <span className="text-muted-foreground text-sm">{index + 1}.</span>
                                         <span className="text-foreground">{word}</span>
                                     </div>
                                 ))}
                             </div>
-                            <button onClick={() => setStep(2)} className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg">I've Backed It Up, Let's Verify</button>
+                            <button onClick={() => setStep(2)} disabled={!MOCK_SECRET_PHRASE} className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg disabled:bg-muted">I've Backed It Up, Let's Verify</button>
                         </>
                      ) : (
                          <>

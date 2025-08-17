@@ -159,7 +159,6 @@ const P2PExchangeView: React.FC<P2PExchangeViewProps> = ({ kycStatus, setCurrent
                 description: `Your trade for ${newOrder.cryptoAmount.toFixed(4)} ${newOrder.offer.asset.ticker} has begun.`
             });
         } catch(e) {
-            console.error(e);
             addNotification({
                 type: 'system',
                 title: 'P2P Trade Failed',
