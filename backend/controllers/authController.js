@@ -22,10 +22,10 @@ export async function register(req, res) {
     if (existingUser.rows.length > 0) {
         if (existingUser.rows[0].email === email) {
             await tx.rollback();
-            return res.status(400).json({ status: 'error', message: 'Email already registered' });
+            return res.status(400).json({ success: false, message: 'Email already registered' });
         }
         await tx.rollback();
-        return res.status(400).json({ status: 'error', message: 'Username already taken' });
+        return res.status(400).json({ success: false, message: 'Username already taken' });
     }
 
     const userId = crypto.randomUUID();
@@ -51,8 +51,8 @@ export async function register(req, res) {
     });
 
     await tx.execute({
-        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details, balanceInEscrow, change24h, allocation) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}', 0, 0, 0)`,
-        args: [assetId, userId]
+        sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, totalEarnings, status, details, balanceInEscrow, change24h, allocation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [assetId, userId, 'Cash', 'USD', 'Cash', 0, 0, 0, 0, 'Active', '{}', 0, 0, 0]
     });
     
     await tx.commit();
