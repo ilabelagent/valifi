@@ -1,10 +1,8 @@
 import { db } from '../lib/db.js';
 
-// Fetches the profile and settings for the authenticated user.
 export async function getUserProfile(req, res) {
   const userId = req.user.id;
   try {
-    // The user object from the middleware might be stale, so we refetch.
     const userResult = await db.execute({
       sql: `SELECT id, fullName, username, email, profilePhotoUrl, kycStatus, kycRejectionReason, createdAt, updatedAt FROM users WHERE id = ?`,
       args: [userId]
@@ -40,21 +38,16 @@ export async function getUserProfile(req, res) {
         args: [userId]
     });
 
-
-    const responseData = {
-        profile,
-        settings,
-        sessions: sessionsResult.rows
-    };
-
-    return res.status(200).json({ success: true, data: responseData });
+    return res.status(200).json({ 
+        success: true, 
+        data: { profile, settings, sessions: sessionsResult.rows }
+    });
   } catch(err) {
       console.error('Error fetching user profile:', err);
       return res.status(500).json({ success: false, message: 'Database error fetching user data.' });
   }
 }
 
-// Updates the user's settings.
 export async function updateUserSettings(req, res) {
   const userId = req.user.id;
   const { profile, settings } = req.body;
@@ -72,32 +65,19 @@ export async function updateUserSettings(req, res) {
       if (settings) {
           await tx.execute({
               sql: `UPDATE user_settings SET 
-                twoFactorEnabled = ?, 
-                twoFactorMethod = ?, 
-                loginAlerts = ?, 
-                preferences = ?, 
-                privacy = ?
-                WHERE userId = ?`,
+                twoFactorEnabled = ?, twoFactorMethod = ?, loginAlerts = ?, 
+                preferences = ?, privacy = ? WHERE userId = ?`,
               args: [
-                  settings.twoFactorAuth.enabled,
-                  settings.twoFactorAuth.method,
-                  settings.loginAlerts,
-                  JSON.stringify(settings.preferences || {}),
-                  JSON.stringify(settings.privacy || {}),
-                  userId
+                  settings.twoFactorAuth.enabled, settings.twoFactorAuth.method,
+                  settings.loginAlerts, JSON.stringify(settings.preferences || {}),
+                  JSON.stringify(settings.privacy || {}), userId
               ]
           });
       }
-      
       await tx.commit();
-      
-      // Refetch the updated data to send back
       return getUserProfile(req, res);
-
   } catch(err) {
-      if (tx) {
-        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
-      }
+      if (tx) await tx.rollback();
       console.error('Error updating settings:', err);
       return res.status(500).json({ success: false, message: 'Database error updating settings.' });
   }

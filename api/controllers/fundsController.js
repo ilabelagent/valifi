@@ -1,67 +1,6 @@
 import crypto from 'crypto';
 import { db } from '../lib/db.js';
 
-// Initiate a deposit.  For crypto deposits a dummy address is returned.  For
-// fiat deposits, dummy bank details are returned.  No state is mutated.
-export function depositIntent(req, res) {
-  const user = req.user;
-  const { type, assetTicker, network } = req.body;
-  if (!type) {
-    return res.status(400).json({ success: false, message: 'Deposit type required' });
-  }
-  if (type === 'crypto') {
-    const ticker = assetTicker ? assetTicker.toUpperCase() : 'USDT';
-    const depositAddress = `${ticker}-DEPOSIT-${Date.now()}`;
-    return res.status(201).json({ success: true, data: { depositAddress } });
-  } else if (type === 'fiat') {
-    const bankDetails = {
-      beneficiary: user.fullName,
-      reference: `VLF-${Date.now()}`,
-    };
-    return res.status(201).json({ success: true, data: { bankDetails } });
-  } else {
-    return res.status(400).json({ success: false, message: 'Invalid deposit type' });
-  }
-}
-
-// Submit a withdrawal request.  KYC approval is required.  The user must
-// have sufficient cash balance.  Withdrawal requests are recorded with
-// status pending; no funds are actually debited until admin approval.
-export async function withdrawRequest(req, res) {
-  const user = req.user;
-  const { type, amountUSD, destination } = req.body;
-  if (!type || !amountUSD || !destination) {
-    return res.status(400).json({ success: false, message: 'Missing withdrawal parameters' });
-  }
-  
-  // KYC gating handled by middleware
-  const amount = Number(amountUSD);
-  try {
-    const cashResult = await db.execute({
-        sql: `SELECT balance FROM assets WHERE userId = ? AND type = 'Cash'`,
-        args: [user.id]
-    });
-    
-    if (cashResult.rows.length === 0 || cashResult.rows[0].balance < amount) {
-        return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
-    }
-
-    // Record a pending transaction (no immediate debit)
-    await db.execute({
-        sql: `INSERT INTO transactions (id, userId, description, type, amountUSD, status) VALUES (?, ?, ?, 'Withdrawal', ?, 'Pending')`,
-        args: [crypto.randomUUID(), user.id, `Withdrawal request of $${amount} to ${destination}`, -amount]
-    });
-
-    return res.status(202).json({ success: true, message: 'Withdrawal request submitted for review.' });
-  } catch(err) {
-      console.error('Withdrawal request error:', err);
-      return res.status(500).json({ success: false, message: 'Database error during withdrawal request.' });
-  }
-}
-
-// Perform an internal transfer between users.  The sender and recipient must
-// exist and the sender must have sufficient funds.  Both portfolios and
-// activity logs are updated accordingly.
 export async function internalTransfer(req, res) {
   const senderId = req.user.id;
   const { recipientIdentifier, amountUSD, note } = req.body;
@@ -87,50 +26,36 @@ export async function internalTransfer(req, res) {
         return res.status(404).json({ success: false, message: 'Recipient not found' });
     }
     const recipient = recipientResult.rows[0];
+    
+    if (recipient.id === senderId) {
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: 'Cannot send funds to yourself.' });
+    }
 
-    if (senderResult.rows.length === 0 || senderResult.rows[0].balance < amount) {
+    if (senderResult.rows.length === 0 || Number(senderResult.rows[0].balance) < amount) {
         await tx.rollback();
         return res.status(400).json({ success: false, message: 'Insufficient cash balance' });
     }
     const sender = senderResult.rows[0];
 
-    // Debit sender
-    await tx.execute({
-        sql: `UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = 'Cash'`,
-        args: [amount, amount, senderId]
-    });
-
-    // Credit recipient
-    await tx.execute({
-        sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`,
-        args: [amount, amount, recipient.id]
-    });
+    // Debit sender & Credit recipient
+    await Promise.all([
+        tx.execute({ sql: `UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = 'Cash'`, args: [amount, amount, senderId] }),
+        tx.execute({ sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`, args: [amount, amount, recipient.id] })
+    ]);
 
     // Record transactions
-    const txIdSender = crypto.randomUUID();
-    const txIdRecipient = crypto.randomUUID();
-    await tx.execute({
-        sql: `INSERT INTO transactions (id, userId, description, type, amountUSD, status) VALUES (?, ?, ?, 'Sent', ?, 'Completed')`,
-        args: [txIdSender, senderId, `Sent $${amount} to ${recipient.username}${note ? ` - Note: ${note}` : ''}`, -amount]
-    });
-    await tx.execute({
-        sql: `INSERT INTO transactions (id, userId, description, type, amountUSD, status) VALUES (?, ?, ?, 'Received', ?, 'Completed')`,
-        args: [txIdRecipient, recipient.id, `Received $${amount} from ${sender.username}${note ? ` - Note: ${note}` : ''}`, amount]
-    });
+    await Promise.all([
+        tx.execute({ sql: `INSERT INTO transactions (id, userId, description, type, amountUSD, status) VALUES (?, ?, ?, 'Sent', ?, 'Completed')`, args: [crypto.randomUUID(), senderId, `Transfer to ${recipient.username}${note ? ` - Note: ${note}` : ''}`, -amount] }),
+        tx.execute({ sql: `INSERT INTO transactions (id, userId, description, type, amountUSD, status) VALUES (?, ?, ?, 'Received', ?, 'Completed')`, args: [crypto.randomUUID(), recipient.id, `Transfer from ${sender.username}${note ? ` - Note: ${note}` : ''}`, amount] })
+    ]);
 
     await tx.commit();
-
-    // Fetch updated portfolio to return
-    const assetsResult = await db.execute({ sql: 'SELECT * FROM assets WHERE userId = ?', args: [senderId]});
-    const updatedPortfolio = { ...req.user.portfolio, assets: assetsResult.rows }; // simplified portfolio return
-
-    return res.status(200).json({ success: true, data: { updatedPortfolio } });
+    return res.status(200).json({ success: true, message: 'Transfer successful.' });
 
   } catch(err) {
-      if (tx) {
-        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback transaction:', e); }
-      }
+      if (tx) await tx.rollback();
       console.error('Internal transfer error:', err);
-      return res.status(500).json({ success: false, message: 'Database error during internal transfer.' });
+      return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 }
