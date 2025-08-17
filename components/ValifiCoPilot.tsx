@@ -86,12 +86,40 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
             Your Task: Proactively advise the user to transfer these funds to their main balance so they can be reinvested or withdrawn. Keep it brief and actionable.`;
             suggestionId = `matured-${maturedAsset.id}`;
         } else if (cashBalance > 10000) {
-            const suitablePlan = newPlans.find(p => cashBalance >= parseFloat(p.investmentRange.split('–')[0].replace(/[\$,]/g, '')));
-            prompt = `Context: The user is on the Dashboard.
-            Portfolio Situation: The user has a significant cash balance of $${cashBalance.toFixed(2)} sitting idle.
-            Available Investment Plan: ${suitablePlan ? `${suitablePlan.name} (${suitablePlan.investmentRange}) with ${suitablePlan.dailyReturns} daily returns.` : 'Multiple Spectrum Plans are available.'}
-            Your Task: Proactively suggest the user invest their idle cash. Recommend the "${suitablePlan?.name || 'Spectrum'}" plan and briefly mention its benefit. Guide them to the 'Investments' section.`;
-            suggestionId = `cash-${Math.floor(cashBalance / 1000)}`;
+            const suggestionTypes = ['spectrum', 'reit', 'stock'];
+            const randomType = suggestionTypes[Math.floor(Math.random() * suggestionTypes.length)];
+            
+            suggestionId = `cash-${Math.floor(cashBalance / 1000)}-${randomType}`;
+            
+            switch (randomType) {
+                case 'reit':
+                    if (reitProperties.length > 0) {
+                        const topReit = [...reitProperties].sort((a,b) => b.monthlyROI - a.monthlyROI)[0];
+                        prompt = `Context: The user is on the Dashboard.
+                        Portfolio Situation: The user has a significant cash balance of $${cashBalance.toFixed(2)} sitting idle.
+                        Available Investment: A top-performing REIT property, "${topReit.name}" in ${topReit.address}, is available with a ${topReit.monthlyROI}% monthly ROI.
+                        Your Task: Proactively suggest the user invest their idle cash into this attractive REIT property. Highlight the benefit of earning passive real estate income. Guide them to the 'Investments' section to learn more.`;
+                        break;
+                    }
+                case 'stock':
+                    if (stakableStocks.length > 0) {
+                        const topStock = [...stakableStocks].sort((a,b) => b.poolSize - a.poolSize)[0];
+                         prompt = `Context: The user is on the Dashboard.
+                        Portfolio Situation: The user has a significant cash balance of $${cashBalance.toFixed(2)} sitting idle.
+                        Available Investment: High-yield stock staking is available for top companies like "${topStock.name} (${topStock.ticker})".
+                        Your Task: Proactively suggest the user stake their idle cash in this popular stock to earn monthly returns. Frame it as a stable, high-yield opportunity. Guide them to the 'Investments' section.`;
+                        break;
+                    }
+                case 'spectrum':
+                default:
+                    const suitablePlan = newPlans.find(p => cashBalance >= parseFloat(p.investmentRange.split('–')[0].replace(/[\$,]/g, '')));
+                    prompt = `Context: The user is on the Dashboard.
+                    Portfolio Situation: The user has a significant cash balance of $${cashBalance.toFixed(2)} sitting idle.
+                    Available Investment Plan: ${suitablePlan ? `${suitablePlan.name} (${suitablePlan.investmentRange}) with ${suitablePlan.dailyReturns} daily returns.` : 'Multiple Spectrum Plans are available.'}
+                    Your Task: Proactively suggest the user invest their idle cash. Recommend the "${suitablePlan?.name || 'Spectrum'}" plan and briefly mention its benefit. Guide them to the 'Investments' section.`;
+                    suggestionId = `cash-${Math.floor(cashBalance / 1000)}`; // Overwrite suggestionId to avoid re-showing
+                    break;
+            }
         }
 
         if (!prompt || localStorage.getItem('seenSuggestion') === suggestionId) {
@@ -117,7 +145,7 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
         } catch (error) {
             console.error("Co-Pilot suggestion error:", error);
         }
-    }, [api, portfolio.assets, portfolio.totalValueUSD, setCurrentView, onTransferToMain, onDepositClick]);
+    }, [api, portfolio, setCurrentView, onTransferToMain, onDepositClick, stakableStocks, reitProperties]);
     
      useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
