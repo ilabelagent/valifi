@@ -63,13 +63,13 @@ const ReferralLinkCard: React.FC<{ username: string }> = ({ username }) => {
             
             <div className="mt-4 flex items-center gap-4">
                 <p className="text-sm text-muted-foreground">{t('share_via')}</p>
-                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on Twitter">
+                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on Twitter" aria-label="Share on Twitter">
                     <TwitterIcon className="w-5 h-5" />
                 </a>
-                <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on WhatsApp">
+                <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on WhatsApp" aria-label="Share on WhatsApp">
                     <WhatsAppIcon className="w-5 h-5" />
                 </a>
-                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on Telegram">
+                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-foreground bg-accent hover:bg-primary/20 transition-colors" title="Share on Telegram" aria-label="Share on Telegram">
                     <TelegramIcon className="w-5 h-5" />
                 </a>
             </div>

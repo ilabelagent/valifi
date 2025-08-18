@@ -220,7 +220,7 @@ const NavLink: React.FC<{ item: NavItem, isCollapsed: boolean, currentView: View
         >
           {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary-foreground rounded-r-full"></div>}
           <item.Icon className={`w-5 h-5 flex-shrink-0 transition-colors drop-shadow-sm ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/link:text-foreground'}`} />
-          <span aria-hidden={isCollapsed} className={`tracking-wide whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100'}`}>{item.label}</span>
+          <span aria-hidden="true" className={`tracking-wide whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100'}`}>{item.label}</span>
           {item.badge && <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{item.badge}</span>}
           {item.status && !item.badge && (
               <span className={`ml-auto w-2 h-2 rounded-full ${
