@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Portfolio, ChatMessage, InvestmentPlan, StakableAsset } from '../types';
+import type { Portfolio, ChatMessage, InvestmentPlan, StakableAsset, CoPilotMessage } from '../types';
 import { SparklesIcon, MessageCircleIcon, LockIcon, SendIcon, ClockIcon } from './icons';
 
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
@@ -22,7 +22,7 @@ Your tone should be professional, confident, persuasive, and helpful.`;
 
 interface ForumChatProps {
     portfolio: Portfolio;
-    api: (prompt: string, systemInstruction: string) => Promise<{ text: string }>;
+    api: (prompt: string, systemInstruction: string, history: CoPilotMessage[]) => Promise<{ text: string }>;
     spectrumPlans: InvestmentPlan[];
     stakableCrypto: StakableAsset[];
 }
@@ -53,7 +53,8 @@ const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api, spectrumPlans, st
             timestamp: new Date().toISOString(),
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const currentHistory = [...messages, userMessage];
+        setMessages(currentHistory);
         
         setIsLoading(true);
         const portfolioSummary = `User's Portfolio Context (for your analysis only, do not repeat it back):
@@ -73,10 +74,18 @@ ${spectrumPlansSummary}
 ${stakingOptionsSummary}
 User question: "${newMessage}"
 `;
+        const previousMessages = messages;
         setNewMessage('');
 
+        const coPilotHistory: CoPilotMessage[] = previousMessages.map(msg => ({
+            id: msg.id,
+            author: msg.author,
+            text: msg.text,
+            timestamp: msg.timestamp
+        }));
+
         try {
-            const result = await api(fullPrompt, SYSTEM_INSTRUCTION);
+            const result = await api(fullPrompt, SYSTEM_INSTRUCTION, coPilotHistory);
             
             const aiMessage: ChatMessage = {
                 id: Date.now().toString() + '-ai',

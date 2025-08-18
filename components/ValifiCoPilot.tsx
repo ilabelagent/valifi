@@ -39,7 +39,7 @@ interface ValifiCoPilotProps {
     investableNFTs: InvestableNFT[];
     spectrumPlans: InvestmentPlan[];
     stakableCrypto: StakableAsset[];
-    api: (prompt: string, systemInstruction: string) => Promise<{ text: string }>;
+    api: (prompt: string, systemInstruction: string, history: CoPilotMessage[]) => Promise<{ text: string }>;
 }
 
 const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, setCurrentView, onTransferToMain, userSettings, onDepositClick, stakableStocks, reitProperties, investableNFTs, spectrumPlans, stakableCrypto, api }) => {
@@ -125,7 +125,7 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
         }
 
         try {
-            const result = await api(prompt, SYSTEM_INSTRUCTION);
+            const result = await api(prompt, SYSTEM_INSTRUCTION, []);
 
             const suggestion: CoPilotMessage = {
                 id: `suggestion-${Date.now()}`,
@@ -182,7 +182,10 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
             timestamp: new Date().toISOString(),
         };
         
+        const previousMessages = [...messages];
         setMessages(prev => [...prev, userMessage]);
+        
+        const userInput = inputValue;
         setInputValue('');
         setIsLoading(true);
 
@@ -209,11 +212,11 @@ const ValifiCoPilot: React.FC<ValifiCoPilotProps> = ({ portfolio, currentView, s
             ${reitSummary}
             ${nftSummary}
 
-            User question: "${inputValue}"
+            User question: "${userInput}"
         `;
 
         try {
-            const result = await api(fullContext, SYSTEM_INSTRUCTION);
+            const result = await api(fullContext, SYSTEM_INSTRUCTION, previousMessages);
 
             const aiMessage: CoPilotMessage = {
                 id: `msg-${Date.now()}-ai`,

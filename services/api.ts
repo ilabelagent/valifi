@@ -1,4 +1,4 @@
-import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity } from '../types';
+import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -137,11 +137,11 @@ export const onInitiateTrade = async (offerId: string, amount: number, paymentMe
     return handleDataResponse(response);
 };
 
-export const callTaxAdvisor = async (prompt: string): Promise<{ text: string }> => {
+export const callTaxAdvisor = async (prompt: string, history: ChatMessage[] = []): Promise<{ text: string }> => {
     const response = await fetch(`${API_BASE_URL}/ai/tax-advisor`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, history }),
     });
     return handleDataResponse(response);
 };
@@ -180,11 +180,11 @@ export const submitKyc = async (): Promise<void> => {
     });
 };
 
-export const callCoPilot = async (prompt: string, systemInstruction: string): Promise<{ text: string }> => {
+export const callCoPilot = async (contextPrompt: string, systemInstruction: string, history: CoPilotMessage[] = []): Promise<{ text: string }> => {
     const response = await fetch(`${API_BASE_URL}/ai/copilot`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, systemInstruction }),
+        body: JSON.stringify({ contextPrompt, history, systemInstruction }),
     });
     return handleDataResponse(response);
 };

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Transaction, TaxDocument } from '../types';
+import type { Transaction, TaxDocument, ChatMessage } from '../types';
 import { DownloadIcon, SparklesIcon, TaxIcon, IrisIcon } from './icons';
 import { useCurrency } from './CurrencyContext';
 
@@ -20,7 +20,7 @@ const StatCard: React.FC<{ title: string; value: string; isPositive?: boolean }>
 
 interface TaxViewProps {
     transactions: Transaction[];
-    api: (prompt: string) => Promise<{ text: string }>;
+    api: (prompt: string, history: ChatMessage[]) => Promise<{ text: string }>;
 }
 
 const TaxView: React.FC<TaxViewProps> = ({ transactions, api }) => {
@@ -61,7 +61,7 @@ const TaxView: React.FC<TaxViewProps> = ({ transactions, api }) => {
         `;
         
         try {
-            const result = await api(prompt);
+            const result = await api(prompt, []); // Pass empty history for one-shot questions
             setAiResponse(result.text);
         } catch (error) {
             setAiResponse("Sorry, I was unable to process your request at this time. Please try again later.");

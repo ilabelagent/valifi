@@ -340,7 +340,7 @@ export interface InvestmentPlan {
   shadowColor: string;
 }
 
-export type MessageAuthor = 'user' | 'ai' | 'other_user';
+export type MessageAuthor = 'user' | 'ai';
 
 export interface ChatMessage {
     id: string;
