@@ -19,16 +19,17 @@ export async function register(req, res) {
     return res.status(400).json({ success: false, message: 'All registration fields are required.' });
   }
 
+  let tx;
   try {
-    await db.execute('BEGIN'); // Manual transaction start
+    tx = await db.transaction('write');
 
-    const existingUser = await db.execute({
+    const existingUser = await tx.execute({
         sql: 'SELECT email FROM users WHERE email = ? OR username = ?',
         args: [email, username]
     });
 
     if (existingUser.rows.length > 0) {
-        await db.execute('ROLLBACK');
+        await tx.rollback();
         return res.status(400).json({ success: false, message: 'Email or username is already taken.' });
     }
 
@@ -40,36 +41,35 @@ export async function register(req, res) {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    await db.execute({
+    await tx.execute({
         sql: 'INSERT INTO users (id, fullName, username, email, passwordHash, kycStatus, createdAt, updatedAt, isAdmin, profilePhotoUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         args: [userId, fullName, username, email, passwordHash, 'Not Started', now, now, false, `https://i.pravatar.cc/40?u=${username}`]
     });
 
     const defaultPreferences = { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false };
     
-    await db.execute({
+    await tx.execute({
         sql: 'INSERT INTO user_settings (id, userId, preferences) VALUES (?, ?, ?)',
         args: [settingsId, userId, JSON.stringify(defaultPreferences)]
     });
 
-    await db.execute({
+    await tx.execute({
         sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [assetId, userId, 'Cash', 'USD', 'Cash', 0, 0]
     });
     
-    await db.execute('COMMIT'); // Manual transaction commit
+    await tx.commit();
     
-    const userResult = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
-    const newUser = processUser(userResult.rows[0]);
-
-    // Use user ID as token for simplicity
-    return res.status(201).json({ success: true, user: { ...newUser, token: userId } });
+    // Return token directly, consistent with login and frontend expectations.
+    return res.status(201).json({ success: true, token: userId });
 
   } catch (err) {
-      try {
-        await db.execute('ROLLBACK');
-      } catch (e) {
-        console.error('Failed to rollback transaction:', e);
+      if (tx) {
+        try {
+          await tx.rollback();
+        } catch (e) {
+          console.error('Failed to rollback transaction:', e);
+        }
       }
       console.error('Registration Error:', err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred during registration.' });
