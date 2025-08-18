@@ -18,30 +18,33 @@ export async function transferMaturity(req, res) {
   const { id } = req.params;
   const user = req.user;
   
+  let tx;
   try {
-    await db.execute('BEGIN');
-    const assetResult = await db.execute({ sql: 'SELECT * FROM assets WHERE id = ? AND userId = ?', args: [id, user.id] });
+    tx = await db.transaction('write');
+    const assetResult = await tx.execute({ sql: 'SELECT * FROM assets WHERE id = ? AND userId = ?', args: [id, user.id] });
     if (assetResult.rows.length === 0) {
-        await db.execute('ROLLBACK');
+        await tx.rollback();
         return res.status(404).json({ success: false, message: 'Investment not found.' });
     }
     const asset = processAsset(assetResult.rows[0]);
     if (asset.status !== 'Matured') {
-        await db.execute('ROLLBACK');
+        await tx.rollback();
         return res.status(400).json({ success: false, message: 'Asset has not matured.' });
     }
 
-    await db.execute({
+    await tx.execute({
         sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`,
         args: [asset.valueUSD, asset.valueUSD, user.id]
     });
 
-    await db.execute({ sql: `UPDATE assets SET status = 'Withdrawn', balance = 0, valueUSD = 0 WHERE id = ?`, args: [id] });
+    await tx.execute({ sql: `UPDATE assets SET status = 'Withdrawn', balance = 0, valueUSD = 0 WHERE id = ?`, args: [id] });
 
-    await db.execute('COMMIT');
+    await tx.commit();
     return res.status(200).json({ success: true, message: 'Maturity transferred successfully.' });
   } catch(err) {
-      try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
+      if (tx) {
+        try { await tx.rollback(); } catch(e) { console.error('Failed to rollback transaction:', e); }
+      }
       console.error('Error transferring maturity:', err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }

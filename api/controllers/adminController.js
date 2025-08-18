@@ -7,45 +7,48 @@ export async function reviewLoan(req, res) {
     return res.status(400).json({ success: false, message: 'loanId and approve flag are required' });
   }
 
+  let tx;
   try {
-    await db.execute('BEGIN');
-    const loanResult = await db.execute({
+    tx = await db.transaction('write');
+    const loanResult = await tx.execute({
       sql: 'SELECT * FROM loan_applications WHERE id = ?',
       args: [loanId],
     });
 
     if (loanResult.rows.length === 0) {
-      await db.execute('ROLLBACK');
+      await tx.rollback();
       return res.status(404).json({ success: false, message: 'Loan not found.' });
     }
     const loan = loanResult.rows[0];
     const loanAmount = Number(loan.amount);
 
     if (approve) {
-      await db.execute({
+      await tx.execute({
         sql: `UPDATE loan_applications SET status = 'Active', details = json_set(details, '$.startDate', ?) WHERE id = ?`,
         args: [new Date().toISOString(), loanId],
       });
-      await db.execute({
+      await tx.execute({
         sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`,
         args: [loanAmount, loanAmount, loan.userId],
       });
     } else {
-      await db.execute({
+      await tx.execute({
         sql: `UPDATE loan_applications SET status = 'Rejected' WHERE id = ?`,
         args: [loanId],
       });
       // Return collateralized asset to active status
-      await db.execute({
+      await tx.execute({
           sql: `UPDATE assets SET status = 'Active' WHERE id = ? AND status = 'Collateralized'`,
           args: [loan.collateralAssetId]
       });
     }
 
-    await db.execute('COMMIT');
+    await tx.commit();
     return res.status(200).json({ success: true, message: `Loan ${approve ? 'approved' : 'rejected'}.` });
   } catch (err) {
-    try { await db.execute('ROLLBACK'); } catch(e) { console.error('Failed to rollback transaction:', e); }
+    if (tx) {
+        try { await tx.rollback(); } catch(e) { console.error('Failed to rollback transaction:', e); }
+    }
     console.error('Error reviewing loan:', err);
     return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
