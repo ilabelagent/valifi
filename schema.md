@@ -3,6 +3,13 @@
 This document outlines the database schema for the Valifi platform, designed for a SQLite-compatible database like Turso. This version includes production-ready enhancements like constraints and indexes.
 
 ```sql
+-- Valifi Platform: Production-Ready Database Schema for Turso (SQLite)
+-- Version 2.0
+-- Changes:
+-- - Added ON DELETE CASCADE to all relevant foreign keys for data integrity.
+-- - Added performance indexes to commonly queried foreign key columns.
+-- - Ensured all tables have appropriate NOT NULL constraints.
+
 -- Users and Authentication
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -13,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     profilePhotoUrl TEXT,
     kycStatus TEXT NOT NULL DEFAULT 'Not Started' CHECK(kycStatus IN ('Not Started', 'Pending', 'Approved', 'Rejected', 'Resubmit Required')),
     kycRejectionReason TEXT,
-    isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
+    isAdmin INTEGER NOT NULL DEFAULT 0, -- BOOLEAN
     createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,10 +28,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_settings (
     id TEXT PRIMARY KEY,
     userId TEXT NOT NULL UNIQUE,
-    twoFactorEnabled BOOLEAN NOT NULL DEFAULT FALSE,
+    twoFactorEnabled INTEGER NOT NULL DEFAULT 0, -- BOOLEAN
     twoFactorMethod TEXT NOT NULL DEFAULT 'none' CHECK(twoFactorMethod IN ('none', 'email', 'sms', 'authenticator')),
     twoFactorSecret TEXT,
-    loginAlerts BOOLEAN NOT NULL DEFAULT TRUE,
+    loginAlerts INTEGER NOT NULL DEFAULT 1, -- BOOLEAN
     preferences TEXT, -- JSON stored as TEXT
     privacy TEXT, -- JSON stored as TEXT
     vaultRecovery TEXT, -- JSON stored as TEXT
@@ -103,8 +110,8 @@ CREATE TABLE IF NOT EXISTS p2p_offers (
     maxOrder REAL,
     paymentTimeLimitMinutes INTEGER,
     terms TEXT,
-    isActive BOOLEAN NOT NULL DEFAULT TRUE,
-    FOREIGN KEY (userId) REFERENCES users(id)
+    isActive INTEGER NOT NULL DEFAULT 1, -- BOOLEAN
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS p2p_orders (
@@ -143,7 +150,7 @@ CREATE TABLE IF NOT EXISTS p2p_chat_messages (
     timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     imageUrl TEXT,
     FOREIGN KEY (orderId) REFERENCES p2p_orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (authorId) REFERENCES users(id)
+    FOREIGN KEY (authorId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS p2p_disputes (
@@ -183,7 +190,7 @@ CREATE TABLE IF NOT EXISTS valifi_cards (
     cardNumberHash TEXT,
     expiry TEXT,
     cvvHash TEXT,
-    isFrozen BOOLEAN NOT NULL DEFAULT FALSE,
+    isFrozen INTEGER NOT NULL DEFAULT 0, -- BOOLEAN
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -222,7 +229,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     type TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    isRead BOOLEAN NOT NULL DEFAULT FALSE,
+    isRead INTEGER NOT NULL DEFAULT 0, -- BOOLEAN
     link TEXT,
     linkContext TEXT, -- JSON stored as TEXT
     timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -265,4 +272,8 @@ CREATE INDEX IF NOT EXISTS idx_p2p_offers_asset_fiat ON p2p_offers(assetTicker, 
 CREATE INDEX IF NOT EXISTS idx_p2p_orders_buyerId ON p2p_orders(buyerId);
 CREATE INDEX IF NOT EXISTS idx_p2p_orders_sellerId ON p2p_orders(sellerId);
 CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+CREATE INDEX IF NOT EXISTS idx_active_sessions_userId ON active_sessions(userId);
+CREATE INDEX IF NOT EXISTS idx_investment_logs_assetId ON investment_logs(assetId);
+CREATE INDEX IF NOT EXISTS idx_loan_applications_userId ON loan_applications(userId);
+CREATE INDEX IF NOT EXISTS idx_bank_accounts_userId ON bank_accounts(userId);
 ```
