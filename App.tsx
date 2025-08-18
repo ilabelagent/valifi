@@ -321,8 +321,18 @@ const AppContent: React.FC = () => {
 }
 
 const App: React.FC = () => {
-    const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || '{}');
-    const initialCurrency = savedSettings?.settings?.preferences?.currency || 'USD';
+    const [initialCurrency, setInitialCurrency] = useState('USD');
+
+    useEffect(() => {
+        try {
+            const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || '{}');
+            const currency = savedSettings?.settings?.preferences?.currency || 'USD';
+            setInitialCurrency(currency);
+        } catch (error) {
+            // In case of parsing error, fallback to 'USD'
+            setInitialCurrency('USD');
+        }
+    }, []);
     
     return (
         <CurrencyProvider savedCurrency={initialCurrency}>
