@@ -216,10 +216,11 @@ const NavLink: React.FC<{ item: NavItem, isCollapsed: boolean, currentView: View
           onClick={(e) => { e.preventDefault(); setCurrentView(item.id); }}
           className={`relative flex items-center gap-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 text-sm group/link transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isCollapsed ? 'px-3 justify-center' : 'px-4'} ${isActive ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
           aria-current={isActive ? 'page' : undefined}
+          aria-label={item.label}
         >
           {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary-foreground rounded-r-full"></div>}
           <item.Icon className={`w-5 h-5 flex-shrink-0 transition-colors drop-shadow-sm ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/link:text-foreground'}`} />
-          <span className={`tracking-wide whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100'}`}>{item.label}</span>
+          <span aria-hidden={isCollapsed} className={`tracking-wide whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100'}`}>{item.label}</span>
           {item.badge && <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{item.badge}</span>}
           {item.status && !item.badge && (
               <span className={`ml-auto w-2 h-2 rounded-full ${

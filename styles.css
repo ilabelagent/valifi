@@ -21,7 +21,7 @@
     --secondary-foreground: 230 237 243;
 
     --muted: 33 38 45;
-    --muted-foreground: 173 186 199; /* #ADBAC7 - Increased contrast */
+    --muted-foreground: 201 209 217; /* #c9d1d9 - Further increased contrast for AA */
 
     --accent: 33 38 45;           /* #21262D - (was #2D333B) */
     --accent-foreground: 230 237 243;

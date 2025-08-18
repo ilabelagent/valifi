@@ -84,18 +84,24 @@ export async function login(req, res) {
     return res.status(400).json({ success: false, message: 'Email and password required' });
   }
   
+  let tx;
   try {
-      const result = await db.execute({
+      // Use a read transaction for consistency and robustness against potential connection issues.
+      tx = await db.transaction('read');
+      const result = await tx.execute({
           sql: 'SELECT id, passwordHash FROM users WHERE email = ?',
           args: [email]
       });
 
       if (result.rows.length === 0) {
+        await tx.close();
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
 
       const user = result.rows[0];
       const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+
+      await tx.close(); // Explicitly close the read transaction
 
       if (!passwordMatch) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
@@ -103,6 +109,9 @@ export async function login(req, res) {
 
       return res.status(200).json({ success: true, token: user.id });
   } catch (err) {
+      if (tx) {
+          try { await tx.close(); } catch (e) { console.error('Failed to close transaction on error:', e); }
+      }
       console.error(`Login error for email ${email}:`, err);
       return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }

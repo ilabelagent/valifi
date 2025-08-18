@@ -998,9 +998,9 @@ const LandingFooter: React.FC<{ onLegalLinkClick: (doc: 'terms' | 'privacy' | 'a
              <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center">
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Valifi, Inc. All rights reserved.</p>
                 <div className="flex items-center gap-6 mt-4 sm:mt-0">
-                    <a href="#" className="text-muted-foreground hover:text-foreground transition-colors"><TwitterIcon className="w-5 h-5" /></a>
-                    <a href="#" className="text-muted-foreground hover:text-foreground transition-colors"><InstagramIcon className="w-5 h-5" /></a>
-                    <a href="#" className="text-muted-foreground hover:text-foreground transition-colors"><LinkedInIcon className="w-5 h-5" /></a>
+                    <a href="#" aria-label="Follow us on Twitter" className="text-muted-foreground hover:text-foreground transition-colors"><TwitterIcon className="w-5 h-5" /></a>
+                    <a href="#" aria-label="Follow us on Instagram" className="text-muted-foreground hover:text-foreground transition-colors"><InstagramIcon className="w-5 h-5" /></a>
+                    <a href="#" aria-label="Follow us on LinkedIn" className="text-muted-foreground hover:text-foreground transition-colors"><LinkedInIcon className="w-5 h-5" /></a>
                 </div>
             </div>
         </div>
