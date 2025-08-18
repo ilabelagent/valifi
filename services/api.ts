@@ -59,18 +59,11 @@ const handleRootResponse = async (response: Response) => {
 
 // --- AUTH & USER ---
 
-export const getUserProfile = async (token: string): Promise<any> => {
-    // Fetch all initial data needed for the app to load.
-    const [dashboardData, userMeData] = await Promise.all([
-        handleDataResponse(await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } })),
-        handleDataResponse(await fetch(`${API_BASE_URL}/users/me`, { headers: { 'Authorization': `Bearer ${token}` } }))
-    ]);
-
-    // Combine into the single user object the application expects
-    return {
-        ...userMeData,      // profile, settings, sessions
-        ...dashboardData,   // portfolio, notifications, userActivity, newsItems
-    };
+export const getAppData = async (token: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/app-data`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return handleDataResponse(response);
 };
 
 export const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
@@ -103,7 +96,7 @@ export const register = async (fullName: string, username: string, email: string
 };
 
 
-export const updateUserSettings = async (userId: string, newSettings: UserSettings): Promise<{settings: UserSettings}> => {
+export const updateUserSettings = async (newSettings: UserSettings): Promise<UserSettings> => {
      const response = await fetch(`${API_BASE_URL}/users/me/settings`, {
         method: 'PUT',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
@@ -112,36 +105,13 @@ export const updateUserSettings = async (userId: string, newSettings: UserSettin
     return handleDataResponse(response);
 };
 
-// --- DATA FETCHING (called from App.tsx) ---
-export const getCardDetails = async (): Promise<CardDetails> => handleDataResponse(await fetch(`${API_BASE_URL}/cards/details`, { headers: getAuthHeaders() }));
-export const getBankAccounts = async (): Promise<BankAccount[]> => handleDataResponse(await fetch(`${API_BASE_URL}/banking/accounts`, { headers: getAuthHeaders() }));
-export const getLoans = async (): Promise<LoanApplication[]> => handleDataResponse(await fetch(`${API_BASE_URL}/loans`, { headers: getAuthHeaders() }));
-export const getP2POffers = async (): Promise<{ offers: P2POffer[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/p2p/offers`, { headers: getAuthHeaders() }));
-export const getMyP2POrders = async (): Promise<{ orders: P2POrder[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/p2p/my-orders`, { headers: getAuthHeaders() }));
-export const getPaymentMethods = async (): Promise<{ paymentMethods: PaymentMethod[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/p2p/payment-methods`, { headers: getAuthHeaders() }));
-export const getReitProperties = async (): Promise<{ reitProperties: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/reit-properties`, { headers: getAuthHeaders() }));
-export const getStakableStocks = async (): Promise<{ stakableStocks: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/stakable-stocks`, { headers: getAuthHeaders() }));
-export const getInvestableNfts = async (): Promise<{ investableNFTs: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/investable-nfts`, { headers: getAuthHeaders() }));
-export const getSpectrumPlans = async (): Promise<{ plans: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/spectrum-plans`, { headers: getAuthHeaders() }));
-export const getStakableCrypto = async (): Promise<{ assets: any[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/investments/stakable-crypto`, { headers: getAuthHeaders() }));
-export const getReferralSummary = async (): Promise<{ tree: ReferralNode, activities: ReferralActivity[] }> => handleDataResponse(await fetch(`${API_BASE_URL}/referrals/summary`, { headers: getAuthHeaders() }));
-
-// --- NEWLY ADDED FUNCTIONS TO FIX ERRORS ---
+// --- WRITE OPERATIONS ---
 
 export const onInitiateTrade = async (offerId: string, amount: number, paymentMethodId: string): Promise<P2POrder> => {
     const response = await fetch(`${API_BASE_URL}/p2p/orders`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ offerId, amount, paymentMethodId }),
-    });
-    return handleDataResponse(response);
-};
-
-export const callTaxAdvisor = async (prompt: string, history: ChatMessage[] = []): Promise<{ text: string }> => {
-    const response = await fetch(`${API_BASE_URL}/ai/tax-advisor`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, history }),
     });
     return handleDataResponse(response);
 };
@@ -174,10 +144,21 @@ export const applyForLoan = async (data: Omit<LoanApplication, 'id' | 'date' | '
 };
 
 export const submitKyc = async (): Promise<void> => {
-    await fetch(`${API_BASE_URL}/kyc/submit`, {
+    const response = await fetch(`${API_BASE_URL}/kyc/submit`, {
         method: 'POST',
         headers: getAuthHeaders(),
     });
+    await handleRootResponse(response);
+};
+
+// --- AI Services ---
+export const callTaxAdvisor = async (prompt: string, history: ChatMessage[] = []): Promise<{ text: string }> => {
+    const response = await fetch(`${API_BASE_URL}/ai/tax-advisor`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, history }),
+    });
+    return handleDataResponse(response);
 };
 
 export const callCoPilot = async (contextPrompt: string, systemInstruction: string, history: CoPilotMessage[] = []): Promise<{ text: string }> => {

@@ -13,9 +13,11 @@ import notificationsRoutes from './notifications.js';
 import p2pRoutes from './p2p.js';
 import aiRoutes from './ai.js';
 import referralRoutes from './referrals.js';
+import appRoutes from './app.js';
 
 const router = Router();
 
+router.use('/app-data', appRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);

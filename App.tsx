@@ -149,10 +149,16 @@ const AppContent: React.FC = () => {
     const loadAppData = useCallback(async (token: string) => {
         setIsLoading(true);
         try {
-            const userData = await apiService.getUserProfile(token);
-            if (!userData) throw new Error("No user data found");
-            const { profile, settings, portfolio: p, notifications: n, userActivity: ua, newsItems: ni, sessions } = userData;
-            
+            const appData = await apiService.getAppData(token);
+            if (!appData) throw new Error("No application data found");
+
+            const {
+                profile, settings, sessions, portfolio: p, notifications: n, userActivity: ua, newsItems: ni,
+                cardDetails: cd, linkedBankAccounts: lba, loanApplications: la, p2pOffers: po, p2pOrders: p2o,
+                userPaymentMethods: upm, reitProperties: rp, stakableStocks: ss, investableNFTs: inft,
+                spectrumPlans: sp, stakableCrypto: sc, referralSummary: rs
+            } = appData;
+
             setUser({ ...profile, token });
             setUserSettings({ profile, settings, sessions: sessions || [] });
             setPortfolio({ ...p, assets: processAssets(p.assets) });
@@ -160,29 +166,21 @@ const AppContent: React.FC = () => {
             setUserActivity(processUserActivity(ua));
             setNewsItems(ni);
 
-            const [
-                cards, banks, loans, offers, orders, payments, 
-                reits, stocks, nfts, plans, crypto, referrals
-            ] = await Promise.all([
-                apiService.getCardDetails(), apiService.getBankAccounts(), apiService.getLoans(),
-                apiService.getP2POffers(), apiService.getMyP2POrders(), apiService.getPaymentMethods(),
-                apiService.getReitProperties(), apiService.getStakableStocks(), apiService.getInvestableNfts(),
-                apiService.getSpectrumPlans(), apiService.getStakableCrypto(), apiService.getReferralSummary()
-            ]);
-            setCardDetails(cards);
-            setLinkedBankAccounts(banks);
-            setLoanApplications(loans);
-            setP2POffers(processP2POffers(offers.offers));
-            setP2POrders(processP2POrders(orders.orders));
-            setUserPaymentMethods(payments.paymentMethods);
-            setReitProperties(reits.reitProperties);
-            setStakableStocks(processStakableStocks(stocks.stakableStocks));
-            setInvestableNFTs(nfts.investableNFTs);
-            setSpectrumPlans(plans.plans);
-            setStakableCrypto(processStakableAssets(crypto.assets));
-            setReferralSummary(referrals);
+            setCardDetails(cd);
+            setLinkedBankAccounts(lba);
+            setLoanApplications(la);
+            setP2POffers(processP2POffers(po));
+            setP2POrders(processP2POrders(p2o));
+            setUserPaymentMethods(upm);
+            setReitProperties(rp);
+            setStakableStocks(processStakableStocks(ss));
+            setInvestableNFTs(inft);
+            setSpectrumPlans(sp);
+            setStakableCrypto(processStakableAssets(sc));
+            setReferralSummary(rs);
 
         } catch (error) {
+            console.error("Failed to load app data:", error);
             localStorage.removeItem('valifi_token');
             setUser(null);
         } finally {

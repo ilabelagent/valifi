@@ -1,5 +1,12 @@
 import crypto from 'crypto';
 import { db } from '../lib/db.js';
+import {
+    spectrumPlans,
+    stakableCrypto,
+    stakableStocks,
+    reitProperties,
+    investableNFTs
+} from '../data/investmentOptions.js';
 
 // Helper to process asset data from DB
 const processAsset = (asset) => {
@@ -52,23 +59,58 @@ export async function transferMaturity(req, res) {
 
 // --- Read-only endpoints for fetching investment options ---
 export function getStakableStocks(req, res) {
-    res.status(200).json({ success: true, stakableStocks: [] });
+    res.status(200).json({ success: true, stakableStocks });
 }
 export function getReitProperties(req, res) {
-    res.status(200).json({ success: true, reitProperties: [] });
+    res.status(200).json({ success: true, reitProperties });
 }
 export function getInvestableNfts(req, res) {
-    res.status(200).json({ success: true, investableNFTs: [] });
+    res.status(200).json({ success: true, investableNFTs });
 }
 export function getSpectrumPlans(req, res) {
-    res.status(200).json({ success: true, plans: [] });
+    res.status(200).json({ success: true, plans: spectrumPlans });
 }
 export function getStakableCrypto(req, res) {
-    res.status(200).json({ success: true, assets: [] });
+    res.status(200).json({ success: true, assets: stakableCrypto });
 }
 
-// --- Placeholder functions for other investment types ---
-export async function investSpectrumPlan(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
+// --- Write endpoints for creating investments ---
+export async function investSpectrumPlan(req, res) {
+    const { planId, amount } = req.body;
+    const userId = req.user.id;
+    const plan = spectrumPlans.find(p => p.id === planId);
+    if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+
+    let tx;
+    try {
+        tx = await db.transaction('write');
+        const cashResult = await tx.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND type = "Cash"', args: [userId] });
+        if (cashResult.rows.length === 0 || Number(cashResult.rows[0].balance) < amount) {
+            await tx.rollback();
+            return res.status(400).json({ success: false, message: 'Insufficient cash balance.' });
+        }
+        
+        await tx.execute({ sql: 'UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = "Cash"', args: [amount, amount, userId] });
+
+        const assetId = crypto.randomUUID();
+        const maturityDate = new Date();
+        maturityDate.setDate(maturityDate.getDate() + parseInt(plan.totalPeriods));
+
+        await tx.execute({
+            sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, status, maturityDate, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [assetId, userId, plan.name, plan.id.toUpperCase(), 'Stock', 0, amount, amount, 'Active', maturityDate.toISOString(), JSON.stringify(plan)]
+        });
+        
+        await tx.commit();
+        res.status(201).json({ success: true, message: 'Investment successful.' });
+
+    } catch (err) {
+        if (tx) { try { await tx.rollback(); } catch (e) {} }
+        console.error('Error investing in Spectrum plan:', err);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+}
+
 export async function stakeCrypto(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
 export async function stakeStock(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
 export async function investReit(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }

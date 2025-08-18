@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "postinstall": "npm install --prefix api",
-    "build": "vite build",
-    "start": "vercel deploy --prod"
+    "build": "vite build"
   },
   "dependencies": {
     "i18next": "^23.11.5",

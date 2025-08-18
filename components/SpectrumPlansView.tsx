@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import type { InvestmentPlan } from '../types';
 import InvestModal from './InvestModal';
 
+const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
+    <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
+      {children}
+    </div>
+);
+
 export const newPlans: InvestmentPlan[] = [
     {
         id: 'corestart',
@@ -68,12 +74,6 @@ export const newPlans: InvestmentPlan[] = [
         shadowColor: 'shadow-purple-500/30'
     }
 ];
-
-const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
-    <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
-      {children}
-    </div>
-);
 
 const PlanDetailRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
     <div className="flex justify-between items-center py-3.5 border-b border-border/50">

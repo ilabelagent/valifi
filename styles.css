@@ -29,7 +29,7 @@
     --destructive: 248 81 73;    /* #F85149 */
     --destructive-foreground: 255 255 255;
     
-    --success: 35 134 54;        /* #238636 */
+    --success: 63 185 80;        /* #3FB950 - Increased contrast for AA */
     --success-foreground: 255 255 255;
     
     --warning: 245 158 11;       /* amber-500 */
