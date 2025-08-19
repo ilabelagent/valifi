@@ -78,7 +78,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                         <input id="confirm-password" name="confirmPassword" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
                     </div>
                     
-                    {error && <div className="bg-destructive/10 border border-destructive/50 text-destructive text-sm p-3 rounded-lg text-center">{error}</div>}
+                    {error && <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">{error}</div>}
 
                     <div className="pt-2">
                         <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">

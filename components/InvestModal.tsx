@@ -110,7 +110,7 @@ const InvestModal: React.FC<InvestModalProps> = ({ isOpen, onClose, plan, onInve
                         </div>
                     </div>
 
-                    {error && <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-lg border border-destructive/20">{error}</p>}
+                    {error && <p className="text-sm text-destructive-foreground text-center bg-destructive p-3 rounded-lg">{error}</p>}
 
                     <button type="submit" disabled={isButtonDisabled} className={`w-full flex items-center justify-center font-bold py-3 px-4 rounded-lg transition-colors text-lg text-white shadow-lg disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed disabled:shadow-none ${plan.buttonColor} ${plan.shadowColor}`}>
                         {isProcessing ? 'Processing...' : `Confirm Investment`}

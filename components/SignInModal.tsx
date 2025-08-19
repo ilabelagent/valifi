@@ -82,7 +82,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
                     </div>
 
                     {error && (
-                        <div className="bg-destructive/10 border border-destructive/50 text-destructive text-sm p-3 rounded-lg text-center">
+                        <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
                             {error}
                         </div>
                     )}

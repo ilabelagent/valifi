@@ -70,7 +70,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
                             <input id="reset-email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground" />
                         </div>
                         
-                        {error && <div className="bg-destructive/10 border border-destructive/50 text-destructive text-sm p-3 rounded-lg text-center">{error}</div>}
+                        {error && <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">{error}</div>}
 
                         <div>
                             <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground">

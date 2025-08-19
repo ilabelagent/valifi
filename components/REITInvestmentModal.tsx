@@ -96,7 +96,7 @@ const REITInvestmentModal: React.FC<REITInvestmentModalProps> = ({ isOpen, onClo
                         <span className="font-semibold text-lg text-success blur-balance">{formatCurrency(monthlyReturn)}</span>
                     </div>
 
-                    {error && <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-lg border border-destructive/20">{error}</p>}
+                    {error && <p className="text-sm text-destructive-foreground text-center bg-destructive p-3 rounded-lg">{error}</p>}
                     
                     <button type="submit" disabled={isButtonDisabled} className="w-full font-bold py-3 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed disabled:shadow-none">
                         {isProcessing ? 'Processing...' : 'Buy Shares'}
