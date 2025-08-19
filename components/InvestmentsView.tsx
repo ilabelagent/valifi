@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowUpDownIcon, SearchIcon, TrendingUpIcon, InvestmentsIcon, UsdIcon } from './icons';
 import type { Asset, InvestmentPlan, StakableAsset, REITProperty, StakableStock, InvestableNFT } from '../types';
 import { AssetType } from '../types';
@@ -161,9 +161,20 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
 
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: 'asc' | 'desc' } | null>({ key: 'valueUSD', order: 'desc' });
     const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const { formatCurrency, currency } = useCurrency();
     
     const nftAssets = useMemo(() => assets.filter(a => a.type === AssetType.NFT), [assets]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchTerm(inputValue);
+        }, 300); // 300ms debounce delay
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [inputValue]);
 
     const handleSort = (key: SortKey) => {
         let order: 'asc' | 'desc' = 'asc';
@@ -329,8 +340,8 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                             <input
                                 type="text"
                                 placeholder="Filter by name..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
                                 className="bg-secondary border border-border rounded-lg py-2 pl-10 pr-4 w-64 text-muted-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all"
                             />
                         </div>
