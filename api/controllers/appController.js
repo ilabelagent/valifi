@@ -1,3 +1,4 @@
+
 import { db } from '../lib/db.js';
 import {
     spectrumPlans,
@@ -72,14 +73,36 @@ export async function getAppData(req, res) {
     
     // Process User and Settings
     const profile = userResult.rows[0];
+    if (!profile) {
+        return res.status(404).json({ success: false, message: 'User profile data not found.' });
+    }
+
     const dbSettings = settingsResult.rows[0];
-    const settings = {
-        twoFactorAuth: { enabled: Boolean(dbSettings.twoFactorEnabled), method: dbSettings.twoFactorMethod },
-        loginAlerts: Boolean(dbSettings.loginAlerts),
-        preferences: JSON.parse(dbSettings.preferences || '{}'),
-        privacy: JSON.parse(dbSettings.privacy || '{}'),
-        vaultRecovery: JSON.parse(dbSettings.vaultRecovery || '{}'),
-    };
+    let settings;
+
+    // This robust check prevents a crash if a user exists but their settings row does not.
+    if (dbSettings) {
+        settings = {
+            twoFactorAuth: { 
+                enabled: Boolean(dbSettings.twoFactorEnabled), 
+                method: dbSettings.twoFactorMethod || 'none' 
+            },
+            loginAlerts: Boolean(dbSettings.loginAlerts),
+            preferences: JSON.parse(dbSettings.preferences || '{}'),
+            privacy: JSON.parse(dbSettings.privacy || '{}'),
+            vaultRecovery: JSON.parse(dbSettings.vaultRecovery || '{}'),
+        };
+    } else {
+        // Provide a safe, default settings object to prevent errors and ensure UI consistency.
+        console.warn(`No settings found for user ${userId}. Providing default settings.`);
+        settings = {
+            twoFactorAuth: { enabled: false, method: 'none' },
+            loginAlerts: true,
+            preferences: { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false },
+            privacy: {},
+            vaultRecovery: {},
+        };
+    }
 
     // Process Portfolio
     const assets = assetsResult.rows.map(processAsset);
@@ -102,7 +125,7 @@ export async function getAppData(req, res) {
 
     // Process other features' data
     const cardDetails = cardResult.rows.length > 0 ? cardResult.rows[0] : { status: 'Not Applied' };
-    const linkedBankAccounts = bankAccountsResult.rows.map(acc => ({ ...acc, details: JSON.parse(acc.details) }));
+    const linkedBankAccounts = bankAccountsResult.rows.map(acc => ({ ...acc, details: JSON.parse(acc.details || '{}') }));
 
     const responsePayload = {
         profile,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ValifiLogo, CloseIcon } from './icons';
+import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon } from './icons';
 
 interface SignInModalProps {
     isOpen: boolean;
@@ -97,6 +97,35 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
                         </button>
                     </div>
                 </form>
+
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="bg-card px-2 text-muted-foreground">OR</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                    <button
+                        type="button"
+                        onClick={() => console.log('Continue with Google')}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
+                    >
+                        <GoogleIcon className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Continue with Google</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => console.log('Continue with GitHub')}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
+                    >
+                        <GithubIcon className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Continue with GitHub</span>
+                    </button>
+                </div>
+
                  <p className="mt-8 text-center text-sm text-muted-foreground">
                     Not a member?{' '}
                     <button type="button" onClick={() => { onClose(); onOpenSignUp(); }} className="font-semibold leading-6 text-primary hover:text-primary/80">
