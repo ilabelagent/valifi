@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ValifiLogo, CloseIcon, CheckCircleIcon } from './icons';
 
@@ -39,9 +38,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         <div 
             className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 p-4 motion-safe:animate-slide-in-fade"
             onClick={onClose}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="forgot-password-modal-title"
         >
             <div 
                 className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl shadow-2xl w-full max-w-md m-4 text-foreground p-8"
@@ -50,7 +46,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
                         <ValifiLogo className="w-10 h-10 text-primary" />
-                        <h2 id="forgot-password-modal-title" className="text-2xl font-bold">Reset Password</h2>
+                        <h2 className="text-2xl font-bold">Reset Password</h2>
                     </div>
                     <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
                         <CloseIcon className="w-6 h-6" />

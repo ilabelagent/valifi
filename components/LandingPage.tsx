@@ -16,7 +16,6 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 interface LandingPageProps {
     onLogin: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
     onSignUp: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean, message?: string }>;
-    onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     userSettings: UserSettings;
     setUserSettings: React.Dispatch<React.SetStateAction<UserSettings>>;
 }
@@ -1009,7 +1008,7 @@ const LandingFooter: React.FC<{ onLegalLinkClick: (doc: 'terms' | 'privacy' | 'a
     );
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLogin, userSettings, setUserSettings }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, userSettings, setUserSettings }) => {
     const featuresRef = useRef<HTMLDivElement>(null);
     const careersRef = useRef<HTMLDivElement>(null);
     const faqRef = useRef<HTMLDivElement>(null);
@@ -1095,7 +1094,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
                 isOpen={isSignInModalOpen}
                 onClose={() => setSignInModalOpen(false)}
                 onLogin={onLogin}
-                onSocialLogin={onSocialLogin}
                 onOpenSignUp={() => { setSignInModalOpen(false); setSignUpModalOpen(true); }}
                 onOpenForgotPassword={() => { setSignInModalOpen(false); setForgotPasswordModalOpen(true); }}
             />

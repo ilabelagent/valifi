@@ -80,19 +80,6 @@ export const login = async (email: string, password: string): Promise<{ success:
     }
 };
 
-export const socialLogin = async (provider: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/social-login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider }),
-        });
-        return await handleRootResponse(response);
-    } catch (e: any) {
-        return { success: false, message: e.message };
-    }
-}
-
 export const register = async (fullName: string, username: string, email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
      try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {

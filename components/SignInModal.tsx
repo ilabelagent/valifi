@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon } from './icons';
 
@@ -6,12 +5,11 @@ interface SignInModalProps {
     isOpen: boolean;
     onClose: () => void;
     onLogin: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
-    onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignUp: () => void;
     onOpenForgotPassword: () => void;
 }
 
-const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onSocialLogin, onOpenSignUp, onOpenForgotPassword }) => {
+const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onOpenSignUp, onOpenForgotPassword }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -31,23 +29,10 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
         // On success, the parent component will handle closing the modal/transitioning the view.
     };
 
-    const handleSocialLoginClick = async (provider: string) => {
-        setError('');
-        setIsLoading(true);
-        const result = await onSocialLogin(provider);
-        setIsLoading(false);
-        if (!result.success) {
-            setError(result.message || `Failed to sign in with ${provider}.`);
-        }
-    }
-
     return (
         <div 
             className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 p-4 motion-safe:animate-slide-in-fade"
             onClick={onClose}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="signin-modal-title"
         >
             <div 
                 className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl shadow-2xl w-full max-w-md m-4 text-foreground p-8"
@@ -56,7 +41,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
                         <ValifiLogo className="w-10 h-10 text-primary" />
-                        <h2 id="signin-modal-title" className="text-2xl font-bold">Sign In to Valifi</h2>
+                        <h2 className="text-2xl font-bold">Sign In to Valifi</h2>
                     </div>
                     <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
                         <CloseIcon className="w-6 h-6" />
@@ -96,13 +81,11 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                         />
                     </div>
 
-                    <div className="min-h-[52px] flex items-center justify-center">
-                        {error && (
-                            <div className="w-full bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
-                                {error}
-                            </div>
-                        )}
-                    </div>
+                    {error && (
+                        <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
+                            {error}
+                        </div>
+                    )}
 
                     <div>
                         <button
@@ -127,18 +110,16 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                 <div className="grid grid-cols-1 gap-4">
                     <button
                         type="button"
-                        onClick={() => handleSocialLoginClick('google')}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => console.log('Continue with Google')}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
                     >
                         <GoogleIcon className="w-5 h-5" />
                         <span className="text-sm font-semibold">Continue with Google</span>
                     </button>
                     <button
                         type="button"
-                        onClick={() => handleSocialLoginClick('github')}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => console.log('Continue with GitHub')}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
                     >
                         <GithubIcon className="w-5 h-5" />
                         <span className="text-sm font-semibold">Continue with GitHub</span>

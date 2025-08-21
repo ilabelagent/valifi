@@ -172,20 +172,17 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                                 <div className="text-sm space-y-2">
                                     <p className="text-slate-400">Transfer exactly <span className="font-bold text-white">{formatCurrency(order.fiatAmount)}</span> to the seller using the following details:</p>
                                     <div className="flex justify-between"><span className="text-slate-400">Method:</span> <span className="font-bold">{order.paymentMethod.methodType}</span></div>
-                                    {Object.entries(order.paymentMethod.details).map(([key, value]) => {
-                                        if (!value) return null;
-                                        return (
-                                            <div key={key} className="flex justify-between items-center">
-                                                <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold">{value}</span>
-                                                    <button onClick={() => handleCopy(String(value), key)} className="text-slate-500 hover:text-white">
-                                                        <CopyIcon className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                    {Object.entries(order.paymentMethod.details).map(([key, value]) => (
+                                        <div key={key} className="flex justify-between items-center">
+                                            <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold">{value}</span>
+                                                <button onClick={() => handleCopy(value!, key)} className="text-slate-500 hover:text-white">
+                                                    <CopyIcon className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                          )}

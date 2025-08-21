@@ -1,4 +1,3 @@
-import type * as React from 'react';
 import { BtcIcon, EthIcon, UsdtIcon, SolanaIcon, CardanoIcon } from './icons';
 
 export interface MixableAssetConfig {
