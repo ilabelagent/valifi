@@ -207,6 +207,16 @@ const AppContent: React.FC = () => {
         return { success: false, message: result.message };
     };
 
+    const handleSocialLogin = async (provider: string) => {
+        const result = await apiService.socialLogin(provider);
+        if (result.success && result.token) {
+            localStorage.setItem('valifi_token', result.token);
+            await loadAppData(result.token);
+            return { success: true };
+        }
+        return { success: false, message: result.message };
+    }
+
     const handleSignUp = async (fullName: string, username: string, email: string, password: string) => {
         const result = await apiService.register(fullName, username, email, password);
         if (result.success && result.token) {
@@ -245,7 +255,7 @@ const AppContent: React.FC = () => {
     }
 
     if (!user || !userSettings || !portfolio) {
-        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} userSettings={userSettings!} setUserSettings={setUserSettings!} />;
+        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onSocialLogin={handleSocialLogin} userSettings={userSettings!} setUserSettings={setUserSettings!} />;
     }
 
     const renderView = () => {
