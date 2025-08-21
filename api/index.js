@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,29 +10,39 @@ import { initializeSchema } from './lib/db.js';
 // Load environment variables from a .env file if present
 dotenv.config();
 
+// --- Environment Variable Validation ---
+const requiredEnvVars = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'API_KEY'];
+for (const varName of requiredEnvVars) {
+    if (!process.env[varName]) {
+        console.error(`FATAL ERROR: Environment variable ${varName} is not defined.`);
+        console.error('Please check your .env file or Vercel project settings.');
+        process.exit(1);
+    }
+}
+
 // --- Global Error Handlers ---
-// These will catch any errors that are not handled within a specific route.
-// This is crucial for Vercel logging and debugging.
 process.on('uncaughtException', (error) => {
   console.error('--- UNCAUGHT EXCEPTION ---');
   console.error(error);
-  process.exit(1); // Exit process, Vercel will restart the serverless function
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('--- UNHANDLED REJECTION ---');
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1); // Exit process
+  process.exit(1);
 });
 
 
 const app = express();
 
+// Set trust proxy for Vercel deployment if using cookies with secure flag
+app.set('trust proxy', 1);
+
 // Default to port 3001 if no PORT env var is provided
 const PORT = process.env.PORT || 3001;
 
-// Initialize Database Schema on startup. In a production Vercel env, this won't run.
-// You need to manually initialize the schema via the Turso shell for production.
+// Initialize Database Schema on startup.
 if (process.env.NODE_ENV !== 'production') {
     initializeSchema().catch(err => {
         console.error('Database initialization failed:', err);
@@ -41,38 +52,34 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 // Enable CORS for all origins
-app.use(cors());
+app.use(cors({
+    origin: true, // Reflect request origin, or configure for specific domains
+    credentials: true
+}));
+
 // Parse JSON request bodies
 app.use(express.json());
 
-// Mount the API routes under the configured base URL.  If API_BASE_URL is
-// undefined, fall back to `/api` as the root for all endpoints.
+// Mount the API routes under the configured base URL.
 const baseUrl = process.env.API_BASE_URL || '/api';
 app.use(baseUrl, apiRoutes);
 
 
 // --- Express Error Handling Middleware ---
-// This middleware must be the last one in the chain.
-// It catches any errors that occur in the route handlers.
 app.use((err, req, res, next) => {
-    // Log the full error to Vercel's logs for debugging
     console.error('--- EXPRESS ERROR ---');
     console.error(`[${req.method}] ${req.url}`);
     console.error(err.stack);
-
-    // Send a generic error response to the client
-    // to avoid leaking implementation details.
     res.status(500).json({ 
-        status: 'error', 
+        code: 'INTERNAL_ERROR',
         message: 'An internal server error occurred. Our team has been notified.' 
     });
 });
 
 
-// Start listening for connections.  The callback logs the URL to the
-// console for convenience when running locally.
+// Start listening for connections.
 app.listen(PORT, () => {
-  // Intentionally silent in production
+  // Silent in production
 });
 
 export default app;

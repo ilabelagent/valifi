@@ -1,29 +1,29 @@
+
 import { db } from '../lib/db.js';
 
 export async function protect(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ status: 'error', message: 'Missing or invalid authorization header' });
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authorization header is missing or invalid.' });
   }
   
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Token is missing from authorization header.' });
+  }
+
   try {
-    const token = authHeader.split(' ')[1];
-    
-    // As per the simple auth system, the token is the user's ID.
+    // Select only the fields needed for authorization and context, excluding sensitive data
     const result = await db.execute({
-        sql: 'SELECT * FROM users WHERE id = ?',
+        sql: 'SELECT id, email, username, kycStatus, status, isAdmin FROM users WHERE id = ?',
         args: [token],
     });
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ status: 'error', message: 'Invalid or expired token. User not found.' });
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid token. User not found.' });
     }
     
     const user = result.rows[0];
-    // Exclude password hash from the user object attached to the request
-    delete user.passwordHash;
-    
-    // Ensure isAdmin is a boolean
     user.isAdmin = Boolean(user.isAdmin);
     
     req.user = user;
@@ -31,7 +31,8 @@ export async function protect(req, res, next) {
     next();
   } catch (err) {
       console.error('Authentication error:', err);
-      return res.status(500).json({ status: 'error', message: 'Internal server error during authentication.' });
+      // Return a 401 for auth-related db errors, as it's an auth failure from client's perspective
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Could not verify authentication.' });
   }
 }
 
@@ -39,7 +40,7 @@ export async function protect(req, res, next) {
 export function requireKyc(req, res, next) {
   const user = req.user;
   if (!user || user.kycStatus !== 'Approved') {
-    return res.status(403).json({ status: 'error', message: 'KYC approval required' });
+    return res.status(403).json({ code: 'KYC_REQUIRED', message: 'This action requires KYC approval.' });
   }
   next();
 }
@@ -48,7 +49,7 @@ export function requireKyc(req, res, next) {
 export function requireAdmin(req, res, next) {
   const user = req.user;
   if (!user || !user.isAdmin) {
-    return res.status(403).json({ status: 'error', message: 'Admin access required' });
+    return res.status(403).json({ code: 'ADMIN_REQUIRED', message: 'Admin access required for this resource.' });
   }
   next();
 }

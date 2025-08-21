@@ -1,3 +1,4 @@
+
 import { createClient } from '@libsql/client';
 import 'dotenv/config';
 import fs from 'fs/promises';
@@ -24,31 +25,38 @@ export const db = createClient({
 // A function to initialize the database schema from an SQL file
 export const initializeSchema = async () => {
     try {
-        // Check if the main users table exists.
+        // A simple check to see if the main users table exists.
         await db.execute("SELECT id FROM users LIMIT 1");
     } catch (e) {
+        // If it throws "no such table", we assume the DB is empty and initialize it.
         if (e.message.includes('no such table')) {
+            console.log('No schema found. Initializing database...');
+            let tx;
             try {
+                // Read the entire schema file
                 const schemaPath = path.join(__dirname, 'schema.sql');
                 const schema = await fs.readFile(schemaPath, 'utf-8');
                 
-                const statements = schema.split(';').filter(s => s.trim());
+                // Split into individual statements (handles comments and semicolons)
+                const statements = schema.split(';').filter(s => s.trim().length > 0 && !s.trim().startsWith('--'));
                 
-                await db.execute('BEGIN');
+                // Execute all statements within a single transaction
+                tx = await db.transaction('write');
                 for (const statement of statements) {
-                    await db.execute(statement);
+                    await tx.execute(statement);
                 }
-                await db.execute('COMMIT');
+                await tx.commit();
+                console.log('Database schema initialized successfully.');
 
             } catch (initErr) {
-                try {
-                  await db.execute('ROLLBACK');
-                } catch (rollbackErr) {
-                  // silent
+                console.error('Failed to initialize database schema:', initErr);
+                if (tx) {
+                  try { await tx.rollback(); } catch (rollbackErr) { console.error('Failed to rollback schema initialization:', rollbackErr); }
                 }
-                throw initErr;
+                throw initErr; // Re-throw to prevent server from starting with a bad DB state
             }
         } else {
+             // If the error is something other than "no such table", re-throw it.
              throw e;
         }
     }
