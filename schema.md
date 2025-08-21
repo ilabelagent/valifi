@@ -4,11 +4,8 @@ This document outlines the database schema for the Valifi platform, designed for
 
 ```sql
 -- Valifi Platform: Production-Ready Database Schema for Turso (SQLite)
--- Version 2.1
+-- Version 2.0
 -- Changes:
--- - Added `email_normalized` column to `users` for case-insensitive login.
--- - Renamed `passwordHash` to `password_hash` to match application code.
--- - Updated index to use `email_normalized`.
 -- - Added ON DELETE CASCADE to all relevant foreign keys for data integrity.
 -- - Added performance indexes to commonly queried foreign key columns.
 -- - Ensured all tables have appropriate NOT NULL constraints.
@@ -19,8 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     fullName TEXT NOT NULL,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
-    email_normalized TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    passwordHash TEXT NOT NULL,
     profilePhotoUrl TEXT,
     kycStatus TEXT NOT NULL DEFAULT 'Not Started' CHECK(kycStatus IN ('Not Started', 'Pending', 'Approved', 'Rejected', 'Resubmit Required')),
     kycRejectionReason TEXT,
@@ -269,7 +265,7 @@ CREATE TABLE IF NOT EXISTS ai_suggestions_cache (
 
 
 -- INDEXES FOR PERFORMANCE
-CREATE INDEX IF NOT EXISTS idx_users_email_normalized ON users(email_normalized);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_assets_userId_type ON assets(userId, type);
 CREATE INDEX IF NOT EXISTS idx_transactions_userId_type ON transactions(userId, type);
 CREATE INDEX IF NOT EXISTS idx_p2p_offers_asset_fiat ON p2p_offers(assetTicker, fiatCurrency);

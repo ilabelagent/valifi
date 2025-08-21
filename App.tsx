@@ -197,7 +197,7 @@ const AppContent: React.FC = () => {
         }
     }, [loadAppData]);
 
-    const handleLogin = async (email: string, password: string) => {
+    const handleLogin = useCallback(async (email: string, password: string) => {
         const result = await apiService.login(email, password);
         if (result.success && result.token) {
             localStorage.setItem('valifi_token', result.token);
@@ -205,9 +205,19 @@ const AppContent: React.FC = () => {
             return { success: true };
         }
         return { success: false, message: result.message };
-    };
+    }, [loadAppData]);
 
-    const handleSignUp = async (fullName: string, username: string, email: string, password: string) => {
+    const handleSocialLogin = useCallback(async (provider: string) => {
+        const result = await apiService.socialLogin(provider);
+        if (result.success && result.token) {
+            localStorage.setItem('valifi_token', result.token);
+            await loadAppData(result.token);
+            return { success: true };
+        }
+        return { success: false, message: result.message };
+    }, [loadAppData]);
+
+    const handleSignUp = useCallback(async (fullName: string, username: string, email: string, password: string) => {
         const result = await apiService.register(fullName, username, email, password);
         if (result.success && result.token) {
             localStorage.setItem('valifi_token', result.token);
@@ -215,7 +225,7 @@ const AppContent: React.FC = () => {
             return { success: true };
         }
         return { success: false, message: result.message };
-    }
+    }, [loadAppData]);
 
     const onTransferToMain = useCallback(async (assetId: string) => {
         // await apiService.transferToMain(assetId);
@@ -232,20 +242,26 @@ const AppContent: React.FC = () => {
         return order;
     }, []);
     
-    // ... other handlers would go here ...
-    const handlers = {
+    const onDepositClick = useCallback(() => setDepositModalOpen(true), []);
+    const onWithdrawClick = useCallback(() => setWithdrawModalOpen(true), []);
+    const onViewInvestment = useCallback((asset: Asset) => {
+        setSelectedInvestment(asset);
+        setInvestmentDetailModalOpen(true);
+    }, []);
+
+    const handlers = useMemo(() => ({
         onTransferToMain,
-        onDepositClick: () => setDepositModalOpen(true),
-        onWithdrawClick: () => setWithdrawModalOpen(true),
-        onViewInvestment: (asset: Asset) => { setSelectedInvestment(asset); setInvestmentDetailModalOpen(true); },
-    };
+        onDepositClick,
+        onWithdrawClick,
+        onViewInvestment,
+    }), [onTransferToMain, onDepositClick, onWithdrawClick, onViewInvestment]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen bg-background"><LoadingSpinner /></div>;
     }
 
     if (!user || !userSettings || !portfolio) {
-        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} userSettings={userSettings!} setUserSettings={setUserSettings!} />;
+        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onSocialLogin={handleSocialLogin} userSettings={userSettings!} setUserSettings={setUserSettings!} />;
     }
 
     const renderView = () => {
@@ -299,8 +315,8 @@ const AppContent: React.FC = () => {
             onClearAll={() => setNotifications(n => n.filter(notif => !notif.isRead))}
             userSettings={userSettings}
             setUserSettings={setUserSettings}
-            onDepositClick={handlers.onDepositClick}
-            onWithdrawClick={handlers.onWithdrawClick}
+            onDepositClick={onDepositClick}
+            onWithdrawClick={onWithdrawClick}
             isMobileMenuOpen={isMobileMenuOpen}
             setIsMobileMenuOpen={setIsMobileMenuOpen}
             stakableStocks={stakableStocks}

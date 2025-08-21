@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, Suspense } from 'react';
+import React, { useRef, useEffect, useState, Suspense, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import WalletConnectModal from './WalletConnectModal';
@@ -92,6 +92,10 @@ const Layout: React.FC<LayoutProps> = (props) => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [currentView, setIsMobileMenuOpen]);
+  
+  const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen(prev => !prev), [setIsMobileMenuOpen]);
+  const handleNotificationsClick = useCallback(() => setNotificationsOpen(prev => !prev), [setNotificationsOpen]);
+
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -101,17 +105,17 @@ const Layout: React.FC<LayoutProps> = (props) => {
         userSettings={userSettings}
         setUserSettings={setUserSettings}
         unreadNotifications={unreadCount}
-        onNotificationsClick={() => setNotificationsOpen(prev => !prev)}
+        onNotificationsClick={handleNotificationsClick}
         isMobileMenuOpen={isMobileMenuOpen}
-        onMobileMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
+        onMobileMenuToggle={handleMobileMenuToggle}
         {...props}
       />
       <div className="flex-1 flex flex-col relative min-w-0">
         <Header 
           currentView={currentView} 
-          onMobileMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
+          onMobileMenuToggle={handleMobileMenuToggle}
           unreadNotifications={unreadCount}
-          onNotificationsClick={() => setNotificationsOpen(prev => !prev)}
+          onNotificationsClick={handleNotificationsClick}
         />
         <main className="flex-1 overflow-y-auto">
           <div key={currentView}>
@@ -162,4 +166,4 @@ const Layout: React.FC<LayoutProps> = (props) => {
   );
 };
 
-export default Layout;
+export default React.memo(Layout);

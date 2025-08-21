@@ -55,7 +55,7 @@ export async function register(req, res) {
     tx = await db.transaction('write');
 
     const existingUserResult = await tx.execute({
-        sql: 'SELECT id FROM users WHERE email_normalized = ? OR username = ?',
+        sql: 'SELECT id FROM users WHERE LOWER(email) = ? OR username = ?',
         args: [email_normalized, username]
     });
 
@@ -73,11 +73,11 @@ export async function register(req, res) {
 
     await tx.batch([
         {
-            sql: 'INSERT INTO users (id, fullName, username, email, email_normalized, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-            args: [userId, fullName, username, email, email_normalized, passwordHash]
+            sql: 'INSERT INTO users (id, fullName, username, email, password_hash) VALUES (?, ?, ?, ?, ?)',
+            args: [userId, fullName, username, email, passwordHash]
         },
         {
-            sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
+            sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
             args: [settingsId, userId]
         },
         {
@@ -110,7 +110,7 @@ export async function login(req, res) {
 
   try {
       const result = await db.execute({
-          sql: 'SELECT * FROM users WHERE email_normalized = ?',
+          sql: 'SELECT * FROM users WHERE LOWER(email) = ?',
           args: [email_normalized]
       });
 
@@ -138,14 +138,14 @@ export async function login(req, res) {
 
       // Defensively create user_settings if they are missing
       const settingsResult = await db.execute({
-          sql: 'SELECT userId from user_settings WHERE userId = ?',
+          sql: 'SELECT user_id from user_settings WHERE user_id = ?',
           args: [user.id]
       });
 
       if (settingsResult.rows.length === 0) {
           console.warn(`User ${user.id} is missing a settings row. Auto-creating one now.`);
           await db.execute({
-              sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
+              sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
               args: [crypto.randomUUID(), user.id]
           });
       }
@@ -161,6 +161,76 @@ export async function login(req, res) {
 // Attach the rate limiter middleware to the exported login function
 export const loginWithRateLimit = [rateLimiter, login];
 
+export async function socialLogin(req, res) {
+  const { provider } = req.body;
+  if (!provider || !['google', 'github'].includes(provider)) {
+    return res.status(400).json({ code: 'INVALID_PROVIDER', message: 'Invalid social provider specified.' });
+  }
+
+  const mockUsers = {
+    google: {
+      email: 'social.google@valifi.com',
+      fullName: 'Google User',
+      username: 'googleuser',
+      profilePhotoUrl: 'https://i.pravatar.cc/150?u=google'
+    },
+    github: {
+      email: 'social.github@valifi.com',
+      fullName: 'GitHub User',
+      username: 'githubuser',
+      profilePhotoUrl: 'https://i.pravatar.cc/150?u=github'
+    }
+  };
+
+  const socialUser = mockUsers[provider];
+  const email_normalized = socialUser.email.trim().toLowerCase();
+  
+  let tx;
+  try {
+    const existingUserResult = await db.execute({
+      sql: 'SELECT id FROM users WHERE LOWER(email) = ?',
+      args: [email_normalized]
+    });
+
+    if (existingUserResult.rows.length > 0) {
+      const userId = existingUserResult.rows[0].id;
+      return res.status(200).json({ success: true, token: userId });
+    }
+    
+    // User does not exist, create them
+    tx = await db.transaction('write');
+    const userId = crypto.randomUUID();
+    const settingsId = crypto.randomUUID();
+    const assetId = crypto.randomUUID();
+    const placeholderPassword = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
+
+    await tx.batch([
+        {
+            sql: 'INSERT INTO users (id, fullName, username, email, password_hash, profilePhotoUrl, kycStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            args: [userId, socialUser.fullName, socialUser.username, socialUser.email, placeholderPassword, socialUser.profilePhotoUrl, 'Approved'] // Approve social users by default for demo
+        },
+        {
+            sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
+            args: [settingsId, userId]
+        },
+        {
+            sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, 'Cash', 'USD', 'Cash', 0, 0)`,
+            args: [assetId, userId]
+        }
+    ]);
+    
+    await tx.commit();
+
+    return res.status(201).json({ success: true, token: userId });
+
+  } catch (err) {
+    if (tx) {
+        try { await tx.rollback(); } catch (e) { console.error('Failed to rollback social login transaction:', e); }
+    }
+    console.error(`Social Login Error for ${provider}:`, err);
+    return res.status(500).json({ code: 'INTERNAL_ERROR', message: 'An internal server error occurred during social login.' });
+  }
+}
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body;

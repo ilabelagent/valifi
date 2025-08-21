@@ -51,4 +51,4 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMobileMenuToggle, unread
   );
 };
 
-export default Header;
+export default React.memo(Header);
