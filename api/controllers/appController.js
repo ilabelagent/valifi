@@ -99,8 +99,8 @@ export async function getAppData(req, res) {
             twoFactorAuth: { enabled: false, method: 'none' },
             loginAlerts: true,
             preferences: { currency: 'USD', language: 'en', theme: 'dark', balancePrivacy: false },
-            privacy: {},
-            vaultRecovery: {},
+            privacy: { emailMarketing: true, platformMessages: true, contactAccess: false },
+            vaultRecovery: { email: '', phone: '', pin: '' },
         };
     }
 
