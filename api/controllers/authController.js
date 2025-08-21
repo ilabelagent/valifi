@@ -55,7 +55,7 @@ export async function register(req, res) {
     tx = await db.transaction('write');
 
     const existingUserResult = await tx.execute({
-        sql: 'SELECT id FROM users WHERE email_normalized = ? OR username = ?',
+        sql: 'SELECT id FROM users WHERE LOWER(email) = ? OR username = ?',
         args: [email_normalized, username]
     });
 
@@ -73,8 +73,8 @@ export async function register(req, res) {
 
     await tx.batch([
         {
-            sql: 'INSERT INTO users (id, fullName, username, email, email_normalized, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-            args: [userId, fullName, username, email, email_normalized, passwordHash]
+            sql: 'INSERT INTO users (id, fullName, username, email, password_hash) VALUES (?, ?, ?, ?, ?)',
+            args: [userId, fullName, username, email, passwordHash]
         },
         {
             sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
@@ -110,7 +110,7 @@ export async function login(req, res) {
 
   try {
       const result = await db.execute({
-          sql: 'SELECT * FROM users WHERE email_normalized = ?',
+          sql: 'SELECT * FROM users WHERE LOWER(email) = ?',
           args: [email_normalized]
       });
 
@@ -188,7 +188,7 @@ export async function socialLogin(req, res) {
   let tx;
   try {
     const existingUserResult = await db.execute({
-      sql: 'SELECT id FROM users WHERE email_normalized = ?',
+      sql: 'SELECT id FROM users WHERE LOWER(email) = ?',
       args: [email_normalized]
     });
 
@@ -206,8 +206,8 @@ export async function socialLogin(req, res) {
 
     await tx.batch([
         {
-            sql: 'INSERT INTO users (id, fullName, username, email, email_normalized, password_hash, profilePhotoUrl, kycStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            args: [userId, socialUser.fullName, socialUser.username, socialUser.email, email_normalized, placeholderPassword, socialUser.profilePhotoUrl, 'Approved'] // Approve social users by default for demo
+            sql: 'INSERT INTO users (id, fullName, username, email, password_hash, profilePhotoUrl, kycStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            args: [userId, socialUser.fullName, socialUser.username, socialUser.email, placeholderPassword, socialUser.profilePhotoUrl, 'Approved'] // Approve social users by default for demo
         },
         {
             sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',

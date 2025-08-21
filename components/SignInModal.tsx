@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon } from './icons';
 
@@ -44,6 +45,9 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
         <div 
             className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 p-4 motion-safe:animate-slide-in-fade"
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signin-modal-title"
         >
             <div 
                 className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl shadow-2xl w-full max-w-md m-4 text-foreground p-8"
@@ -52,7 +56,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
                         <ValifiLogo className="w-10 h-10 text-primary" />
-                        <h2 className="text-2xl font-bold">Sign In to Valifi</h2>
+                        <h2 id="signin-modal-title" className="text-2xl font-bold">Sign In to Valifi</h2>
                     </div>
                     <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
                         <CloseIcon className="w-6 h-6" />
@@ -92,11 +96,13 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                         />
                     </div>
 
-                    {error && (
-                        <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
-                            {error}
-                        </div>
-                    )}
+                    <div className="min-h-[52px] flex items-center justify-center">
+                        {error && (
+                            <div className="w-full bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
+                                {error}
+                            </div>
+                        )}
+                    </div>
 
                     <div>
                         <button

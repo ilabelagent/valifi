@@ -179,7 +179,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                                                 <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold">{value}</span>
-                                                    <button onClick={() => handleCopy(value, key)} className="text-slate-500 hover:text-white">
+                                                    <button onClick={() => handleCopy(String(value), key)} className="text-slate-500 hover:text-white">
                                                         <CopyIcon className="w-4 h-4" />
                                                     </button>
                                                 </div>
