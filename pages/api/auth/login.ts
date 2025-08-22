@@ -1,14 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import bcrypt from 'bcryptjs';
 
 // Demo user for testing
 const DEMO_USER = {
   email: 'demo@valifi.net',
-  password: 'demo123',
-  passwordHash: '$2a$10$YourHashHere', // This would be the actual hash
-  id: 'demo_user_001',
-  fullName: 'Demo User',
-  username: 'demouser'
+  password: 'demo123'
 };
 
 export default async function handler(
@@ -31,7 +26,7 @@ export default async function handler(
   try {
     // Check for demo user
     if (email === DEMO_USER.email && password === DEMO_USER.password) {
-      const token = Buffer.from(`${DEMO_USER.id}:${Date.now()}`).toString('base64');
+      const token = Buffer.from(`demo_user:${Date.now()}`).toString('base64');
       
       return res.status(200).json({
         success: true,
@@ -40,11 +35,11 @@ export default async function handler(
       });
     }
 
-    // In production, check database here
-    // For now, return error for non-demo users
+    // For any other email/password, return a 401
+    // In production, you would check against a database here
     return res.status(401).json({
       success: false,
-      message: 'Invalid credentials (use demo@valifi.net / demo123)'
+      message: 'Invalid credentials. Use demo@valifi.net / demo123 for demo access.'
     });
 
   } catch (error) {
