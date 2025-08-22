@@ -69,9 +69,11 @@ export const checkDbStatus = async (): Promise<{ success: boolean; status: strin
         const response = await fetch(`${API_BASE_URL}/health/db`);
         const responseText = await response.text();
 
-        if (!response.ok && !responseText) {
-            return { success: false, status: 'error', message: `API server returned status ${response.status}` };
+        if (!response.ok) {
+            const message = responseText || `API server returned status ${response.status}`;
+            return { success: false, status: 'error', message };
         }
+        
         const json = JSON.parse(responseText);
         return { ...json, success: json.ok };
     } catch (e: any) {
