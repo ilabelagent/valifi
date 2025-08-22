@@ -4,8 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Import the top‑level API router
-import apiRoutes from './routes/index.js';
-import { initializeSchema } from './lib/db.js';
+import apiRoutes from './src/routes/index.js';
+import { initializeSchema } from './src/lib/db.js';
 
 // Load environment variables from a .env file if present
 dotenv.config();
