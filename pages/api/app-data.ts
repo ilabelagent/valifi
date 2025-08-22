@@ -95,7 +95,7 @@ export default async function handler(
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  // Check for auth token (simplified)
+  // Check for auth token (simplified - accepts any token for demo)
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -191,6 +191,11 @@ export default async function handler(
       activities: []
     }
   };
+
+  // Add CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
   res.status(200).json({ success: true, data: appData });
 }
