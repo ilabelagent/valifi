@@ -1,4 +1,5 @@
 
+
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from '../lib/db.js';
@@ -77,7 +78,7 @@ export async function register(req, res) {
             args: [userId, fullName, username, email, passwordHash]
         },
         {
-            sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
+            sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
             args: [settingsId, userId]
         },
         {
@@ -138,14 +139,14 @@ export async function login(req, res) {
 
       // Defensively create user_settings if they are missing
       const settingsResult = await db.execute({
-          sql: 'SELECT user_id from user_settings WHERE user_id = ?',
+          sql: 'SELECT userId from user_settings WHERE userId = ?',
           args: [user.id]
       });
 
       if (settingsResult.rows.length === 0) {
           console.warn(`User ${user.id} is missing a settings row. Auto-creating one now.`);
           await db.execute({
-              sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
+              sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
               args: [crypto.randomUUID(), user.id]
           });
       }
@@ -210,7 +211,7 @@ export async function socialLogin(req, res) {
             args: [userId, socialUser.fullName, socialUser.username, socialUser.email, placeholderPassword, socialUser.profilePhotoUrl, 'Approved'] // Approve social users by default for demo
         },
         {
-            sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
+            sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
             args: [settingsId, userId]
         },
         {

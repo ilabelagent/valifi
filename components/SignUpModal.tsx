@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
 
@@ -6,12 +7,13 @@ interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSignUp: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean, message?: string }>;
+    onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignIn: () => void;
     dbStatus: 'checking' | 'ok' | 'error';
     dbErrorMessage: string;
 }
 
-const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, onOpenSignIn, dbStatus, dbErrorMessage }) => {
+const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, onSocialLogin, onOpenSignIn, dbStatus, dbErrorMessage }) => {
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -36,6 +38,16 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
             setError(result.message || 'An unknown error occurred during registration.');
         }
         // On success, parent component handles the state change and modal closure.
+    };
+    
+    const handleSocialLoginClick = async (provider: string) => {
+        setError('');
+        setIsLoading(true);
+        const result = await onSocialLogin(provider);
+        setIsLoading(false);
+        if (!result.success) {
+            setError(result.message || `Failed to sign up with ${provider}.`);
+        }
     };
     
     const handleOpenSignInClick = useCallback(() => {
@@ -71,16 +83,18 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                 <div className="grid grid-cols-1 gap-4 mb-4">
                     <button
                         type="button"
-                        onClick={() => console.log('Continue with Google')}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
+                        onClick={() => handleSocialLoginClick('google')}
+                        disabled={isLoading || isDbError}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <GoogleIcon className="w-5 h-5" />
                         <span className="text-sm font-semibold">Sign up with Google</span>
                     </button>
                     <button
                         type="button"
-                        onClick={() => console.log('Continue with GitHub')}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors"
+                        onClick={() => handleSocialLoginClick('github')}
+                        disabled={isLoading || isDbError}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <GithubIcon className="w-5 h-5" />
                         <span className="text-sm font-semibold">Sign up with GitHub</span>

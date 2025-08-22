@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ValifiLogo, SparklesIcon, P2PIcon, InvestmentsIcon, NftIcon, HomeIcon, CardIcon, ShieldCheckIcon, LockIcon, TwitterIcon, InstagramIcon, LinkedInIcon, ForbesLogo, TechCrunchLogo, BloombergLogo, BriefcaseIcon, TrendingUpIcon, EyeIcon, ClockIcon, SettingsIcon, CloseIcon, PaletteIcon, GlobeIcon } from './icons';
@@ -1145,6 +1146,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
                 isOpen={isSignUpModalOpen}
                 onClose={handleCloseSignUp}
                 onSignUp={onSignUp}
+                onSocialLogin={onSocialLogin}
                 onOpenSignIn={handleSwitchToSignIn}
                 dbStatus={dbStatus}
                 dbErrorMessage={dbErrorMessage}
