@@ -4,129 +4,56 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light Theme (default) */
   :root {
-    --background: 248 250 252; /* slate-50 */
-    --foreground: 15 23 42;    /* slate-900 */
+    --background: 13 17 23;      /* #0D1117 */
+    --foreground: 230 237 243;   /* #E6EDF3 */
     
-    --card: 255 255 255;       /* white */
-    --card-foreground: 15 23 42;
+    --card: 22 27 34;         /* #161B22 */
+    --card-foreground: 230 237 243;
 
-    --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
+    --popover: 22 27 34;
+    --popover-foreground: 230 237 243;
 
-    --primary: 79 70 229;      /* indigo-600 */
+    --primary: 56 139 253;     /* Accessible Blue: #388BFD */
     --primary-foreground: 255 255 255;
     
-    --secondary: 241 245 249;   /* slate-100 */
-    --secondary-foreground: 15 23 42;
+    --secondary: 33 38 45;      /* #21262D */
+    --secondary-foreground: 230 237 243;
 
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139; /* slate-500 */
+    --muted: 33 38 45;
+    --muted-foreground: 201 209 217; /* #c9d1d9 - Further increased contrast for AA */
 
-    --accent: 241 245 249;
-    --accent-foreground: 15 23 42;
+    --accent: 33 38 45;           /* #21262D - (was #2D333B) */
+    --accent-foreground: 230 237 243;
 
-    --destructive: 220 38 38; /* red-600 */
+    --destructive: 220 38 38;    /* red-600, increased contrast for AA on white text */
     --destructive-foreground: 255 255 255;
     
-    --success: 22 163 74; /* green-600 */
-    --success-foreground: 255 255 255;
+    --success: 52 211 153;       /* emerald-400, increased contrast for AA on dark backgrounds */
+    --success-foreground: 15 23 42; /* slate-900 for high contrast on light green */
     
-    --warning: 245 158 11; /* amber-500 */
+    --warning: 245 158 11;       /* amber-500 */
     --warning-foreground: 255 255 255;
 
-    --border: 226 232 240; /* slate-200 */
-    --input: 226 232 240;
-    --ring: 79 70 229;
-  }
-
-  /* Dark Theme */
-  [data-theme='dark'] {
-    --background: 2 6 23;      /* slate-950 */
-    --foreground: 226 232 240; /* slate-200 */
-
-    --card: 15 23 42;         /* slate-900 */
-    --card-foreground: 226 232 240;
-
-    --popover: 2 6 23;
-    --popover-foreground: 226 232 240;
-
-    --primary: 99 102 241;     /* indigo-500 */
-    --primary-foreground: 15 23 42;
-
-    --secondary: 30 41 59;    /* slate-800 */
-    --secondary-foreground: 248 250 252; /* slate-50 */
-
-    --muted: 30 41 59;
-    --muted-foreground: 148 163 184; /* slate-400 */
-
-    --accent: 30 41 59;
-    --accent-foreground: 248 250 252;
-
-    --destructive: 127 29 29; /* red-900 */
-    --destructive-foreground: 248 250 252;
-    
-    --success: 21 128 61; /* green-700 */
-    --success-foreground: 248 250 252;
-    
-    --warning: 217 119 6; /* amber-600 */
-    --warning-foreground: 255 255 255;
-
-    --border: 30 41 59;
-    --input: 30 41 59;
-    --ring: 99 102 241;
-  }
-      
-  /* Midnight (AMOLED) Theme */
-  [data-theme='midnight'] {
-    --background: 0 0 0;
-    --foreground: 226 232 240;
-    --card: 15 23 42;
-    --card-foreground: 226 232 240;
-    --popover: 5 11 28;
-    --popover-foreground: 226 232 240;
-    --primary: 129 140 248; /* indigo-400 */
-    --primary-foreground: 255 255 255;
-    --secondary: 23 37 64; /* slate-800 adjusted */
-    --secondary-foreground: 248 250 252;
-    --muted: 23 37 64;
-    --muted-foreground: 148 163 184;
-    --accent: 23 37 64;
-    --accent-foreground: 248 250 252;
-    --border: 30 41 59;
-    --input: 23 37 64;
-    --ring: 129 140 248;
+    --border: 48 54 61;          /* #30363D */
+    --input: 13 17 23;
+    --ring: 56 139 253;
   }
 
   body {
     font-family: 'Inter', sans-serif;
     @apply bg-background text-foreground;
-  }
-  
-  [data-theme='dark'] body,
-  [data-theme='midnight'] body {
-     background-image:
+    background-image:
       radial-gradient(circle at 15% 20%, hsla(220, 89%, 61%, 0.1) 0px, transparent 40%),
       radial-gradient(circle at 85% 80%, hsla(245, 89%, 61%, 0.1) 0px, transparent 40%);
     background-size: 150% 150%;
   }
 
   /* Custom Scrollbars */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  [data-theme='dark'] ::-webkit-scrollbar-track,
-  [data-theme='midnight'] ::-webkit-scrollbar-track { background: transparent; }
-  [data-theme='dark'] ::-webkit-scrollbar-thumb,
-  [data-theme='midnight'] ::-webkit-scrollbar-thumb { background: rgb(var(--accent)); border-radius: 4px; }
-  [data-theme='dark'] ::-webkit-scrollbar-thumb:hover,
-  [data-theme='midnight'] ::-webkit-scrollbar-thumb:hover { background: rgb(var(--muted-foreground)); }
-  [data-theme='light'] ::-webkit-scrollbar-track { background: rgb(var(--border)); }
-  [data-theme='light'] ::-webkit-scrollbar-thumb { background: rgb(var(--muted-foreground)); border-radius: 4px; }
-  [data-theme='light'] ::-webkit-scrollbar-thumb:hover { background: rgb(var(--foreground) / 0.5); }
-
-  *, *::before, *::after {
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
+  ::-webkit-scrollbar { @apply w-2 h-2; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-accent rounded; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground; }
 }
 
 @layer components {

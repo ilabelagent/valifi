@@ -2,12 +2,9 @@
 import { Router } from 'express';
 import { checkDbConnection } from '../controllers/healthController.js';
 
-const r = Router();
+const router = Router();
 
-// General API health check
-r.get('/', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+// This is a public endpoint, no auth needed.
+router.get('/db', checkDbConnection);
 
-// Database health check
-r.get('/db', checkDbConnection);
-
-export default r;
+export default router;

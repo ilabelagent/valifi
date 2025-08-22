@@ -12,7 +12,7 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
 );
 
 // MOCK DATA AND CONFIGURATION
-const MOCK_SECRET_PHRASE = "";
+const MOCK_SECRET_PHRASE = "orbit mimic solar custom stable track vendor coral crazy vessel eternal kiwi";
 
 const HYBRID_WALLET_CONFIG = {
     'self-custody': {
@@ -35,7 +35,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
                .map(({ value }) => value);
 };
 
-// --- SUB-COMPONENTS ---
+// --- SUB-COMPONENTS (Moved to top-level) ---
 
 const TotalBalancePanel: React.FC<{ balance: number }> = ({ balance }) => {
     const { formatCurrency } = useCurrency();
