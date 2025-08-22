@@ -6,7 +6,9 @@ const processLoan = (loan) => ({
     amount: Number(loan.amount),
     term: Number(loan.term),
     interestRate: Number(loan.interestRate),
-    details: typeof loan.details === 'string' ? JSON.parse(loan.details) : loan.details,
+    repaymentProgress: Number(loan.repaymentProgress || 0),
+    finalAmountRepaid: Number(loan.finalAmountRepaid || 0),
+    interestPaid: Number(loan.interestPaid || 0),
 });
 
 export async function getLoans(req, res) {
@@ -55,14 +57,17 @@ export async function applyForLoan(req, res) {
     const id = crypto.randomUUID();
     const loan = {
         id, userId: user.id, amount: amt, term: Number(term), interestRate: 5.0, collateralAssetId,
-        status: 'Pending', reason, createdAt: new Date().toISOString(), details: {}
+        status: 'Pending', reason, createdAt: new Date().toISOString()
     };
 
     await tx.execute({
-        sql: `INSERT INTO loan_applications (id, userId, amount, term, interestRate, collateralAssetId, status, reason, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [id, user.id, amt, Number(term), 5.0, collateralAssetId, 'Pending', reason, '{}']
+        sql: `INSERT INTO loan_applications (id, userId, amount, term, interestRate, collateralAssetId, status, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, user.id, amt, Number(term), 5.0, collateralAssetId, 'Pending', reason]
     });
     
+    // Mark collateral asset
+    await tx.execute({sql: `UPDATE assets SET status = 'Collateralized' WHERE id = ?`, args: [collateralAssetId]});
+
     await tx.commit();
     return res.status(202).json({ success: true, data: loan });
   } catch(err) {
@@ -75,5 +80,67 @@ export async function applyForLoan(req, res) {
 }
 
 export async function repayLoan(req, res) {
-    return res.status(501).json({ success: false, message: 'Not implemented' });
+    const { id } = req.params;
+    const { paymentAmount } = req.body;
+    const userId = req.user.id;
+    const amountToPay = Number(paymentAmount);
+
+    if (!amountToPay || amountToPay <= 0) {
+        return res.status(400).json({ success: false, message: 'Invalid payment amount.' });
+    }
+
+    let tx;
+    try {
+        tx = await db.transaction('write');
+        
+        const [loanResult, cashResult] = await Promise.all([
+             tx.execute({ sql: 'SELECT * FROM loan_applications WHERE id = ? AND userId = ?', args: [id, userId] }),
+             tx.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND type = "Cash"', args: [userId] })
+        ]);
+
+        if (loanResult.rows.length === 0) {
+            await tx.rollback();
+            return res.status(404).json({ success: false, message: 'Active loan not found.' });
+        }
+        if (cashResult.rows.length === 0 || Number(cashResult.rows[0].balance) < amountToPay) {
+            await tx.rollback();
+            return res.status(400).json({ success: false, message: 'Insufficient cash balance for repayment.' });
+        }
+
+        const loan = processLoan(loanResult.rows[0]);
+        const totalDue = loan.amount * (1 + loan.interestRate / 100);
+        const totalPaid = loan.finalAmountRepaid; // Assuming details json stores this
+        const remainingDue = totalDue - totalPaid;
+
+        if (amountToPay > remainingDue) {
+            await tx.rollback();
+            return res.status(400).json({ success: false, message: `Payment of ${amountToPay} exceeds remaining balance of ${remainingDue}.` });
+        }
+        
+        // Debit user's cash
+        await tx.execute({ sql: 'UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = "Cash"', args: [amountToPay, amountToPay, userId] });
+
+        // Update loan progress
+        const newTotalPaid = totalPaid + amountToPay;
+        const newProgress = (newTotalPaid / totalDue) * 100;
+        const isFullyRepaid = newTotalPaid >= totalDue;
+
+        await tx.execute({
+            sql: `UPDATE loan_applications SET finalAmountRepaid = ?, repaymentProgress = ?, status = ? WHERE id = ?`,
+            args: [newTotalPaid, newProgress, isFullyRepaid ? 'Repaid' : loan.status, id]
+        });
+
+        if (isFullyRepaid) {
+             // Un-collateralize asset
+            await tx.execute({ sql: `UPDATE assets SET status = 'Active' WHERE id = ? AND status = 'Collateralized'`, args: [loan.collateralAssetId] });
+        }
+        
+        await tx.commit();
+        res.status(200).json({ success: true, message: 'Payment successful.' });
+
+    } catch (err) {
+        if (tx) { try { await tx.rollback(); } catch(e) {} }
+        console.error('Error repaying loan:', err);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
 }

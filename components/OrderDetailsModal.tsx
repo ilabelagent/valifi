@@ -4,6 +4,7 @@ import { CloseIcon, ClockIcon, CopyIcon, ChatBubbleIcon, GavelIcon, PaperclipIco
 import { useCurrency } from './CurrencyContext';
 import { timeAgo } from './utils';
 import P2PChatInterface from './P2PChatInterface';
+import * as apiService from '../services/api';
 
 interface OrderDetailsModalProps {
     isOpen: boolean;
@@ -86,57 +87,54 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
         }
     }
 
-    const handleMarkAsPaid = () => {
-        const updatedOrder = { ...order, status: 'Payment Sent' as const, paymentSentAt: new Date().toISOString() };
-        onUpdateOrder(updatedOrder);
-        addNotification({
-            type: 'p2p',
-            title: 'Payment Marked as Sent',
-            description: `You've marked order ${order.id.slice(-6)} as paid. The seller has been notified.`
-        });
+    const handleMarkAsPaid = async () => {
+        try {
+            const updatedOrder = await apiService.updateOrderStatus(order.id, 'Payment Sent');
+            onUpdateOrder(updatedOrder);
+            addNotification({
+                type: 'p2p',
+                title: 'Payment Marked as Sent',
+                description: `You've marked order ${order.id.slice(-6)} as paid. The seller has been notified.`
+            });
+        } catch (error) {
+            console.error(error);
+            addNotification({ type: 'system', title: 'Action Failed', description: 'Could not mark order as paid.' });
+        }
     };
 
-    const handleReleaseEscrow = () => {
-        const updatedOrder = { ...order, status: 'Escrow Released' as const };
-        onUpdateOrder(updatedOrder);
+    const handleReleaseEscrow = async () => {
+        try {
+            const updatedOrder = await apiService.updateOrderStatus(order.id, 'Escrow Released');
+            onUpdateOrder(updatedOrder);
+        } catch (error) {
+            console.error(error);
+            addNotification({ type: 'system', title: 'Action Failed', description: 'Could not release escrow.' });
+        }
     };
     
-    const handleSendMessage = (text: string) => {
-        const newMessage: P2PChatMessage = {
-            id: `msg_${Date.now()}`,
+    const handleSendMessage = async (text: string) => {
+        const optimisticMessage: P2PChatMessage = {
+            id: `msg_temp_${Date.now()}`,
             orderId: order.id,
             authorId: currentUser.id,
             authorName: currentUser.name,
             text,
             timestamp: new Date().toISOString()
         };
-        setLocalMessages(prev => [...prev, newMessage]);
+        setLocalMessages(prev => [...prev, optimisticMessage]);
 
-        // Simulate counterparty typing and replying
-        setTimeout(() => {
-            const typingMessage: P2PChatMessage = {
-                id: `msg_typing_${Date.now()}`,
-                orderId: order.id,
-                authorId: counterparty.id,
-                authorName: counterparty.name,
-                text: '',
-                timestamp: new Date().toISOString(),
-                isTyping: true,
-            };
-            setLocalMessages(prev => [...prev, typingMessage]);
-
-            setTimeout(() => {
-                 const replyMessage: P2PChatMessage = {
-                    id: `msg_reply_${Date.now()}`,
-                    orderId: order.id,
-                    authorId: counterparty.id,
-                    authorName: counterparty.name,
-                    text: 'Okay, I see your message. I will check it now.',
-                    timestamp: new Date().toISOString()
-                };
-                setLocalMessages(prev => [...prev.filter(m => !m.isTyping), replyMessage]);
-            }, 2000);
-        }, 1000);
+        try {
+            const savedMessage = await apiService.postChatMessage(order.id, text);
+            setLocalMessages(prev => prev.map(m => m.id === optimisticMessage.id ? savedMessage : m));
+        } catch (error) {
+            console.error("Failed to send message:", error);
+            setLocalMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+            addNotification({
+                type: 'system',
+                title: 'Message Failed',
+                description: 'Your message could not be sent. Please try again.'
+            });
+        }
     };
 
     if (!isOpen) return null;

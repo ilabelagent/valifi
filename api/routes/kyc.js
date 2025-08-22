@@ -1,10 +1,3 @@
-import { Router } from 'express';
-import { submitKyc } from '../controllers/kycController.js';
-import { protect } from '../middleware/auth.js';
-
-const router = Router();
-
-// A GET /status endpoint could also be added.
-router.post('/submit', protect, submitKyc);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

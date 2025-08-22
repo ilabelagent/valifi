@@ -1,11 +1,3 @@
-import { Router } from 'express';
-import { getBankAccounts, linkBankAccount } from '../controllers/bankingController.js';
-import { protect } from '../middleware/auth.js';
-
-const router = Router();
-
-router.get('/accounts', protect, getBankAccounts);
-router.post('/accounts', protect, linkBankAccount);
-// DELETE /accounts/:id would go here in a full implementation
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

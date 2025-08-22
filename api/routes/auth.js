@@ -1,12 +1,3 @@
-
-import { Router } from 'express';
-import { loginWithRateLimit, register, forgotPassword, socialLogin } from '../controllers/authController.js';
-
-const router = Router();
-
-router.post('/login', loginWithRateLimit);
-router.post('/register', register);
-router.post('/social-login', socialLogin);
-router.post('/forgot-password', forgotPassword);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

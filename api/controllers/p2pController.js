@@ -113,13 +113,148 @@ export async function createOrder(req, res) {
   }
 }
 
-// --- Placeholder functions for other P2P actions ---
 export async function getMyOrders(req, res) { 
     const result = await db.execute({ sql: `SELECT * from p2p_orders WHERE buyerId = ? OR sellerId = ?`, args: [req.user.id, req.user.id]});
     res.status(200).json({ success: true, data: { orders: result.rows } });
 }
-export async function updateOrderStatus(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
-export async function postChatMessage(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
+
+export async function updateOrderStatus(req, res) {
+  const { id } = req.params;
+  const { status } = req.body;
+  const userId = req.user.id;
+
+  if (!status || !['Payment Sent', 'Escrow Released', 'Cancelled'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid status provided.' });
+  }
+
+  let tx;
+  try {
+    tx = await db.transaction('write');
+    const orderResult = await tx.execute({ sql: `SELECT o.*, offer.assetTicker FROM p2p_orders o JOIN p2p_offers offer ON o.offerId = offer.id WHERE o.id = ?`, args: [id] });
+    if (orderResult.rows.length === 0) {
+      await tx.rollback();
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    const order = orderResult.rows[0];
+
+    const isBuyer = order.buyerId === userId;
+    const isSeller = order.sellerId === userId;
+    
+    if (status === 'Payment Sent' && isBuyer && order.status === 'Pending Payment') {
+        await tx.execute({ sql: `UPDATE p2p_orders SET status = 'Payment Sent', completedAt = CURRENT_TIMESTAMP WHERE id = ?`, args: [id] });
+    } else if (status === 'Escrow Released' && isSeller && order.status === 'Payment Sent') {
+        const ticker = order.assetTicker;
+        await tx.execute({
+            sql: `UPDATE assets SET balanceInEscrow = balanceInEscrow - ? WHERE userId = ? AND ticker = ?`,
+            args: [order.cryptoAmount, order.sellerId, ticker]
+        });
+
+        const buyerAssetResult = await tx.execute({ sql: 'SELECT id FROM assets WHERE userId = ? AND ticker = ?', args: [order.buyerId, ticker] });
+        if(buyerAssetResult.rows.length > 0) {
+             await tx.execute({ sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND ticker = ?`, args: [order.cryptoAmount, order.fiatAmount, order.buyerId, ticker] });
+        } else {
+             await tx.execute({ sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, ?, ?, 'Crypto', ?, ?)`, args: [crypto.randomUUID(), order.buyerId, ticker, ticker, order.cryptoAmount, order.fiatAmount] });
+        }
+        await tx.execute({ sql: `UPDATE p2p_orders SET status = 'Completed', completedAt = CURRENT_TIMESTAMP WHERE id = ?`, args: [id] });
+    } else if (status === 'Cancelled' && (isBuyer || isSeller) && ['Pending Payment', 'Payment Sent'].includes(order.status)) {
+        const ticker = order.assetTicker;
+        await tx.execute({
+            sql: 'UPDATE assets SET balanceInEscrow = balanceInEscrow - ?, balance = balance + ? WHERE userId = ? AND ticker = ?',
+            args: [order.cryptoAmount, order.cryptoAmount, order.sellerId, ticker]
+        });
+        await tx.execute({ sql: 'UPDATE p2p_offers SET availableAmount = availableAmount + ? WHERE id = ?', args: [order.cryptoAmount, order.offerId] });
+        await tx.execute({ sql: `UPDATE p2p_orders SET status = 'Cancelled', completedAt = CURRENT_TIMESTAMP WHERE id = ?`, args: [id] });
+    } else {
+        await tx.rollback();
+        return res.status(403).json({ success: false, message: 'Action not allowed at this stage or you are not authorized.' });
+    }
+
+    await tx.commit();
+    const updatedOrderResult = await db.execute({ sql: 'SELECT * FROM p2p_orders WHERE id = ?', args: [id] });
+    res.status(200).json({ success: true, data: updatedOrderResult.rows[0] });
+  } catch(err) {
+      if (tx) { try { await tx.rollback(); } catch(e) {} }
+      console.error('Error updating order status:', err);
+      res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+  }
+}
+
+export async function postChatMessage(req, res) { 
+    const { id: orderId } = req.params;
+    const { text } = req.body;
+    const authorId = req.user.id;
+    const authorName = req.user.username;
+
+    if (!text) {
+        return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
+    }
+
+    try {
+        const messageId = `msg_${crypto.randomUUID()}`;
+        const timestamp = new Date().toISOString();
+        
+        await db.execute({
+            sql: `INSERT INTO p2p_chat_messages (id, orderId, authorId, text, timestamp) VALUES (?, ?, ?, ?, ?)`,
+            args: [messageId, orderId, authorId, text, timestamp]
+        });
+        
+        const newMessage = { id: messageId, orderId, authorId, authorName, text, timestamp };
+        // In a real app, you would also use websockets to push this message to the other user.
+        res.status(201).json({ success: true, data: { message: newMessage } });
+    } catch(err) {
+        console.error('Error posting chat message:', err);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+}
+
+export async function createOffer(req, res) {
+    const userId = req.user.id;
+    const { type, assetTicker, fiatCurrency, price, totalAmount, ...otherDetails } = req.body;
+    
+    let tx;
+    try {
+        tx = await db.transaction('write');
+        if (type === 'SELL') {
+            const assetResult = await tx.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND ticker = ?', args: [userId, assetTicker] });
+            if (assetResult.rows.length === 0 || Number(assetResult.rows[0].balance) < totalAmount) {
+                await tx.rollback();
+                return res.status(400).json({ success: false, message: 'Insufficient asset balance to create sell offer.' });
+            }
+            await tx.execute({ sql: 'UPDATE assets SET balance = balance - ?, balanceInEscrow = balanceInEscrow + ? WHERE userId = ? AND ticker = ?', args: [totalAmount, totalAmount, userId, assetTicker]});
+        }
+        
+        const offerId = crypto.randomUUID();
+        await tx.execute({
+            sql: `INSERT INTO p2p_offers (id, userId, type, assetTicker, fiatCurrency, price, availableAmount, minOrder, maxOrder, paymentTimeLimitMinutes, terms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [offerId, userId, type, assetTicker, fiatCurrency, price, totalAmount, otherDetails.minOrder, otherDetails.maxOrder, otherDetails.paymentTimeLimitMinutes, otherDetails.terms]
+        });
+
+        await tx.commit();
+        res.status(201).json({ success: true, message: 'Offer created successfully.' });
+    } catch(err) {
+        if(tx) await tx.rollback();
+        console.error('Error creating offer:', err);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+}
+
+export async function addPaymentMethod(req, res) { 
+    const userId = req.user.id;
+    const { methodType, nickname, country, details } = req.body;
+    const id = crypto.randomUUID();
+    await db.execute({
+        sql: `INSERT INTO p2p_payment_methods (id, userId, methodType, nickname, country, details) VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [id, userId, methodType, nickname, country, JSON.stringify(details)]
+    });
+    res.status(201).json({ success: true, data: { id, userId, methodType, nickname, country, details } });
+}
+
+export async function deletePaymentMethod(req, res) { 
+    const { id } = req.params;
+    await db.execute({ sql: 'DELETE FROM p2p_payment_methods WHERE id = ? AND userId = ?', args: [id, req.user.id]});
+    res.status(204).send();
+}
+
 export async function getPaymentMethods(req, res) { 
     const result = await db.execute({ sql: `SELECT * from p2p_payment_methods WHERE userId = ?`, args: [req.user.id]});
     res.status(200).json({ success: true, data: { paymentMethods: result.rows.map(pm => ({...pm, details: JSON.parse(pm.details)})) } }); 

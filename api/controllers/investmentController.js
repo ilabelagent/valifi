@@ -159,8 +159,98 @@ export async function investSpectrumPlan(req, res) {
     }
 }
 
-export async function stakeCrypto(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
-export async function stakeStock(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
-export async function investReit(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
-export async function investNftFractional(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
-export async function swapAssets(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
+const createInvestment = async (res, userId, amount, assetType, name, ticker, details, durationDays = 90) => {
+    let tx;
+    try {
+        tx = await db.transaction('write');
+        const cashResult = await tx.execute({ sql: 'SELECT balance FROM assets WHERE userId = ? AND type = "Cash"', args: [userId] });
+        if (cashResult.rows.length === 0 || Number(cashResult.rows[0].balance) < amount) {
+            await tx.rollback();
+            return res.status(400).json({ success: false, message: 'Insufficient cash balance.' });
+        }
+        
+        await tx.execute({ sql: 'UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE userId = ? AND type = "Cash"', args: [amount, amount, userId] });
+
+        const assetId = crypto.randomUUID();
+        const maturityDate = new Date();
+        maturityDate.setDate(maturityDate.getDate() + durationDays);
+
+        await tx.execute({
+            sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD, initialInvestment, status, maturityDate, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [assetId, userId, name, ticker, assetType, 0, amount, amount, 'Active', maturityDate.toISOString(), JSON.stringify(details)]
+        });
+        
+        await tx.commit();
+        res.status(201).json({ success: true, message: `${assetType} investment successful.` });
+    } catch (err) {
+        if (tx) { try { await tx.rollback(); } catch (e) {} }
+        console.error(`Error creating ${assetType} investment:`, err);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+};
+
+export async function stakeCrypto(req, res) { 
+    const { assetId, amount, duration, payoutDestination } = req.body;
+    const crypto = (await db.execute({sql: 'SELECT * FROM stakable_crypto WHERE id = ?', args: [assetId]})).rows[0];
+    const details = { apr: crypto.apr, payoutDestination };
+    await createInvestment(res, req.user.id, amount, 'Crypto', `${crypto.name} Staking`, crypto.ticker, details, duration);
+}
+
+export async function stakeStock(req, res) { 
+    const { stockTicker, amount } = req.body;
+    const stock = (await db.execute({sql: 'SELECT * FROM stakable_stocks WHERE ticker = ?', args: [stockTicker]})).rows[0];
+    const details = { stakedOn: new Date().toISOString(), monthlyROI: 10, nextPayoutDate: new Date(Date.now() + 30 * 24*60*60*1000).toISOString() }; // Mock ROI
+    await createInvestment(res, req.user.id, amount, 'Stock', `${stock.name} Stake`, stock.ticker, details, 365);
+}
+
+export async function investReit(req, res) { 
+    const { propertyId, amount } = req.body;
+    const property = (await db.execute({sql: 'SELECT * FROM reit_properties WHERE id = ?', args: [propertyId]})).rows[0];
+    const details = { propertyId, sharesOwned: amount }; // Shares are 1:1 with USD for simplicity
+    await createInvestment(res, req.user.id, amount, 'REIT', property.name, `REIT-${property.id.slice(0,4)}`, details, 365 * 2);
+}
+
+export async function investNftFractional(req, res) { 
+    const { nftId, amount } = req.body;
+    const nft = (await db.execute({sql: 'SELECT * FROM investable_nfts WHERE id = ?', args: [nftId]})).rows[0];
+    const sharePrice = nft.floorPrice / nft.totalShares;
+    const sharesOwned = amount / sharePrice;
+    const details = { investableNFTId: nftId, sharesOwned };
+    await createInvestment(res, req.user.id, amount, 'NFT', nft.title, `FNFT-${nft.id.slice(0,4)}`, details, 180);
+}
+
+export async function swapAssets(req, res) { 
+    const { fromTicker, toTicker, fromAmount } = req.body;
+    const userId = req.user.id;
+    let tx;
+    try {
+        tx = await db.transaction('write');
+        const assets = await tx.execute({ sql: 'SELECT * FROM assets WHERE userId = ? AND (ticker = ? OR ticker = ?)', args: [userId, fromTicker, toTicker] });
+        const fromAsset = assets.rows.find(a => a.ticker === fromTicker);
+        const toAsset = assets.rows.find(a => a.ticker === toTicker);
+        
+        if (!fromAsset || fromAsset.balance < fromAmount) {
+            await tx.rollback();
+            return res.status(400).json({ success: false, message: 'Insufficient balance for swap.' });
+        }
+        
+        // Mock price conversion
+        const fromPrice = fromAsset.valueUSD / fromAsset.balance;
+        const toPrice = (toAsset ? toAsset.valueUSD / toAsset.balance : 1); // Assume 1 if toAsset is cash or not present
+        const toAmount = (fromAmount * fromPrice) / toPrice;
+
+        await tx.execute({ sql: 'UPDATE assets SET balance = balance - ?, valueUSD = valueUSD - ? WHERE id = ?', args: [fromAmount, fromAmount * fromPrice, fromAsset.id] });
+
+        if(toAsset) {
+            await tx.execute({ sql: 'UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE id = ?', args: [toAmount, fromAmount * fromPrice, toAsset.id] });
+        } else {
+             await tx.execute({ sql: `INSERT INTO assets (id, userId, name, ticker, type, balance, valueUSD) VALUES (?, ?, ?, ?, ?, ?, ?)`, args: [crypto.randomUUID(), userId, toTicker, toTicker, 'Crypto', toAmount, fromAmount * fromPrice] });
+        }
+        await tx.commit();
+        res.status(200).json({ success: true, message: 'Swap successful.' });
+    } catch(err) {
+        if(tx) await tx.rollback();
+        console.error('Swap error:', err);
+        res.status(500).json({ success: false, message: 'An error occurred during the swap.' });
+    }
+}

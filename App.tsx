@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
@@ -278,6 +279,12 @@ const AppContent: React.FC = () => {
         return { success: false, message: result.message };
     }, [loadAppData]);
 
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('valifi_token');
+        setUser(null);
+        _setCurrentView('dashboard');
+    }, []);
+
     const onTransferToMain = useCallback(async (assetId: string) => {
         // await apiService.transferToMain(assetId);
         if (user?.token) loadAppData(user.token);
@@ -380,6 +387,7 @@ const AppContent: React.FC = () => {
             investableNFTs={investableNFTs}
             spectrumPlans={spectrumPlans}
             stakableCrypto={stakableCrypto}
+            onLogout={handleLogout}
         >
             {renderView()}
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CloseIcon, KeyIcon } from './icons';
+import * as apiService from '../services/api';
 
 interface ImportSeedPhraseModalProps {
   isOpen: boolean;
@@ -14,7 +15,7 @@ const ImportSeedPhraseModal: React.FC<ImportSeedPhraseModalProps> = ({ isOpen, o
 
   if (!isOpen) return null;
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const words = seedPhrase.trim().split(/\s+/);
     if (words.length !== 12 && words.length !== 24) {
       setError('Please enter a valid 12 or 24-word seed phrase.');
@@ -23,12 +24,16 @@ const ImportSeedPhraseModal: React.FC<ImportSeedPhraseModalProps> = ({ isOpen, o
     setError('');
     setIsImporting(true);
     
-    setTimeout(() => {
-        alert(`Wallet imported successfully from ${walletName}! Balances will now be tracked.`);
-        setIsImporting(false);
+    try {
+        const result = await apiService.importWallet(seedPhrase, walletName);
+        alert(result.message || `Wallet imported successfully from ${walletName}! Balances will now be tracked.`);
         setSeedPhrase('');
         onClose();
-    }, 1500);
+    } catch (err: any) {
+        setError(err.message || 'Failed to import wallet.');
+    } finally {
+        setIsImporting(false);
+    }
   };
   
   return (
@@ -50,7 +55,7 @@ const ImportSeedPhraseModal: React.FC<ImportSeedPhraseModalProps> = ({ isOpen, o
             />
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
             <div className="text-xs p-3 rounded-lg bg-slate-900/50 text-slate-400 border border-slate-700">
-                <p className="font-semibold">Your seed phrase is encrypted and stored securely. Valifi never has access to your funds or wallet without your permission.</p>
+                <p className="font-semibold">Your seed phrase is encrypted and never stored on our servers. It is used only once to establish a secure connection for balance tracking.</p>
             </div>
             <button
               onClick={handleImport}

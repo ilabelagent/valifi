@@ -9,8 +9,9 @@ import crypto from 'crypto';
  * ONE-TIME DATA REPAIR SCRIPT
  * ==========================================================================================
  * This script performs two essential data migration tasks:
- * 1. Backfills the `email_normalized` column for all existing users by lowercasing their email.
- * 2. Finds any users who are missing a corresponding row in `user_settings` and creates one
+ * 1. Adds the `email_normalized` column and an index to the `users` table if they don't exist.
+ * 2. Backfills the `email_normalized` column for all existing users by lowercasing their email.
+ * 3. Finds any users who are missing a corresponding row in `user_settings` and creates one
  *    for them with default values.
  *
  * HOW TO RUN:
@@ -34,6 +35,13 @@ async function repairData() {
     try {
         tx = await db.transaction('write');
         console.log('Transaction started.');
+        
+        // --- Task 0: Ensure schema is up-to-date ---
+        console.log('Verifying users table schema...');
+        await tx.execute("ALTER TABLE users ADD COLUMN email_normalized TEXT");
+        await tx.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_normalized ON users(email_normalized)");
+        console.log('Schema verification complete. `email_normalized` column and index are present.');
+
 
         // --- Task 1: Backfill email_normalized ---
         console.log('Fetching users with missing email_normalized...');
@@ -45,12 +53,14 @@ async function repairData() {
         if (usersToNormalize.rows.length > 0) {
             console.log(`Found ${usersToNormalize.rows.length} users to update with normalized emails.`);
             for (const user of usersToNormalize.rows) {
-                const normalizedEmail = user.email.trim().toLowerCase();
-                await tx.execute({
-                    sql: 'UPDATE users SET email_normalized = ? WHERE id = ?',
-                    args: [normalizedEmail, user.id]
-                });
-                console.log(`  - Normalized email for user ${user.id}`);
+                if(user.email) {
+                    const normalizedEmail = user.email.trim().toLowerCase();
+                    await tx.execute({
+                        sql: 'UPDATE users SET email_normalized = ? WHERE id = ?',
+                        args: [normalizedEmail, user.id]
+                    });
+                    console.log(`  - Normalized email for user ${user.id}`);
+                }
             }
         } else {
             console.log('All users already have normalized emails. No updates needed.');
@@ -62,8 +72,8 @@ async function repairData() {
         const usersMissingSettings = await tx.execute({
             sql: `
                 SELECT u.id FROM users u
-                LEFT JOIN user_settings us ON u.id = us.user_id
-                WHERE us.user_id IS NULL
+                LEFT JOIN user_settings us ON u.id = us.userId
+                WHERE us.userId IS NULL
             `,
             args: []
         });
@@ -72,7 +82,7 @@ async function repairData() {
             console.log(`Found ${usersMissingSettings.rows.length} users missing settings. Creating default settings...`);
             for (const user of usersMissingSettings.rows) {
                 await tx.execute({
-                    sql: 'INSERT INTO user_settings (id, user_id) VALUES (?, ?)',
+                    sql: 'INSERT INTO user_settings (id, userId) VALUES (?, ?)',
                     args: [crypto.randomUUID(), user.id]
                 });
                 console.log(`  - Created settings for user ${user.id}`);
@@ -91,13 +101,19 @@ async function repairData() {
         console.log('---');
 
     } catch (error) {
-        console.error('An error occurred during the repair process:', error);
-        if (tx) {
-            try {
-                await tx.rollback();
-                console.error('Transaction has been rolled back.');
-            } catch (rollbackError) {
-                console.error('Failed to rollback transaction:', rollbackError);
+        // Suppress "duplicate column name" error as it's expected if the migration has run before.
+        if (error.message && error.message.includes('duplicate column name')) {
+             console.log('`email_normalized` column already exists, skipping ALTER TABLE.');
+             if(tx) await tx.commit(); // Commit other potential changes
+        } else {
+            console.error('An error occurred during the repair process:', error);
+            if (tx) {
+                try {
+                    await tx.rollback();
+                    console.error('Transaction has been rolled back.');
+                } catch (rollbackError) {
+                    console.error('Failed to rollback transaction:', rollbackError);
+                }
             }
         }
     }

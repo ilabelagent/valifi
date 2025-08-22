@@ -2,9 +2,12 @@ import crypto from 'crypto';
 import { db } from '../lib/db.js';
 
 export async function reviewLoan(req, res) {
-  const { loanId, approve } = req.body;
+  const { loanId, approve, rejectionReason } = req.body;
   if (!loanId || approve === undefined) {
     return res.status(400).json({ success: false, message: 'loanId and approve flag are required' });
+  }
+  if (!approve && !rejectionReason) {
+    return res.status(400).json({ success: false, message: 'Rejection reason is required when rejecting a loan.' });
   }
 
   let tx;
@@ -21,11 +24,27 @@ export async function reviewLoan(req, res) {
     }
     const loan = loanResult.rows[0];
     const loanAmount = Number(loan.amount);
+    
+    if (loan.status !== 'Pending') {
+        await tx.rollback();
+        return res.status(400).json({ success: false, message: `Loan is not in 'Pending' state. Current state: ${loan.status}` });
+    }
 
     if (approve) {
+      const termInDays = Number(loan.term);
+      const startDate = new Date();
+      const dueDate = new Date(startDate);
+      dueDate.setDate(startDate.getDate() + termInDays);
+
+      const details = {
+          startDate: startDate.toISOString(),
+          dueDate: dueDate.toISOString(),
+          repaymentProgress: 0,
+      };
+
       await tx.execute({
-        sql: `UPDATE loan_applications SET status = 'Active', details = json_set(details, '$.startDate', ?) WHERE id = ?`,
-        args: [new Date().toISOString(), loanId],
+        sql: `UPDATE loan_applications SET status = 'Active', details = ? WHERE id = ?`,
+        args: [JSON.stringify(details), loanId],
       });
       await tx.execute({
         sql: `UPDATE assets SET balance = balance + ?, valueUSD = valueUSD + ? WHERE userId = ? AND type = 'Cash'`,
@@ -33,8 +52,8 @@ export async function reviewLoan(req, res) {
       });
     } else {
       await tx.execute({
-        sql: `UPDATE loan_applications SET status = 'Rejected' WHERE id = ?`,
-        args: [loanId],
+        sql: `UPDATE loan_applications SET status = 'Rejected', rejectionReason = ? WHERE id = ?`,
+        args: [rejectionReason, loanId],
       });
       // Return collateralized asset to active status
       await tx.execute({
@@ -54,8 +73,30 @@ export async function reviewLoan(req, res) {
   }
 }
 
-// Other admin functions would go here and also include robust error handling
-export async function reviewKyc(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
+
+export async function reviewKyc(req, res) {
+  const { userId, approve, rejectionReason } = req.body;
+  if (!userId || approve === undefined) {
+    return res.status(400).json({ success: false, message: 'userId and approve status are required' });
+  }
+  if (!approve && !rejectionReason) {
+      return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+  }
+  
+  const newStatus = approve ? 'Approved' : 'Rejected';
+  
+  try {
+      await db.execute({
+          sql: `UPDATE users SET kycStatus = ?, kycRejectionReason = ? WHERE id = ?`,
+          args: [newStatus, approve ? null : rejectionReason, userId]
+      });
+      res.status(200).json({ success: true, message: `User KYC status updated to ${newStatus}` });
+  } catch (err) {
+      console.error('Error reviewing KYC:', err);
+      res.status(500).json({ success: false, message: 'An internal error occurred.' });
+  }
+}
+
 export async function listUsers(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
 export async function addReit(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }
 export async function watchWallet(req, res) { res.status(501).json({ success: false, message: 'Not implemented' }); }

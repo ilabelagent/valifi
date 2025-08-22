@@ -1,11 +1,3 @@
-import { Router } from 'express';
-import { sendFromWallet, createWallet } from '../controllers/walletController.js';
-import { protect } from '../middleware/auth.js';
-
-const router = Router();
-
-// In a real app, you'd have GET /assets, POST /create, POST /import etc.
-router.post('/send', protect, sendFromWallet);
-router.post('/create', protect, createWallet);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

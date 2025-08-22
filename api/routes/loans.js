@@ -1,11 +1,3 @@
-import { Router } from 'express';
-import { getLoans, applyForLoan, repayLoan } from '../controllers/loansController.js';
-import { protect } from '../middleware/auth.js';
-
-const router = Router();
-
-router.get('/', protect, getLoans);
-router.post('/apply', protect, applyForLoan);
-router.post('/:id/repay', protect, repayLoan);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

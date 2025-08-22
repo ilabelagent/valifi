@@ -1,10 +1,3 @@
-import { Router } from 'express';
-import { callCoPilot, callTaxAdvisor } from '../controllers/aiController.js';
-import { protect } from '../middleware/auth.js';
-
-const router = Router();
-
-router.post('/copilot', protect, callCoPilot);
-router.post('/tax-advisor', protect, callTaxAdvisor);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.

@@ -1,6 +1,4 @@
-
-
-import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
+import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage, P2PChatMessage, StakableStock, StakableAsset, REITProperty, InvestableNFT } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -144,6 +142,44 @@ export const createWallet = async (): Promise<{ secretPhrase: string; assets: an
     return handleDataResponse(response);
 };
 
+export const importWallet = async (secretPhrase: string, source: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/wallet/import`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secretPhrase, source }),
+    });
+    return handleRootResponse(response);
+};
+
+
+// --- Funds Management ---
+export const requestDeposit = async (data: { amount: number, type: 'fiat' | 'crypto', coinTicker?: string }): Promise<{ success: boolean, message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/funds/deposit-intent`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return handleRootResponse(response);
+};
+
+export const requestWithdrawal = async (data: { amount: number, type: 'fiat' | 'crypto', destination: string, coinTicker?: string, coinAmount?: number }): Promise<{ success: boolean, message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/funds/withdraw-request`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return handleRootResponse(response);
+};
+
+export const internalTransfer = async (recipient: string, amount: number, note: string): Promise<{ success: boolean, message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/funds/internal-transfer`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientIdentifier: recipient, amountUSD: amount, note }),
+    });
+    return handleRootResponse(response);
+};
+
 
 // --- WRITE OPERATIONS ---
 
@@ -164,6 +200,27 @@ export const onInitiateTrade = async (offerId: string, amount: number, paymentMe
         body: JSON.stringify({ offerId, amount, paymentMethodId }),
     });
     return handleDataResponse(response);
+};
+
+// --- P2P ---
+export const updateOrderStatus = async (orderId: string, status: 'Payment Sent' | 'Escrow Released' | 'Cancelled'): Promise<P2POrder> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    const result = await handleDataResponse(response);
+    return result.order;
+};
+
+export const postChatMessage = async (orderId: string, text: string): Promise<P2PChatMessage> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/orders/${orderId}/chat`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+    });
+    const result = await handleDataResponse(response);
+    return result.message;
 };
 
 export const applyForCard = async (data: CardApplicationData): Promise<{ cardDetails: CardDetails }> => {
@@ -219,3 +276,85 @@ export const callCoPilot = async (contextPrompt: string, systemInstruction: stri
     });
     return handleDataResponse(response);
 };
+
+// --- NEWLY IMPLEMENTED ---
+
+export const repayLoan = async (loanId: string, paymentAmount: number): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/loans/${loanId}/repay`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentAmount }),
+    });
+    return handleRootResponse(response);
+}
+
+export const swapAssets = async (fromTicker: string, toTicker: string, fromAmount: number): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/investments/swap`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromTicker, toTicker, fromAmount }),
+    });
+    return handleRootResponse(response);
+}
+
+export const stakeCrypto = async (assetId: string, amount: number, duration: number, payoutDestination: 'wallet' | 'balance'): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/investments/stake-crypto`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId, amount, duration, payoutDestination }),
+    });
+    return handleRootResponse(response);
+}
+
+export const stakeStock = async (stockTicker: string, amount: number): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/investments/stake-stock`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stockTicker, amount }),
+    });
+    return handleRootResponse(response);
+}
+
+export const investReit = async (propertyId: string, amount: number): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/investments/reit`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, amount }),
+    });
+    return handleRootResponse(response);
+}
+
+export const investNftFractional = async (nftId: string, amount: number): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/investments/nft-fractional`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nftId, amount }),
+    });
+    return handleRootResponse(response);
+}
+
+export const createP2POffer = async (offerData: any): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/offers`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(offerData),
+    });
+    return handleRootResponse(response);
+}
+
+export const addPaymentMethod = async (methodData: Omit<PaymentMethod, 'id'>): Promise<PaymentMethod> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/payment-methods`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(methodData),
+    });
+    return handleDataResponse(response);
+}
+
+export const deletePaymentMethod = async (methodId: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/p2p/payment-methods/${methodId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    await handleDataResponse(response);
+}

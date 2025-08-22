@@ -82,3 +82,25 @@ export async function sendFromWallet(req, res) {
       return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 }
+
+export async function importWallet(req, res) {
+    const { secretPhrase, source } = req.body;
+    const userId = req.user.id;
+
+    if (!secretPhrase || !source) {
+        return res.status(400).json({ success: false, message: 'Secret phrase and source are required.' });
+    }
+    
+    // SECURITY WARNING: In a real production app, the secret phrase must NEVER be sent to the server.
+    // All cryptographic operations would happen client-side.
+    // This endpoint is for demonstration purposes to complete the UI flow.
+    // It will not store the phrase or perform any real import.
+    
+    console.log(`[WALLET IMPORT] User ${userId} initiated an import from ${source}. This is a mock operation.`);
+    
+    // Here, you would typically use a library like ethers.js or web3.js with the phrase
+    // to derive addresses, then query blockchain explorers to find balances, and
+    // add those assets to the user's portfolio for tracking.
+
+    return res.status(200).json({ success: true, message: `Wallet import from ${source} acknowledged. Balances will be tracked.` });
+}

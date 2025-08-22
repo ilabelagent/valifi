@@ -15,6 +15,7 @@ interface SidebarProps {
   onMobileMenuToggle: () => void;
   onDepositClick: () => void;
   onWithdrawClick: () => void;
+  onLogout: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
@@ -238,7 +239,7 @@ const NavLink: React.FC<{ item: NavItem, isCollapsed: boolean, currentView: View
 };
 
 const BottomSection: React.FC<SidebarProps & { onToggleCollapse: () => void }> = (props) => {
-    const { userSettings, setUserSettings, setCurrentView, onNotificationsClick, unreadNotifications, onToggleCollapse } = props;
+    const { userSettings, setUserSettings, setCurrentView, onNotificationsClick, unreadNotifications, onToggleCollapse, onLogout } = props;
     const isCollapsed = userSettings.settings.preferences.sidebarCollapsed ?? false;
     const { t, i18n } = useTranslation(['sidebar', 'common', 'settings']);
 
@@ -259,6 +260,7 @@ const BottomSection: React.FC<SidebarProps & { onToggleCollapse: () => void }> =
             <div className="flex items-center justify-around">
                 <BottomIcon icon={NotificationIcon} badgeCount={unreadNotifications} onClick={onNotificationsClick} isCollapsed={isCollapsed} tooltip={t('notifications', { ns: 'header' })} />
                 <BottomIcon icon={SettingsIcon} onClick={() => setCurrentView('settings')} isCollapsed={isCollapsed} tooltip={t('settings')} />
+                <BottomIcon icon={LogoutIcon} onClick={onLogout} isCollapsed={isCollapsed} tooltip={t('logout')} />
                 <BottomIcon icon={isCollapsed ? ChevronsRightIcon : ChevronsLeftIcon} onClick={onToggleCollapse} isCollapsed={isCollapsed} tooltip={isCollapsed ? t('expand') : t('collapse')} />
             </div>
         </div>

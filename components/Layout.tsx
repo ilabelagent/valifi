@@ -47,6 +47,7 @@ interface LayoutProps {
   investableNFTs: InvestableNFT[];
   spectrumPlans: InvestmentPlan[];
   stakableCrypto: StakableAsset[];
+  onLogout: () => void;
 }
 
 const Layout: React.FC<LayoutProps> = (props) => {

@@ -1,10 +1,3 @@
-
-import { Router } from 'express';
-import { checkDbConnection } from '../controllers/healthController.js';
-
-const router = Router();
-
-// This is a public endpoint, no auth needed.
-router.get('/db', checkDbConnection);
-
-export default router;
+// This file is intentionally left empty.
+// All routes have been consolidated into /api/routes/index.js
+// to comply with Vercel's serverless function limits on the Hobby plan.
