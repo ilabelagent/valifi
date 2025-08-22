@@ -1,15 +1,19 @@
-# DO NOT ignore the source files - they are needed!
-# Only ignore specific items that shouldn't be deployed:
+# Ignore backup folder completely
+backup/
+backup/**
 
-# Backup files
+# Ignore all backup files
+*_backup
+*_backup/**
 *.bak
 *.tmp
 *.log
 
-# Environment files (Vercel handles these separately)
+# Environment files
 .env
 .env.local
 .env.*
+!.env.example
 
 # Version control
 .git/
@@ -19,17 +23,15 @@
 .vscode/
 .idea/
 *.swp
-*.swo
 
-# Documentation (except README which might be needed)
-*.md
-!README.md
+# Documentation (keep README)
+RUNBOOK.md
+DEPLOYMENT_FIX.md
 
 # Test files
-**/*.test.js
-**/*.spec.js
+*.test.js
+*.spec.js
 **/__tests__/
 
-# Empty directories that might cause issues
-api/routes/.gitkeep
-api/routes/
+# Health check report
+health-check/
