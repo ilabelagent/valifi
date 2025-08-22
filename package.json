@@ -7,25 +7,31 @@
     "build": "next build",
     "build:prod": "next build --no-lint",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@libsql/client": "^0.6.0",
+    "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "i18next": "^23.11.5",
     "i18next-browser-languagedetector": "^7.2.1",
-    "next": "14.2.5",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.32",
     "otpauth": "^9.2.8",
     "qrcode": "^1.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-i18next": "^14.1.2"
+    "react-i18next": "^14.1.2",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.14.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.79",

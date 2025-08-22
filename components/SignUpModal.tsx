@@ -22,7 +22,11 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    if (!isOpen) return null;
+    // All hooks must be called before any conditional returns
+    const handleOpenSignInClick = useCallback(() => {
+        onClose();
+        onOpenSignIn();
+    }, [onClose, onOpenSignIn]);
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,11 +52,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
             setError(result.message || `Failed to sign up with ${provider}.`);
         }
     };
-    
-    const handleOpenSignInClick = useCallback(() => {
-        onClose();
-        onOpenSignIn();
-    }, [onClose, onOpenSignIn]);
+
+    // Conditional return must come after all hooks
+    if (!isOpen) return null;
     
     const inputClass = "w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
     const isDbError = dbStatus === 'error';
