@@ -1,55 +1,49 @@
 
-import { db } from '../lib/db.js';
+import jwt from 'jsonwebtoken';
+import { create } from '../lib/errors.js';
 
-export async function protect(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authorization header is missing or invalid.' });
+const COOKIE = process.env.COOKIE_NAME || 'valifi_token';
+const JWT_SECRET = process.env.JWT_SECRET;
+const isProd = process.env.NODE_ENV === 'production';
+
+export function issueJwtCookie(res, payload) {
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES || '7d' });
+  res.cookie(COOKIE, token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    path: '/',
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  });
+  return token;
+}
+
+export function clearJwtCookie(res) {
+  res.clearCookie(COOKIE, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    path: '/',
+  });
+}
+
+export function protect(req, _res, next) {
+  const auth = req.headers.authorization;
+  let token;
+
+  if (req.cookies?.[COOKIE]) {
+    token = req.cookies[COOKIE];
+  } else if (auth?.startsWith('Bearer ')) {
+    token = auth.slice(7);
   }
-  
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Token is missing from authorization header.' });
-  }
+
+  if (!token) throw create.unauthorized('UNAUTHORIZED', 'Login required');
 
   try {
-    // Select only the fields needed for authorization and context, excluding sensitive data
-    const result = await db.execute({
-        sql: 'SELECT id, email, username, kycStatus, status, isAdmin FROM users WHERE id = ?',
-        args: [token],
-    });
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid token. User not found.' });
-    }
-    
-    const user = result.rows[0];
-    user.isAdmin = Boolean(user.isAdmin);
-    
-    req.user = user;
-    
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = { id: decoded.id, email: decoded.email, sub: decoded.sub || decoded.id };
     next();
-  } catch (err) {
-      console.error('Authentication error:', err);
-      // Return a 401 for auth-related db errors, as it's an auth failure from client's perspective
-      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Could not verify authentication.' });
+  } catch {
+    throw create.unauthorized('UNAUTHORIZED', 'Invalid or expired session');
   }
-}
-
-// Middleware to check that the authenticated user has completed KYC.
-export function requireKyc(req, res, next) {
-  const user = req.user;
-  if (!user || user.kycStatus !== 'Approved') {
-    return res.status(403).json({ code: 'KYC_REQUIRED', message: 'This action requires KYC approval.' });
-  }
-  next();
-}
-
-// Middleware to enforce admin privileges.
-export function requireAdmin(req, res, next) {
-  const user = req.user;
-  if (!user || !user.isAdmin) {
-    return res.status(403).json({ code: 'ADMIN_REQUIRED', message: 'Admin access required for this resource.' });
-  }
-  next();
 }

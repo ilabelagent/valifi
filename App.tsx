@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
@@ -197,10 +198,10 @@ const AppContent: React.FC = () => {
         }
     }, [guestSettings, user]);
 
-    const loadAppData = useCallback(async (token: string) => {
+    const loadAppData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const appData = await apiService.getAppData(token);
+            const appData = await apiService.getAppData();
             if (!appData) throw new Error("No application data found");
 
             const {
@@ -210,7 +211,7 @@ const AppContent: React.FC = () => {
                 spectrumPlans: sp, stakableCrypto: sc, referralSummary: rs
             } = appData;
 
-            setUser({ ...profile, token });
+            setUser(profile);
             setUserSettings({ profile, settings, sessions: sessions || [] });
             setPortfolio({ ...p, assets: processAssets(p.assets) });
             setNotifications(n);
@@ -232,27 +233,33 @@ const AppContent: React.FC = () => {
 
         } catch (error) {
             console.error("Failed to load app data:", error);
-            localStorage.removeItem('valifi_token');
             setUser(null);
+            setUserSettings(null);
+            setPortfolio(null);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem('valifi_token');
-        if (token) {
-            loadAppData(token);
-        } else {
-            setIsLoading(false);
-        }
+        const checkSession = async () => {
+            try {
+                // me() will throw an error if not logged in
+                await apiService.me();
+                // If me() succeeds, a valid session exists.
+                await loadAppData(); 
+            } catch (error) {
+                // User is not logged in, or session expired.
+                setIsLoading(false);
+            }
+        };
+        checkSession();
     }, [loadAppData]);
 
     const handleLogin = useCallback(async (email: string, password: string) => {
         const result = await apiService.login(email, password);
-        if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
-            await loadAppData(result.token);
+        if (result.ok && result.user) {
+            await loadAppData();
             return { success: true };
         }
         return { success: false, message: result.message };
@@ -260,9 +267,8 @@ const AppContent: React.FC = () => {
 
     const handleSocialLogin = useCallback(async (provider: string) => {
         const result = await apiService.socialLogin(provider);
-        if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
-            await loadAppData(result.token);
+        if (result.ok && result.user) {
+            await loadAppData();
             return { success: true };
         }
         return { success: false, message: result.message };
@@ -270,9 +276,8 @@ const AppContent: React.FC = () => {
 
     const handleSignUp = useCallback(async (fullName: string, username: string, email: string, password: string) => {
         const result = await apiService.register(fullName, username, email, password);
-        if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
-            await loadAppData(result.token);
+        if (result.ok && result.user) {
+            await loadAppData();
             return { success: true };
         }
         return { success: false, message: result.message };
@@ -280,8 +285,8 @@ const AppContent: React.FC = () => {
 
     const onTransferToMain = useCallback(async (assetId: string) => {
         // await apiService.transferToMain(assetId);
-        if (user?.token) loadAppData(user.token);
-    }, [loadAppData, user?.token]);
+        await loadAppData();
+    }, [loadAppData]);
 
     const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
         setNotifications(prev => [{...notification, id: `notif-${Date.now()}`, timestamp: new Date().toISOString(), isRead: false}, ...prev]);

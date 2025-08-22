@@ -1,11 +1,14 @@
 
+
 import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
 
 const API_BASE_URL = '/api';
 
-const getAuthHeaders = () => {
-    const token = localStorage.getItem('valifi_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+const fetchOptions = {
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    credentials: 'include' as const // Crucial for sending cookies
 };
 
 const handleNonJsonResponse = async (response: Response) => {
@@ -42,6 +45,7 @@ const handleRootResponse = async (response: Response) => {
     if (!response.ok) {
         if (contentType && contentType.includes('application/json')) {
             const json = await response.json();
+            // The new backend sends { ok: false, message: '...' }
             throw new Error(json.message || `HTTP error! status: ${response.status}`);
         } else {
             const text = await handleNonJsonResponse(response);
@@ -63,72 +67,90 @@ const handleRootResponse = async (response: Response) => {
 export const checkDbStatus = async (): Promise<{ success: boolean; status: string; message: string; }> => {
     try {
         const response = await fetch(`${API_BASE_URL}/health/db`);
-        // We expect JSON from our health endpoint, even on failure.
-        const json = await response.json();
-        return json;
+        const responseText = await response.text();
+
+        if (!response.ok && !responseText) {
+            return { success: false, status: 'error', message: `API server returned status ${response.status}` };
+        }
+        const json = JSON.parse(responseText);
+        return { ...json, success: json.ok };
     } catch (e: any) {
-        // This catches network errors or if the backend returns non-JSON on a crash.
         console.error("API health check failed:", e);
-        return { success: false, status: 'error', message: 'Failed to connect to the API server.' };
+        return { success: false, status: 'error', message: 'Failed to connect to the API server or parse its response.' };
     }
 };
 
 // --- AUTH & USER ---
 
-export const getAppData = async (token: string): Promise<any> => {
+export const getAppData = async (): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/app-data`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        ...fetchOptions,
+        method: 'GET',
     });
+    // This endpoint may not exist yet in the new backend, so handle 404 gracefully
+    if (response.status === 404) {
+        console.warn("/api/app-data not found. Using empty data structure.");
+        // Return a default structure to prevent app from crashing
+        return {
+             profile: {}, settings: {}, sessions: [], portfolio: { assets: [], transactions: [] },
+             notifications: [], userActivity: [], newsItems: [], cardDetails: { status: 'Not Applied' },
+             linkedBankAccounts: [], loanApplications: [], p2pOffers: [], p2pOrders: [],
+             userPaymentMethods: [], reitProperties: [], stakableStocks: [], investableNFTs: [],
+             spectrumPlans: [], stakableCrypto: [], referralSummary: { tree: null, activities: [] }
+        };
+    }
     return handleDataResponse(response);
 };
 
-export const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
+export const me = async (): Promise<{ ok: boolean; profile: any }> => {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, { ...fetchOptions, method: 'GET' });
+    return handleRootResponse(response);
+};
+
+export const login = async (email: string, password: string): Promise<{ ok: boolean; message?: string; user?: any; }> => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            ...fetchOptions,
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         });
-        // Returns { success, token, message }
         return await handleRootResponse(response);
     } catch (e: any) {
-        return { success: false, message: e.message };
+        return { ok: false, message: e.message };
     }
 };
 
-export const socialLogin = async (provider: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
+export const socialLogin = async (provider: string): Promise<{ ok: boolean; message?: string; user?: any; }> => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/social-login`, {
+            ...fetchOptions,
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider }),
         });
         return await handleRootResponse(response);
     } catch (e: any) {
-        return { success: false, message: e.message };
+        return { ok: false, message: e.message };
     }
 }
 
-export const register = async (fullName: string, username: string, email: string, password: string): Promise<{ success: boolean; message?: string; token?: string; }> => {
+export const register = async (fullName: string, username: string, email: string, password: string): Promise<{ ok: boolean; message?: string; user?: any; }> => {
      try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            ...fetchOptions,
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fullName, username, email, password }),
         });
-        
-        // Returns { success, token, message }
         return await handleRootResponse(response);
     } catch (e: any) {
-        return { success: false, message: e.message };
+        return { ok: false, message: e.message };
     }
 };
 
 
 export const updateUserSettings = async (newSettings: UserSettings): Promise<UserSettings> => {
      const response = await fetch(`${API_BASE_URL}/users/me/settings`, {
+        ...fetchOptions,
         method: 'PUT',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings),
     });
     return handleDataResponse(response);
@@ -138,8 +160,8 @@ export const updateUserSettings = async (newSettings: UserSettings): Promise<Use
 
 export const searchInvestments = async (query: string): Promise<string[]> => {
     const response = await fetch(`${API_BASE_URL}/investments/search`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
     });
     const result = await handleDataResponse(response);
@@ -148,8 +170,8 @@ export const searchInvestments = async (query: string): Promise<string[]> => {
 
 export const onInitiateTrade = async (offerId: string, amount: number, paymentMethodId: string): Promise<P2POrder> => {
     const response = await fetch(`${API_BASE_URL}/p2p/orders`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ offerId, amount, paymentMethodId }),
     });
     return handleDataResponse(response);
@@ -157,8 +179,8 @@ export const onInitiateTrade = async (offerId: string, amount: number, paymentMe
 
 export const applyForCard = async (data: CardApplicationData): Promise<{ cardDetails: CardDetails }> => {
     const response = await fetch(`${API_BASE_URL}/cards/apply`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
     return handleDataResponse(response);
@@ -166,8 +188,8 @@ export const applyForCard = async (data: CardApplicationData): Promise<{ cardDet
 
 export const linkBankAccount = async (data: Omit<BankAccount, 'id' | 'status'>): Promise<BankAccount> => {
     const response = await fetch(`${API_BASE_URL}/banking/accounts`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
     return handleDataResponse(response);
@@ -175,8 +197,8 @@ export const linkBankAccount = async (data: Omit<BankAccount, 'id' | 'status'>):
 
 export const applyForLoan = async (data: Omit<LoanApplication, 'id' | 'date' | 'status'>): Promise<LoanApplication> => {
     const response = await fetch(`${API_BASE_URL}/loans/apply`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
     return handleDataResponse(response);
@@ -184,8 +206,8 @@ export const applyForLoan = async (data: Omit<LoanApplication, 'id' | 'date' | '
 
 export const submitKyc = async (): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/kyc/submit`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: getAuthHeaders(),
     });
     await handleRootResponse(response);
 };
@@ -193,8 +215,8 @@ export const submitKyc = async (): Promise<void> => {
 // --- AI Services ---
 export const callTaxAdvisor = async (prompt: string, history: ChatMessage[] = []): Promise<{ text: string }> => {
     const response = await fetch(`${API_BASE_URL}/ai/tax-advisor`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, history }),
     });
     return handleDataResponse(response);
@@ -202,8 +224,8 @@ export const callTaxAdvisor = async (prompt: string, history: ChatMessage[] = []
 
 export const callCoPilot = async (contextPrompt: string, systemInstruction: string, history: CoPilotMessage[] = []): Promise<{ text: string }> => {
     const response = await fetch(`${API_BASE_URL}/ai/copilot`, {
+        ...fetchOptions,
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ contextPrompt, history, systemInstruction }),
     });
     return handleDataResponse(response);

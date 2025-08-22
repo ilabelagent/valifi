@@ -1,6 +1,12 @@
 
-
 import { db } from '../lib/db.js';
+import {
+    spectrumPlans,
+    stakableCrypto,
+    stakableStocks,
+    reitProperties,
+    investableNFTs
+} from '../data/investmentOptions.js';
 
 // Helper to ensure all numeric types from DB are JS Numbers
 const processAsset = (asset) => {
@@ -28,18 +34,11 @@ const transactionTypeToIconString = (type) => {
     return map[type] || 'ClockIcon';
 };
 
-const processJsonField = (items, field) => {
-    return items.map(item => ({
-        ...item,
-        [field]: JSON.parse(item[field] || '{}')
-    }));
-};
-
 export async function getAppData(req, res) {
   try {
     const userId = req.user.id;
 
-    // Fetch all user-specific data and catalog data concurrently
+    // Fetch all user-specific data concurrently
     const [
         userResult,
         settingsResult,
@@ -54,12 +53,7 @@ export async function getAppData(req, res) {
         p2pOffersResult,
         p2pOrdersResult,
         paymentMethodsResult,
-        referralResult,
-        spectrumPlansResult,
-        stakableCryptoResult,
-        stakableStocksResult,
-        reitPropertiesResult,
-        investableNftsResult
+        referralResult
     ] = await Promise.all([
         db.execute({ sql: `SELECT id, fullName, username, email, profilePhotoUrl, kycStatus, kycRejectionReason FROM users WHERE id = ?`, args: [userId] }),
         db.execute({ sql: 'SELECT * FROM user_settings WHERE userId = ?', args: [userId] }),
@@ -74,13 +68,7 @@ export async function getAppData(req, res) {
         db.execute({ sql: 'SELECT * FROM p2p_offers WHERE isActive = TRUE AND userId != ?', args: [userId] }),
         db.execute({ sql: 'SELECT * FROM p2p_orders WHERE buyerId = ? OR sellerId = ?', args: [userId, userId] }),
         db.execute({ sql: 'SELECT * FROM p2p_payment_methods WHERE userId = ?', args: [userId] }),
-        Promise.resolve({ tree: null, activities: [] }), // Mocked referral data for now
-        // Investment Catalogs from DB
-        db.execute('SELECT * FROM spectrum_plans'),
-        db.execute('SELECT * FROM stakable_crypto'),
-        db.execute('SELECT * FROM stakable_stocks'),
-        db.execute('SELECT * FROM reit_properties'),
-        db.execute('SELECT * FROM investable_nfts')
+        Promise.resolve({ tree: null, activities: [] }) // Mocked referral data
     ]);
     
     // Process User and Settings
@@ -138,8 +126,6 @@ export async function getAppData(req, res) {
     // Process other features' data
     const cardDetails = cardResult.rows.length > 0 ? cardResult.rows[0] : { status: 'Not Applied' };
     const linkedBankAccounts = bankAccountsResult.rows.map(acc => ({ ...acc, details: JSON.parse(acc.details || '{}') }));
-    
-    const reitProperties = processJsonField(reitPropertiesResult.rows, 'investmentRange');
 
     const responsePayload = {
         profile,
@@ -157,11 +143,11 @@ export async function getAppData(req, res) {
         userPaymentMethods: paymentMethodsResult.rows,
         referralSummary: referralResult,
         // Investment Catalogs
-        reitProperties: reitProperties,
-        stakableStocks: stakableStocksResult.rows,
-        investableNFTs: investableNftsResult.rows,
-        spectrumPlans: spectrumPlansResult.rows,
-        stakableCrypto: stakableCryptoResult.rows,
+        reitProperties,
+        stakableStocks,
+        investableNFTs,
+        spectrumPlans,
+        stakableCrypto,
     };
     
     return res.status(200).json({ success: true, data: responsePayload });

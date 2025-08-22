@@ -1,12 +1,15 @@
 
 import { Router } from 'express';
-import { loginWithRateLimit, register, forgotPassword, socialLogin } from '../controllers/authController.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
+import { register, login, me, logout } from '../controllers/authController.js';
+import { protect } from '../middleware/auth.js';
+import { limitLogin } from '../middleware/rateLimit.js';
 
-const router = Router();
+const r = Router();
 
-router.post('/login', loginWithRateLimit);
-router.post('/register', register);
-router.post('/social-login', socialLogin);
-router.post('/forgot-password', forgotPassword);
+r.post('/register', asyncHandler(register));
+r.post('/login', limitLogin, asyncHandler(login));
+r.get('/me', protect, asyncHandler(me));
+r.post('/logout', protect, asyncHandler(logout));
 
-export default router;
+export default r;
