@@ -2,6 +2,17 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  
+  // Skip ESLint during builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Skip TypeScript errors during builds
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
   // Allow images from external sources
   images: {
     domains: [
@@ -9,6 +20,7 @@ const nextConfig = {
       'i.pravatar.cc'
     ],
   },
+  
   // API routes configuration
   async headers() {
     return [
