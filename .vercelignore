@@ -1,23 +1,35 @@
-# Explicitly ignore everything in api/src from being treated as functions
-api/src/
+# DO NOT ignore the source files - they are needed!
+# Only ignore specific items that shouldn't be deployed:
 
-# Ignore backup and temporary files
+# Backup files
 *.bak
 *.tmp
+*.log
 
-# Ignore documentation
-*.md
+# Environment files (Vercel handles these separately)
+.env
+.env.local
+.env.*
 
-# Ignore environment files
-.env*
-
-# Ignore version control
+# Version control
 .git/
 .gitignore
 
-# Ignore the empty routes directory
-api/routes/
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Node modules are auto-ignored but let's be explicit
-node_modules/
-api/node_modules/
+# Documentation (except README which might be needed)
+*.md
+!README.md
+
+# Test files
+**/*.test.js
+**/*.spec.js
+**/__tests__/
+
+# Empty directories that might cause issues
+api/routes/.gitkeep
+api/routes/
