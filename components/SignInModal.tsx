@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
 
@@ -30,7 +31,6 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
         if (!result.success) {
             setError(result.message || 'An unknown error occurred.');
         }
-        // On success, the parent component will handle closing the modal/transitioning the view.
     };
 
     const handleSocialLoginClick = async (provider: string) => {
@@ -43,16 +43,6 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
         }
     }
     
-    const handleOpenSignUp = useCallback(() => {
-        onClose();
-        onOpenSignUp();
-    }, [onClose, onOpenSignUp]);
-    
-    const handleOpenForgotPassword = useCallback(() => {
-        onClose();
-        onOpenForgotPassword();
-    }, [onClose, onOpenForgotPassword]);
-
     const isDbError = dbStatus === 'error';
 
     return (
@@ -67,78 +57,16 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                 className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl shadow-2xl w-full max-w-md m-4 text-foreground p-8"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <ValifiLogo className="w-10 h-10 text-primary" />
-                        <h2 id="signin-modal-title" className="text-2xl font-bold">Sign In to Valifi</h2>
-                    </div>
-                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
+                <div className="relative text-center">
+                    <button onClick={onClose} className="absolute -top-4 -right-4 text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
                         <CloseIcon className="w-6 h-6" />
                     </button>
+                    <ValifiLogo className="w-12 h-12 text-primary mx-auto mb-2" />
+                    <h2 id="signin-modal-title" className="text-2xl font-bold">Welcome Back</h2>
+                    <p className="text-muted-foreground text-sm">Sign in to access your financial dashboard.</p>
                 </div>
 
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1.5">Email Address</label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                    </div>
-                    <div>
-                        <div className="flex items-center justify-between">
-                             <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-1.5">Password</label>
-                             <div className="text-sm">
-                                <button type="button" onClick={handleOpenForgotPassword} className="font-semibold text-primary hover:text-primary/80">Forgot password?</button>
-                            </div>
-                        </div>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            autoComplete="current-password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                    </div>
-
-                    <div className="min-h-[52px] flex items-center justify-center">
-                        {error && (
-                            <div className="w-full bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">
-                                {error}
-                            </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={isLoading || isDbError}
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Signing In...' : 'Sign In'}
-                        </button>
-                    </div>
-                </form>
-
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="bg-card px-2 text-muted-foreground">OR</span>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4 my-6">
                     <button
                         type="button"
                         onClick={() => handleSocialLoginClick('google')}
@@ -148,7 +76,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                         <GoogleIcon className="w-5 h-5" />
                         <span className="text-sm font-semibold">Continue with Google</span>
                     </button>
-                    <button
+                     <button
                         type="button"
                         onClick={() => handleSocialLoginClick('github')}
                         disabled={isLoading || isDbError}
@@ -158,16 +86,50 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                         <span className="text-sm font-semibold">Continue with GitHub</span>
                     </button>
                 </div>
+                
+                <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full border-t border-border" /></div>
+                    <div className="relative flex justify-center text-sm"><span className="bg-card px-2 text-muted-foreground">OR</span></div>
+                </div>
 
-                 <div className="mt-4 text-center text-xs">
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="email" className="sr-only">Email Address</label>
+                        <input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Email Address"
+                        />
+                    </div>
+                    <div>
+                         <label htmlFor="password" className="sr-only">Password</label>
+                        <input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Password"
+                        />
+                    </div>
+                    
+                    <div className="text-right text-sm">
+                        <button type="button" onClick={onOpenForgotPassword} className="font-semibold text-primary hover:text-primary/80">Forgot password?</button>
+                    </div>
+
+                    {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-lg text-center">{error}</div>}
+
+                    <div>
+                        <button type="submit" disabled={isLoading || isDbError}
+                            className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? 'Signing In...' : 'Sign In'}
+                        </button>
+                    </div>
+                </form>
+
+                <div className="mt-4 text-center text-xs">
                     {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
                     {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
                     {isDbError && <p className="text-destructive flex items-center justify-center gap-1.5"><AlertTriangleIcon className="w-4 h-4" /> {dbErrorMessage}</p>}
                 </div>
 
-                 <p className="mt-8 text-center text-sm text-muted-foreground">
+                 <p className="mt-6 text-center text-sm text-muted-foreground">
                     Not a member?{' '}
-                    <button type="button" onClick={handleOpenSignUp} className="font-semibold leading-6 text-primary hover:text-primary/80">
+                    <button type="button" onClick={onOpenSignUp} className="font-semibold leading-6 text-primary hover:text-primary/80">
                         Start your journey today
                     </button>
                 </p>

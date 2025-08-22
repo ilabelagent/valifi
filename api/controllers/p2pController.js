@@ -16,15 +16,15 @@ export async function getOffers(req, res) {
             o.*, 
             u.username as name, 
             u.profilePhotoUrl as avatarUrl,
-            -- Mocked data until these fields are in the users table
-            5.0 as rating,
-            150 as totalTrades,
-            98.5 as completionRate,
-            TRUE as isVerified,
-            'US' as countryCode,
-            '2023-01-15T10:00:00Z' as joinDate,
-            'English' as language,
-            95 as trustScore
+            u.p2pRating as rating,
+            u.p2pTotalTrades as totalTrades,
+            u.p2pCompletionRate as completionRate,
+            u.isP2PVerified as isVerified,
+            u.countryCode as countryCode,
+            u.p2pJoinDate as joinDate,
+            u.createdAt as userCreatedAt,
+            u.p2pLanguage as language,
+            u.p2pTrustScore as trustScore
         FROM p2p_offers o 
         JOIN users u ON o.userId = u.id 
         WHERE o.isActive = TRUE AND o.userId != ?`;
@@ -32,12 +32,21 @@ export async function getOffers(req, res) {
     
     // This is complex because we need to construct the nested user object
     const offers = result.rows.map(row => {
-        const { name, avatarUrl, rating, totalTrades, completionRate, isVerified, countryCode, joinDate, language, trustScore, ...offerData } = row;
+        const { name, avatarUrl, rating, totalTrades, completionRate, isVerified, countryCode, joinDate, userCreatedAt, language, trustScore, ...offerData } = row;
         return {
             ...processOffer(offerData),
             user: {
                 id: offerData.userId,
-                name, avatarUrl, rating, totalTrades, completionRate, isVerified, countryCode, joinDate, language, trustScore, badges: []
+                name, avatarUrl, 
+                rating: Number(rating), 
+                totalTrades: Number(totalTrades), 
+                completionRate: Number(completionRate), 
+                isVerified: Boolean(isVerified), 
+                countryCode, 
+                joinDate: joinDate || userCreatedAt, 
+                language, 
+                trustScore: Number(trustScore), 
+                badges: [] // Badges can be added as a separate feature
             }
         }
     });

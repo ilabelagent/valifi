@@ -1,4 +1,5 @@
 
+
 import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
 
 const API_BASE_URL = '/api';
@@ -133,6 +134,16 @@ export const updateUserSettings = async (newSettings: UserSettings): Promise<Use
     });
     return handleDataResponse(response);
 };
+
+// --- Wallet ---
+export const createWallet = async (): Promise<{ secretPhrase: string; assets: any[] }> => {
+    const response = await fetch(`${API_BASE_URL}/wallet/create`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    return handleDataResponse(response);
+};
+
 
 // --- WRITE OPERATIONS ---
 

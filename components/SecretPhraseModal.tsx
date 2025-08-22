@@ -4,20 +4,18 @@ import { KeyIcon, CloseIcon, AlertTriangleIcon } from './icons';
 
 type WalletStatus = 'loading' | 'none' | 'generated' | 'backed_up';
 
-const MOCK_SECRET_PHRASE = "orbit mimic solar custom stable track vendor coral crazy vessel eternal kiwi";
-
 const shuffleArray = <T,>(array: T[]): T[] => {
     return array.map(value => ({ value, sort: Math.random() }))
                .sort((a, b) => a.sort - b.sort)
                .map(({ value }) => value);
 };
 
-const SecretPhraseModal: React.FC<{ status: WalletStatus, onConfirmBackup: () => void, onClose: () => void }> = ({ status, onConfirmBackup, onClose }) => {
+const SecretPhraseModal: React.FC<{ secretPhrase: string, status: WalletStatus, onConfirmBackup: () => void, onClose: () => void }> = ({ secretPhrase, status, onConfirmBackup, onClose }) => {
     const [step, setStep] = useState(1); // 1: Show phrase, 2: Verify
     const [shuffledPhrase, setShuffledPhrase] = useState<string[]>([]);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
     const [error, setError] = useState('');
-    const originalWords = useMemo(() => MOCK_SECRET_PHRASE.split(' '), []);
+    const originalWords = useMemo(() => secretPhrase.split(' '), [secretPhrase]);
 
     useEffect(() => {
         if (status === 'generated' && step === 1) {
@@ -36,7 +34,7 @@ const SecretPhraseModal: React.FC<{ status: WalletStatus, onConfirmBackup: () =>
     };
     
     const handleVerify = () => {
-        if (selectedWords.join(' ') === MOCK_SECRET_PHRASE) {
+        if (selectedWords.join(' ') === secretPhrase) {
             onConfirmBackup();
         } else {
             setError('Incorrect order. Please try again.');
@@ -58,7 +56,7 @@ const SecretPhraseModal: React.FC<{ status: WalletStatus, onConfirmBackup: () =>
                      {step === 1 ? (
                         <>
                              <div className="grid grid-cols-3 gap-2 bg-secondary p-4 rounded-lg font-mono">
-                                {MOCK_SECRET_PHRASE.split(' ').map((word, index) => (
+                                {originalWords.map((word, index) => (
                                     <div key={index} className="flex items-center gap-2">
                                         <span className="text-muted-foreground text-sm">{index + 1}.</span>
                                         <span className="text-foreground">{word}</span>

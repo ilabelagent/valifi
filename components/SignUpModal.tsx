@@ -37,7 +37,6 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
         if (!result.success) {
             setError(result.message || 'An unknown error occurred during registration.');
         }
-        // On success, parent component handles the state change and modal closure.
     };
     
     const handleSocialLoginClick = async (provider: string) => {
@@ -55,7 +54,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
         onOpenSignIn();
     }, [onClose, onOpenSignIn]);
     
-    const inputClass = "w-full bg-secondary border border-border rounded-lg py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+    const inputClass = "w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
     const isDbError = dbStatus === 'error';
 
     return (
@@ -70,17 +69,16 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                 className="bg-card/70 backdrop-blur-xl border border-border rounded-2xl shadow-2xl w-full max-w-md m-4 text-foreground p-8"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <ValifiLogo className="w-10 h-10 text-primary" />
-                        <h2 id="signup-modal-title" className="text-2xl font-bold">Create your Account</h2>
-                    </div>
-                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
+                 <div className="relative text-center">
+                    <button onClick={onClose} className="absolute -top-4 -right-4 text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent" aria-label="Close">
                         <CloseIcon className="w-6 h-6" />
                     </button>
+                    <ValifiLogo className="w-12 h-12 text-primary mx-auto mb-2" />
+                    <h2 id="signup-modal-title" className="text-2xl font-bold">Create your Account</h2>
+                    <p className="text-muted-foreground text-sm">Join the future of finance.</p>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-4 mb-4">
+                <div className="grid grid-cols-1 gap-4 my-6">
                     <button
                         type="button"
                         onClick={() => handleSocialLoginClick('google')}
@@ -102,38 +100,34 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                 </div>
 
                 <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="bg-card px-2 text-muted-foreground">OR</span>
-                    </div>
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full border-t border-border" /></div>
+                    <div className="relative flex justify-center text-sm"><span className="bg-card px-2 text-muted-foreground">OR</span></div>
                 </div>
 
 
                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="fullName" className="block text-sm font-medium text-muted-foreground mb-1.5">Full Name</label>
-                        <input id="fullName" name="fullName" type="text" autoComplete="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
+                     <div>
+                        <label htmlFor="fullName" className="sr-only">Full Name</label>
+                        <input id="fullName" name="fullName" type="text" autoComplete="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} placeholder="Full Name"/>
+                    </div>
+                     <div>
+                        <label htmlFor="username" className="sr-only">Username</label>
+                        <input id="username" name="username" type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} placeholder="Username"/>
                     </div>
                     <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-muted-foreground mb-1.5">Username</label>
-                        <input id="username" name="username" type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
+                        <label htmlFor="signup-email" className="sr-only">Email Address</label>
+                        <input id="signup-email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="Email Address"/>
                     </div>
                     <div>
-                        <label htmlFor="signup-email" className="block text-sm font-medium text-muted-foreground mb-1.5">Email Address</label>
-                        <input id="signup-email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+                        <label htmlFor="signup-password"className="sr-only">Password</label>
+                        <input id="signup-password" name="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="Password (min. 8 characters)"/>
                     </div>
                     <div>
-                        <label htmlFor="signup-password"className="block text-sm font-medium text-muted-foreground mb-1.5">Password</label>
-                        <input id="signup-password" name="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
-                    </div>
-                    <div>
-                        <label htmlFor="confirm-password"className="block text-sm font-medium text-muted-foreground mb-1.5">Confirm Password</label>
-                        <input id="confirm-password" name="confirmPassword" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
+                        <label htmlFor="confirm-password"className="sr-only">Confirm Password</label>
+                        <input id="confirm-password" name="confirmPassword" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} placeholder="Confirm Password"/>
                     </div>
                     
-                    {error && <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">{error}</div>}
+                    {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-lg text-center">{error}</div>}
 
                     <div className="pt-2">
                         <button type="submit" disabled={isLoading || isDbError} className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
