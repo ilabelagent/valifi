@@ -1,12 +1,5 @@
 import crypto from 'crypto';
 import { db } from '../lib/db.js';
-import {
-    spectrumPlans,
-    stakableCrypto,
-    stakableStocks,
-    reitProperties,
-    investableNFTs
-} from '../data/investmentOptions.js';
 
 // Helper to process asset data from DB
 const processAsset = (asset) => {
@@ -19,6 +12,13 @@ const processAsset = (asset) => {
         totalEarnings: Number(asset.totalEarnings || 0),
         details: typeof asset.details === 'string' ? JSON.parse(asset.details || '{}') : asset.details,
     };
+};
+
+const processJsonField = (items, field) => {
+    return items.map(item => ({
+        ...item,
+        [field]: JSON.parse(item[field] || '{}')
+    }));
 };
 
 export async function transferMaturity(req, res) {
@@ -58,20 +58,26 @@ export async function transferMaturity(req, res) {
 }
 
 // --- Read-only endpoints for fetching investment options ---
-export function getStakableStocks(req, res) {
-    res.status(200).json({ success: true, stakableStocks });
+export async function getStakableStocks(req, res) {
+    const result = await db.execute('SELECT * FROM stakable_stocks');
+    res.status(200).json({ success: true, stakableStocks: result.rows });
 }
-export function getReitProperties(req, res) {
-    res.status(200).json({ success: true, reitProperties });
+export async function getReitProperties(req, res) {
+    const result = await db.execute('SELECT * FROM reit_properties');
+    const properties = processJsonField(result.rows, 'investmentRange');
+    res.status(200).json({ success: true, reitProperties: properties });
 }
-export function getInvestableNfts(req, res) {
-    res.status(200).json({ success: true, investableNFTs });
+export async function getInvestableNfts(req, res) {
+    const result = await db.execute('SELECT * FROM investable_nfts');
+    res.status(200).json({ success: true, investableNFTs: result.rows });
 }
-export function getSpectrumPlans(req, res) {
-    res.status(200).json({ success: true, plans: spectrumPlans });
+export async function getSpectrumPlans(req, res) {
+    const result = await db.execute('SELECT * FROM spectrum_plans');
+    res.status(200).json({ success: true, plans: result.rows });
 }
-export function getStakableCrypto(req, res) {
-    res.status(200).json({ success: true, assets: stakableCrypto });
+export async function getStakableCrypto(req, res) {
+    const result = await db.execute('SELECT * FROM stakable_crypto');
+    res.status(200).json({ success: true, assets: result.rows });
 }
 
 export async function searchInvestments(req, res) {
@@ -116,8 +122,12 @@ export async function searchInvestments(req, res) {
 export async function investSpectrumPlan(req, res) {
     const { planId, amount } = req.body;
     const userId = req.user.id;
-    const plan = spectrumPlans.find(p => p.id === planId);
-    if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    
+    const plansResult = await db.execute({ sql: 'SELECT * FROM spectrum_plans WHERE id = ?', args: [planId]});
+    if(plansResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Plan not found.' });
+    }
+    const plan = plansResult.rows[0];
 
     let tx;
     try {
