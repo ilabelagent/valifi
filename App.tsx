@@ -150,11 +150,13 @@ const AppContent: React.FC = () => {
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
     const [guestSettings, setGuestSettings] = useState<UserSettings>(() => {
-        try {
-            const saved = localStorage.getItem('valifi_guest_settings');
-            if (saved) return JSON.parse(saved);
-        } catch (e) {
-            console.error("Failed to parse guest settings from localStorage", e);
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            try {
+                const saved = localStorage.getItem('valifi_guest_settings');
+                if (saved) return JSON.parse(saved);
+            } catch (e) {
+                console.error("Failed to parse guest settings from localStorage", e);
+            }
         }
         return defaultGuestSettings;
     });
@@ -193,7 +195,7 @@ const AppContent: React.FC = () => {
     const setCurrentView = useCallback((view: ViewType) => { window.scrollTo(0, 0); _setCurrentView(view); }, []);
     
     useEffect(() => {
-        if (!user) {
+        if (!user && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
             localStorage.setItem('valifi_guest_settings', JSON.stringify(guestSettings));
         }
     }, [guestSettings, user]);
@@ -233,7 +235,9 @@ const AppContent: React.FC = () => {
 
         } catch (error) {
             console.error("Failed to load app data:", error);
-            localStorage.removeItem('valifi_token');
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+                localStorage.removeItem('valifi_token');
+            }
             setUser(null);
         } finally {
             setIsLoading(false);
@@ -241,9 +245,13 @@ const AppContent: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem('valifi_token');
-        if (token) {
-            loadAppData(token);
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            const token = localStorage.getItem('valifi_token');
+            if (token) {
+                loadAppData(token);
+            } else {
+                setIsLoading(false);
+            }
         } else {
             setIsLoading(false);
         }
@@ -252,7 +260,9 @@ const AppContent: React.FC = () => {
     const handleLogin = useCallback(async (email: string, password: string) => {
         const result = await apiService.login(email, password);
         if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+                localStorage.setItem('valifi_token', result.token);
+            }
             await loadAppData(result.token);
             return { success: true };
         }
@@ -262,7 +272,9 @@ const AppContent: React.FC = () => {
     const handleSocialLogin = useCallback(async (provider: string) => {
         const result = await apiService.socialLogin(provider);
         if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+                localStorage.setItem('valifi_token', result.token);
+            }
             await loadAppData(result.token);
             return { success: true };
         }
@@ -272,7 +284,9 @@ const AppContent: React.FC = () => {
     const handleSignUp = useCallback(async (fullName: string, username: string, email: string, password: string) => {
         const result = await apiService.register(fullName, username, email, password);
         if (result.success && result.token) {
-            localStorage.setItem('valifi_token', result.token);
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+                localStorage.setItem('valifi_token', result.token);
+            }
             await loadAppData(result.token);
             return { success: true };
         }
@@ -280,7 +294,9 @@ const AppContent: React.FC = () => {
     }, [loadAppData]);
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('valifi_token');
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.removeItem('valifi_token');
+        }
         setUser(null);
         _setCurrentView('dashboard');
     }, []);
@@ -402,12 +418,16 @@ const App: React.FC = () => {
     const [initialCurrency, setInitialCurrency] = useState('USD');
 
     useEffect(() => {
-        try {
-            const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || localStorage.getItem('valifi_guest_settings') || '{}');
-            const currency = savedSettings?.settings?.preferences?.currency || 'USD';
-            setInitialCurrency(currency);
-        } catch (error) {
-            // In case of parsing error, fallback to 'USD'
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            try {
+                const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || localStorage.getItem('valifi_guest_settings') || '{}');
+                const currency = savedSettings?.settings?.preferences?.currency || 'USD';
+                setInitialCurrency(currency);
+            } catch (error) {
+                // In case of parsing error, fallback to 'USD'
+                setInitialCurrency('USD');
+            }
+        } else {
             setInitialCurrency('USD');
         }
     }, []);
