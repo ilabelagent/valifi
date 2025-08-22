@@ -1,5 +1,4 @@
 
-
 import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
 
 const API_BASE_URL = '/api';
