@@ -144,7 +144,7 @@ const AppContent: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [exchangeDefaultAssetTicker, setExchangeDefaultAssetTicker] = useState<string | undefined>(undefined);
 
-    const setCurrentView = (view: ViewType) => { window.scrollTo(0, 0); _setCurrentView(view); };
+    const setCurrentView = useCallback((view: ViewType) => { window.scrollTo(0, 0); _setCurrentView(view); }, []);
     
     const loadAppData = useCallback(async (token: string) => {
         setIsLoading(true);
@@ -256,6 +256,11 @@ const AppContent: React.FC = () => {
         onViewInvestment,
     }), [onTransferToMain, onDepositClick, onWithdrawClick, onViewInvestment]);
 
+    const onMarkAsRead = useCallback((id: string) => setNotifications(n => n.map(notif => notif.id === id ? {...notif, isRead: true} : notif)), []);
+    const onDismiss = useCallback((id: string) => setNotifications(n => n.filter(notif => notif.id !== id)), []);
+    const onMarkAllRead = useCallback(() => setNotifications(n => n.map(notif => ({...notif, isRead: true}))), []);
+    const onClearAll = useCallback(() => setNotifications(n => n.filter(notif => !notif.isRead)), []);
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen bg-background"><LoadingSpinner /></div>;
     }
@@ -309,10 +314,10 @@ const AppContent: React.FC = () => {
             newsItems={newsItems}
             isNotificationsOpen={isNotificationsOpen}
             setNotificationsOpen={setNotificationsOpen}
-            onMarkAsRead={(id) => setNotifications(n => n.map(notif => notif.id === id ? {...notif, isRead: true} : notif))}
-            onDismiss={(id) => setNotifications(n => n.filter(notif => notif.id !== id))}
-            onMarkAllRead={() => setNotifications(n => n.map(notif => ({...notif, isRead: true})))}
-            onClearAll={() => setNotifications(n => n.filter(notif => !notif.isRead))}
+            onMarkAsRead={onMarkAsRead}
+            onDismiss={onDismiss}
+            onMarkAllRead={onMarkAllRead}
+            onClearAll={onClearAll}
             userSettings={userSettings}
             setUserSettings={setUserSettings}
             onDepositClick={onDepositClick}

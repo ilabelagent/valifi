@@ -1,4 +1,5 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+
+import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ValifiLogo, SparklesIcon, P2PIcon, InvestmentsIcon, NftIcon, HomeIcon, CardIcon, ShieldCheckIcon, LockIcon, TwitterIcon, InstagramIcon, LinkedInIcon, ForbesLogo, TechCrunchLogo, BloombergLogo, BriefcaseIcon, TrendingUpIcon, EyeIcon, ClockIcon, SettingsIcon, CloseIcon, PaletteIcon, GlobeIcon } from './icons';
 import { newPlans } from './SpectrumPlansView';
@@ -11,6 +12,7 @@ import { languageList } from '../i18n';
 import SignInModal from './SignInModal';
 import SignUpModal from './SignUpModal';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import * as apiService from '../services/api';
 
 
 interface LandingPageProps {
@@ -1023,56 +1025,94 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
     const [isSignInModalOpen, setSignInModalOpen] = useState(false);
     const [isSignUpModalOpen, setSignUpModalOpen] = useState(false);
     const [isForgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
+    const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+    const [dbErrorMessage, setDbErrorMessage] = useState('');
 
-    const handleExploreClick = () => {
+    useEffect(() => {
+        const checkStatus = async () => {
+            const result = await apiService.checkDbStatus();
+            if (result.success) {
+                setDbStatus('ok');
+            } else {
+                setDbStatus('error');
+                setDbErrorMessage(result.message || 'The platform is temporarily unavailable.');
+            }
+        };
+        checkStatus();
+    }, []);
+
+    const handleExploreClick = useCallback(() => {
         featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, []);
 
-    const handleCareersClick = () => {
+    const handleCareersClick = useCallback(() => {
         careersRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, []);
 
-    const handleFaqClick = () => {
+    const handleFaqClick = useCallback(() => {
         faqRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, []);
 
-    const handlePhilosophyClick = () => {
+    const handlePhilosophyClick = useCallback(() => {
         philosophyRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, []);
 
-    const handleLeadershipClick = () => {
+    const handleLeadershipClick = useCallback(() => {
         leadershipRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, []);
     
-    const handleApplyClick = (jobTitle: string) => {
+    const handleApplyClick = useCallback((jobTitle: string) => {
         setSelectedJob(jobTitle);
         setApplicationModalOpen(true);
-    };
+    }, []);
 
-    const handleLearnMore = (feature: Feature) => {
+    const handleLearnMore = useCallback((feature: Feature) => {
         setSelectedFeature(feature);
-    };
+    }, []);
 
-    const handleLegalLinkClick = (doc: 'terms' | 'privacy' | 'about' | 'contact') => {
+    const handleLegalLinkClick = useCallback((doc: 'terms' | 'privacy' | 'about' | 'contact') => {
         setLegalContent(infoDocs[doc]);
         setLegalModalOpen(true);
-    };
+    }, []);
+
+    const handleOpenSignIn = useCallback(() => setSignInModalOpen(true), []);
+    const handleCloseSignIn = useCallback(() => setSignInModalOpen(false), []);
+    const handleOpenSignUp = useCallback(() => setSignUpModalOpen(true), []);
+    const handleCloseSignUp = useCallback(() => setSignUpModalOpen(false), []);
+    const handleOpenForgotPassword = useCallback(() => setForgotPasswordModalOpen(true), []);
+    const handleCloseForgotPassword = useCallback(() => setForgotPasswordModalOpen(false), []);
+
+    const handleSwitchToSignUp = useCallback(() => {
+        setSignInModalOpen(false);
+        setSignUpModalOpen(true);
+    }, []);
+
+    const handleSwitchToSignIn = useCallback(() => {
+        setSignUpModalOpen(false);
+        setForgotPasswordModalOpen(false);
+        setSignInModalOpen(true);
+    }, []);
+    
+    const handleSwitchToForgotPassword = useCallback(() => {
+        setSignInModalOpen(false);
+        setForgotPasswordModalOpen(true);
+    }, []);
 
 
     return (
         <div className="bg-background">
-            <LandingHeader onSignInClick={() => setSignInModalOpen(true)} onExplore={handleExploreClick} onCareersClick={handleCareersClick} onFaqClick={handleFaqClick} onPhilosophyClick={handlePhilosophyClick} onLeadershipClick={handleLeadershipClick} userSettings={userSettings} setUserSettings={setUserSettings}/>
+            <LandingHeader onSignInClick={handleOpenSignIn} onExplore={handleExploreClick} onCareersClick={handleCareersClick} onFaqClick={handleFaqClick} onPhilosophyClick={handlePhilosophyClick} onLeadershipClick={handleLeadershipClick} userSettings={userSettings} setUserSettings={setUserSettings}/>
             <main>
-                <HeroSection onSignUpClick={() => setSignUpModalOpen(true)} onExplore={handleExploreClick} />
+                <HeroSection onSignUpClick={handleOpenSignUp} onExplore={handleExploreClick} />
                 <FeaturesSection ref={featuresRef} onLearnMore={handleLearnMore} />
                 <PhilosophySection ref={philosophyRef} />
                 <LeadershipSection ref={leadershipRef} />
-                <SpectrumSection onSignInClick={() => setSignUpModalOpen(true)} />
-                <TestimonialsSection onSignInClick={() => setSignUpModalOpen(true)} />
+                <SpectrumSection onSignInClick={handleOpenSignUp} />
+                <TestimonialsSection onSignInClick={handleOpenSignUp} />
                 <TrustSection />
                 <CareersSection ref={careersRef} onApplyClick={handleApplyClick} />
                 <FAQSection ref={faqRef} />
-                <CtaSection onSignUpClick={() => setSignUpModalOpen(true)} />
+                <CtaSection onSignUpClick={handleOpenSignUp} />
             </main>
             <LandingFooter onLegalLinkClick={handleLegalLinkClick} />
             <JobApplicationModal 
@@ -1093,22 +1133,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
             />
             <SignInModal
                 isOpen={isSignInModalOpen}
-                onClose={() => setSignInModalOpen(false)}
+                onClose={handleCloseSignIn}
                 onLogin={onLogin}
                 onSocialLogin={onSocialLogin}
-                onOpenSignUp={() => { setSignInModalOpen(false); setSignUpModalOpen(true); }}
-                onOpenForgotPassword={() => { setSignInModalOpen(false); setForgotPasswordModalOpen(true); }}
+                onOpenSignUp={handleSwitchToSignUp}
+                onOpenForgotPassword={handleSwitchToForgotPassword}
+                dbStatus={dbStatus}
+                dbErrorMessage={dbErrorMessage}
             />
              <SignUpModal
                 isOpen={isSignUpModalOpen}
-                onClose={() => setSignUpModalOpen(false)}
+                onClose={handleCloseSignUp}
                 onSignUp={onSignUp}
-                onOpenSignIn={() => { setSignUpModalOpen(false); setSignInModalOpen(true); }}
+                onOpenSignIn={handleSwitchToSignIn}
+                dbStatus={dbStatus}
+                dbErrorMessage={dbErrorMessage}
             />
             <ForgotPasswordModal
                 isOpen={isForgotPasswordModalOpen}
-                onClose={() => setForgotPasswordModalOpen(false)}
-                onOpenSignIn={() => { setForgotPasswordModalOpen(false); setSignInModalOpen(true); }}
+                onClose={handleCloseForgotPassword}
+                onOpenSignIn={handleSwitchToSignIn}
             />
         </div>
     );

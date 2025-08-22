@@ -80,9 +80,11 @@ interface StockStakingViewProps {
     cashBalance: number;
     onStake: (stock: StakableStock, amount: number) => void;
     onManage: (asset: Asset) => void;
+    searchResultTickers: string[] | null;
+    clearSearch: () => void;
 }
 
-const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, userStakedStocks, cashBalance, onStake }) => {
+const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, userStakedStocks, cashBalance, onStake, searchResultTickers, clearSearch }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sectorFilter, setSectorFilter] = useState('All');
     const [sortBy, setSortBy] = useState('poolSize');
@@ -92,20 +94,32 @@ const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, use
     const sectors = useMemo(() => ['All', ...Array.from(new Set(stakableStocks.map(s => s.sector)))], [stakableStocks]);
     
     const filteredAndSortedStocks = useMemo(() => {
-        return stakableStocks
+        let stocks = stakableStocks
             .filter(s => 
                 (s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.ticker.toLowerCase().includes(searchTerm.toLowerCase())) &&
                 (sectorFilter === 'All' || s.sector === sectorFilter)
-            )
-            .sort((a, b) => {
-                switch (sortBy) {
-                    case 'name': return a.name.localeCompare(b.name);
-                    case 'price': return b.price - a.price;
-                    case 'change24h': return b.change24h - a.change24h;
-                    default: return b.poolSize - a.poolSize; // poolSize is default
-                }
-            });
-    }, [stakableStocks, searchTerm, sectorFilter, sortBy]);
+            );
+
+        if (searchResultTickers !== null) {
+            if (searchResultTickers.length === 0) {
+                stocks = [];
+            } else {
+                const tickerSet = new Set(searchResultTickers);
+                stocks = stocks.filter(s => tickerSet.has(s.ticker));
+            }
+        }
+        
+        stocks.sort((a, b) => {
+            switch (sortBy) {
+                case 'name': return a.name.localeCompare(b.name);
+                case 'price': return b.price - a.price;
+                case 'change24h': return b.change24h - a.change24h;
+                default: return b.poolSize - a.poolSize; // poolSize is default
+            }
+        });
+
+        return stocks;
+    }, [stakableStocks, searchTerm, sectorFilter, sortBy, searchResultTickers]);
 
     const leaderboardStocks = useMemo(() => [...stakableStocks].sort((a,b) => b.poolSize - a.poolSize).slice(0, 10), [stakableStocks]);
     
@@ -138,6 +152,15 @@ const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, use
                             </div>
                         </div>
                         <div className="p-4 max-h-[1000px] overflow-y-auto">
+                            {searchResultTickers !== null && (
+                                <div className="px-4 py-3 mb-4 bg-secondary border border-border rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <h4 className="font-semibold text-foreground">Semantic Search Results</h4>
+                                        <p className="text-sm text-muted-foreground">Showing {filteredAndSortedStocks.length} stocks matching your query.</p>
+                                    </div>
+                                    <button onClick={clearSearch} className="text-sm font-semibold text-primary hover:text-primary/80">Clear</button>
+                                </div>
+                            )}
                             {filteredAndSortedStocks.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {filteredAndSortedStocks.map(stock => {

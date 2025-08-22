@@ -1,7 +1,6 @@
 
-
-import React, { useState } from 'react';
-import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon } from './icons';
+import React, { useState, useCallback } from 'react';
+import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
 
 interface SignInModalProps {
     isOpen: boolean;
@@ -10,9 +9,11 @@ interface SignInModalProps {
     onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignUp: () => void;
     onOpenForgotPassword: () => void;
+    dbStatus: 'checking' | 'ok' | 'error';
+    dbErrorMessage: string;
 }
 
-const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onSocialLogin, onOpenSignUp, onOpenForgotPassword }) => {
+const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onSocialLogin, onOpenSignUp, onOpenForgotPassword, dbStatus, dbErrorMessage }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -41,6 +42,18 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
             setError(result.message || `Failed to sign in with ${provider}.`);
         }
     }
+    
+    const handleOpenSignUp = useCallback(() => {
+        onClose();
+        onOpenSignUp();
+    }, [onClose, onOpenSignUp]);
+    
+    const handleOpenForgotPassword = useCallback(() => {
+        onClose();
+        onOpenForgotPassword();
+    }, [onClose, onOpenForgotPassword]);
+
+    const isDbError = dbStatus === 'error';
 
     return (
         <div 
@@ -82,7 +95,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                         <div className="flex items-center justify-between">
                              <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-1.5">Password</label>
                              <div className="text-sm">
-                                <button type="button" onClick={() => { onClose(); onOpenForgotPassword(); }} className="font-semibold text-primary hover:text-primary/80">Forgot password?</button>
+                                <button type="button" onClick={handleOpenForgotPassword} className="font-semibold text-primary hover:text-primary/80">Forgot password?</button>
                             </div>
                         </div>
                         <input
@@ -108,7 +121,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                     <div>
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || isDbError}
                             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
                         >
                             {isLoading ? 'Signing In...' : 'Sign In'}
@@ -129,7 +142,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                     <button
                         type="button"
                         onClick={() => handleSocialLoginClick('google')}
-                        disabled={isLoading}
+                        disabled={isLoading || isDbError}
                         className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <GoogleIcon className="w-5 h-5" />
@@ -138,7 +151,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                     <button
                         type="button"
                         onClick={() => handleSocialLoginClick('github')}
-                        disabled={isLoading}
+                        disabled={isLoading || isDbError}
                         className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <GithubIcon className="w-5 h-5" />
@@ -146,9 +159,15 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                     </button>
                 </div>
 
+                 <div className="mt-4 text-center text-xs">
+                    {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
+                    {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
+                    {isDbError && <p className="text-destructive flex items-center justify-center gap-1.5"><AlertTriangleIcon className="w-4 h-4" /> {dbErrorMessage}</p>}
+                </div>
+
                  <p className="mt-8 text-center text-sm text-muted-foreground">
                     Not a member?{' '}
-                    <button type="button" onClick={() => { onClose(); onOpenSignUp(); }} className="font-semibold leading-6 text-primary hover:text-primary/80">
+                    <button type="button" onClick={handleOpenSignUp} className="font-semibold leading-6 text-primary hover:text-primary/80">
                         Start your journey today
                     </button>
                 </p>

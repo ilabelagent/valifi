@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowUpDownIcon, SearchIcon, TrendingUpIcon, InvestmentsIcon, UsdIcon } from './icons';
+import { ArrowUpDownIcon, SearchIcon, TrendingUpIcon, InvestmentsIcon, UsdIcon, SparklesIcon } from './icons';
 import type { Asset, InvestmentPlan, StakableAsset, REITProperty, StakableStock, InvestableNFT } from '../types';
 import { AssetType } from '../types';
 import StakingView from './StakingView';
@@ -9,6 +9,7 @@ import REITsView from './REITsView';
 import { useCurrency } from './CurrencyContext';
 import StockStakingView from './StockStakingView';
 import NFTInvestmentView from './NFTInvestmentView';
+import * as apiService from '../services/api';
 
 const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className = '' }) => (
     <div className={`bg-card text-card-foreground border border-border rounded-xl shadow-sm ${className}`}>
@@ -164,6 +165,11 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
     const [inputValue, setInputValue] = useState('');
     const { formatCurrency, currency } = useCurrency();
     
+    // State for Semantic Search
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResultTickers, setSearchResultTickers] = useState<string[] | null>(null);
+
     const nftAssets = useMemo(() => assets.filter(a => a.type === AssetType.NFT), [assets]);
 
     useEffect(() => {
@@ -175,6 +181,25 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
             clearTimeout(handler);
         };
     }, [inputValue]);
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) {
+            setSearchResultTickers(null); // Clear results if search is empty
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const tickers = await apiService.searchInvestments(searchQuery);
+            setSearchResultTickers(tickers);
+            setActiveTab('stock'); // Switch to stock staking view to show results
+        } catch (error) {
+            console.error("Search failed:", error);
+            setSearchResultTickers([]); // Show no results on error
+        } finally {
+            setIsSearching(false);
+        }
+    };
 
     const handleSort = (key: SortKey) => {
         let order: 'asc' | 'desc' = 'asc';
@@ -334,7 +359,7 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                             />
                         ))}
                     </div>
-                    {activeTab !== 'spectrum' && activeTab !== 'staking' && activeTab !== 'reits' && activeTab !== 'stock' && (
+                    {activeTab === 'all' || activeTab === 'nft' ? (
                         <div className="relative">
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                             <input
@@ -345,6 +370,18 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                                 className="bg-secondary border border-border rounded-lg py-2 pl-10 pr-4 w-64 text-muted-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all"
                             />
                         </div>
+                    ) : (
+                         <form onSubmit={handleSearch} className="relative">
+                            <SparklesIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Semantic Search (e.g., 'stable tech stocks')"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="bg-secondary border border-border rounded-lg py-2 pl-10 pr-4 w-72 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all"
+                                disabled={isSearching}
+                            />
+                        </form>
                     )}
                 </div>
                 
@@ -429,6 +466,11 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                         cashBalance={cashBalance}
                         onStake={onStockStake}
                         onManage={() => {}}
+                        searchResultTickers={searchResultTickers}
+                        clearSearch={() => {
+                            setSearchResultTickers(null);
+                            setSearchQuery('');
+                        }}
                     />
                 )}
 

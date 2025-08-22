@@ -74,6 +74,44 @@ export function getStakableCrypto(req, res) {
     res.status(200).json({ success: true, assets: stakableCrypto });
 }
 
+export async function searchInvestments(req, res) {
+    const { query } = req.body;
+    if (!query) {
+        return res.status(400).json({ success: false, message: 'Search query is required.' });
+    }
+    
+    // Mock embedding generation based on keywords. In a real app, this would call an embedding model API.
+    const mockGenerateEmbedding = (q) => {
+        const lowerQ = q.toLowerCase();
+        if (lowerQ.includes('tech') || lowerQ.includes('ai') || lowerQ.includes('software')) return [0.1, 0.9, 0.7, 0.5]; // tech, innovative
+        if (lowerQ.includes('stable') || lowerQ.includes('safe') || lowerQ.includes('blue chip')) return [0.9, 0.5, 0.2, 0.1]; // stable, not innovative
+        if (lowerQ.includes('electric') || lowerQ.includes('car') || lowerQ.includes('innovative')) return [0.2, 0.8, 0.9, 0.9]; // innovative, tech, volatile
+        if (lowerQ.includes('e-commerce') || lowerQ.includes('online')) return [0.7, 0.8, 0.6, 0.4]; // stable-ish, tech-ish
+        return [0.5, 0.5, 0.5, 0.5]; // Generic query
+    };
+
+    const queryVector = mockGenerateEmbedding(query);
+    // IMPORTANT: The vector function call is embedded in the SQL.
+    // This is safe because `queryVector` is generated server-side and contains only numbers.
+    // DO NOT construct SQL strings with direct user input.
+    const queryVectorSql = `vector32('[${queryVector.join(',')}]')`;
+
+    try {
+        const sql = `
+            SELECT si.ticker
+            FROM vector_top_k('idx_investments_embedding', ${queryVectorSql}, 5) AS v
+            JOIN searchable_investments AS si ON si.rowid = v.id;
+        `;
+        const result = await db.execute(sql);
+        const tickers = result.rows.map(row => row.ticker);
+        res.status(200).json({ success: true, data: { tickers } });
+    } catch (err) {
+        console.error('Vector search error:', err);
+        res.status(500).json({ success: false, message: 'An internal error occurred during search.' });
+    }
+}
+
+
 // --- Write endpoints for creating investments ---
 export async function investSpectrumPlan(req, res) {
     const { planId, amount } = req.body;

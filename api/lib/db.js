@@ -1,9 +1,11 @@
 
+
 import { createClient } from '@libsql/client';
 import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { stakableStocks } from '../data/investmentOptions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +47,17 @@ export const initializeSchema = async () => {
                 for (const statement of statements) {
                     await tx.execute(statement);
                 }
+
+                console.log('Populating searchable_investments table...');
+                for (const stock of stakableStocks) {
+                    const embeddingString = `[${stock.embedding.join(',')}]`;
+                    await tx.execute({
+                        sql: `INSERT INTO searchable_investments (id, ticker, name, description, type, embedding) VALUES (?, ?, ?, ?, 'Stock', vector32(?)) ON CONFLICT(ticker) DO NOTHING`,
+                        args: [`search-${stock.id}`, stock.ticker, stock.name, stock.description, embeddingString]
+                    });
+                }
+                console.log('Populated searchable_investments table.');
+                
                 await tx.commit();
                 console.log('Database schema initialized successfully.');
 

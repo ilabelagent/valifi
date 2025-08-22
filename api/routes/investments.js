@@ -12,6 +12,7 @@ import {
     getInvestableNfts,
     getSpectrumPlans,
     getStakableCrypto,
+    searchInvestments,
 } from '../controllers/investmentController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -24,6 +25,7 @@ router.get('/spectrum-plans', protect, getSpectrumPlans);
 router.get('/stakable-crypto', protect, getStakableCrypto);
 
 router.post('/swap', protect, swapAssets);
+router.post('/search', protect, searchInvestments);
 router.post('/:id/transfer-maturity', protect, transferMaturity);
 router.post('/spectrum-plan', protect, investSpectrumPlan);
 router.post('/stake-crypto', protect, stakeCrypto);

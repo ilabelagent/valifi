@@ -75,11 +75,11 @@ export const stakableCrypto = [
 ];
 
 export const stakableStocks = [
-  { id: 'aapl-stake', ticker: 'AAPL', name: 'Apple Inc.', Icon: 'AppleIcon', sector: 'Technology', price: 195.89, change24h: 1.2, poolSize: 95, status: 'Available' },
-  { id: 'tsla-stake', ticker: 'TSLA', name: 'Tesla, Inc.', Icon: 'TeslaIcon', sector: 'Consumer Discretionary', price: 250.50, change24h: -2.5, poolSize: 92, status: 'Available' },
-  { id: 'nvda-stake', ticker: 'NVDA', name: 'NVIDIA Corporation', Icon: 'NvidiaIcon', sector: 'Technology', price: 450.10, change24h: 3.1, poolSize: 88, status: 'Available' },
-  { id: 'amzn-stake', ticker: 'AMZN', name: 'Amazon.com, Inc.', Icon: 'AmazonIcon', sector: 'Consumer Discretionary', price: 135.20, change24h: 0.8, poolSize: 85, status: 'Available' },
-  { id: 'googl-stake', ticker: 'GOOGL', name: 'Alphabet Inc.', Icon: 'GoogleIcon', sector: 'Communication Services', price: 130.45, change24h: -0.5, poolSize: 80, status: 'Fully Staked' },
+  { id: 'aapl-stake', ticker: 'AAPL', name: 'Apple Inc.', Icon: 'AppleIcon', sector: 'Technology', price: 195.89, change24h: 1.2, poolSize: 95, status: 'Available', description: 'Stake in one of the world\'s most valuable and stable technology companies, known for its iconic products and strong market position.', embedding: [0.8, 0.9, 0.1, 0.2] },
+  { id: 'tsla-stake', ticker: 'TSLA', name: 'Tesla, Inc.', Icon: 'TeslaIcon', sector: 'Consumer Discretionary', price: 250.50, change24h: -2.5, poolSize: 92, status: 'Available', description: 'Invest in the future of transportation and energy. Tesla is a high-growth, innovative leader in the electric vehicle market.', embedding: [0.2, 0.9, 0.9, 0.9] },
+  { id: 'nvda-stake', ticker: 'NVDA', name: 'NVIDIA Corporation', Icon: 'NvidiaIcon', sector: 'Technology', price: 450.10, change24h: 3.1, poolSize: 88, status: 'Available', description: 'A dominant force in AI, gaming, and professional graphics. NVIDIA represents a premier investment in cutting-edge technology.', embedding: [0.1, 0.9, 0.9, 0.5] },
+  { id: 'amzn-stake', ticker: 'AMZN', name: 'Amazon.com, Inc.', Icon: 'AmazonIcon', sector: 'Consumer Discretionary', price: 135.20, change24h: 0.8, poolSize: 85, status: 'Available', description: 'A global leader in e-commerce, cloud computing (AWS), and digital streaming. A diversified and stable tech investment.', embedding: [0.7, 0.8, 0.6, 0.4] },
+  { id: 'googl-stake', ticker: 'GOOGL', name: 'Alphabet Inc.', Icon: 'GoogleIcon', sector: 'Communication Services', price: 130.45, change24h: -0.5, poolSize: 80, status: 'Fully Staked', description: 'The parent company of Google, a behemoth in search, advertising, and cloud services. A cornerstone of the modern internet.', embedding: [0.8, 0.9, 0.5, 0.3] },
 ];
 
 export const reitProperties = [

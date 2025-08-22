@@ -1,3 +1,5 @@
+
+
 import { Router } from 'express';
 import dashboardRoutes from './dashboard.js';
 import authRoutes from './auth.js';
@@ -14,9 +16,11 @@ import p2pRoutes from './p2p.js';
 import aiRoutes from './ai.js';
 import referralRoutes from './referrals.js';
 import appRoutes from './app.js';
+import healthRoutes from './health.js';
 
 const router = Router();
 
+router.use('/health', healthRoutes);
 router.use('/app-data', appRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/auth', authRoutes);

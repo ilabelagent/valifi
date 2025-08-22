@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ValifiLogo, CloseIcon, CheckCircleIcon } from './icons';
 
 interface ForgotPasswordModalProps {
@@ -35,6 +33,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             setIsLoading(false);
         }
     };
+    
+    const handleOpenSignInClick = useCallback(() => {
+        onClose();
+        onOpenSignIn();
+    }, [onClose, onOpenSignIn]);
     
     return (
         <div 
@@ -86,7 +89,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
                 )}
                  <p className="mt-8 text-center text-sm text-muted-foreground">
                     Remembered your password?{' '}
-                    <button type="button" onClick={() => { onClose(); onOpenSignIn(); }} className="font-semibold leading-6 text-primary hover:text-primary/80">
+                    <button type="button" onClick={handleOpenSignInClick} className="font-semibold leading-6 text-primary hover:text-primary/80">
                         Sign In
                     </button>
                 </p>

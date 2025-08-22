@@ -1,16 +1,17 @@
 
-
-import React, { useState } from 'react';
-import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon } from './icons';
+import React, { useState, useCallback } from 'react';
+import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
 
 interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSignUp: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignIn: () => void;
+    dbStatus: 'checking' | 'ok' | 'error';
+    dbErrorMessage: string;
 }
 
-const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, onOpenSignIn }) => {
+const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, onOpenSignIn, dbStatus, dbErrorMessage }) => {
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -37,7 +38,13 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
         // On success, parent component handles the state change and modal closure.
     };
     
+    const handleOpenSignInClick = useCallback(() => {
+        onClose();
+        onOpenSignIn();
+    }, [onClose, onOpenSignIn]);
+    
     const inputClass = "w-full bg-secondary border border-border rounded-lg py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+    const isDbError = dbStatus === 'error';
 
     return (
         <div 
@@ -115,14 +122,21 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                     {error && <div className="bg-destructive text-destructive-foreground text-sm p-3 rounded-lg text-center">{error}</div>}
 
                     <div className="pt-2">
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
+                        <button type="submit" disabled={isLoading || isDbError} className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
                             {isLoading ? 'Creating Account...' : 'Create Account'}
                         </button>
                     </div>
                 </form>
+
+                 <div className="mt-4 text-center text-xs">
+                    {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
+                    {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
+                    {isDbError && <p className="text-destructive flex items-center justify-center gap-1.5"><AlertTriangleIcon className="w-4 h-4" /> {dbErrorMessage}</p>}
+                </div>
+
                  <p className="mt-6 text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
-                    <button onClick={() => { onClose(); onOpenSignIn(); }} className="font-semibold leading-6 text-primary hover:text-primary/80">
+                    <button type="button" onClick={handleOpenSignInClick} className="font-semibold leading-6 text-primary hover:text-primary/80">
                         Sign In
                     </button>
                 </p>

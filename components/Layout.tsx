@@ -119,7 +119,7 @@ const Layout: React.FC<LayoutProps> = (props) => {
         />
         <main className="flex-1 overflow-y-auto">
           <div key={currentView}>
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<div className="flex justify-center items-center h-full"><LoadingSpinner /></div>}>
               {children}
             </Suspense>
           </div>
