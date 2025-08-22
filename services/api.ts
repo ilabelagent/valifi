@@ -1,4 +1,5 @@
 
+
 import type { UserSettings, CardDetails, CardApplicationData, BankAccount, LoanApplication, P2POrder, P2POffer, PaymentMethod, ReferralNode, ReferralActivity, CoPilotMessage, ChatMessage } from '../types';
 
 const API_BASE_URL = '/api';
@@ -63,13 +64,22 @@ const handleRootResponse = async (response: Response) => {
 export const checkDbStatus = async (): Promise<{ success: boolean; status: string; message: string; }> => {
     try {
         const response = await fetch(`${API_BASE_URL}/health/db`);
-        // We expect JSON from our health endpoint, even on failure.
-        const json = await response.json();
+        // First, read the response as text. This is more robust against malformed JSON
+        // and potential streaming issues that can lead to cryptic errors.
+        const responseText = await response.text();
+
+        // If the response was not OK and there's no body, create a generic error.
+        if (!response.ok && !responseText) {
+            return { success: false, status: 'error', message: `API server returned status ${response.status}` };
+        }
+
+        // Now, safely parse the text as JSON.
+        const json = JSON.parse(responseText);
         return json;
     } catch (e: any) {
-        // This catches network errors or if the backend returns non-JSON on a crash.
+        // This will catch network errors from fetch() or SyntaxError from JSON.parse().
         console.error("API health check failed:", e);
-        return { success: false, status: 'error', message: 'Failed to connect to the API server.' };
+        return { success: false, status: 'error', message: 'Failed to connect to the API server or parse its response.' };
     }
 };
 
