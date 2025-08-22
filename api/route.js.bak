@@ -1,0 +1,7 @@
+export default function handler(req, res) {
+  // Import and initialize Express app
+  const app = require('./src/app.js').default;
+  
+  // Pass the request to Express
+  return app(req, res);
+}

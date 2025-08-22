@@ -1,0 +1,23 @@
+# Explicitly ignore everything in api/src from being treated as functions
+api/src/
+
+# Ignore backup and temporary files
+*.bak
+*.tmp
+
+# Ignore documentation
+*.md
+
+# Ignore environment files
+.env*
+
+# Ignore version control
+.git/
+.gitignore
+
+# Ignore the empty routes directory
+api/routes/
+
+# Node modules are auto-ignored but let's be explicit
+node_modules/
+api/node_modules/
