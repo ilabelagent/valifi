@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
@@ -106,12 +107,56 @@ const processStakableAssets = (assets: any[]): StakableAsset[] => {
     }));
 };
 
+const defaultGuestSettings: UserSettings = {
+  profile: {
+    id: 'guest',
+    fullName: 'Guest',
+    username: 'guest',
+    profilePhotoUrl: 'https://i.pravatar.cc/150?u=guest',
+    kycStatus: 'Not Started',
+  },
+  settings: {
+    twoFactorAuth: { enabled: false, method: 'none' },
+    loginAlerts: true,
+    autoLogout: '1h',
+    preferences: {
+      currency: 'USD',
+      language: 'en',
+      dateFormat: 'MM/DD/YYYY',
+      timezone: 'UTC',
+      balancePrivacy: false,
+      sidebarCollapsed: false,
+      openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance'],
+    },
+    privacy: {
+      emailMarketing: false,
+      platformMessages: false,
+      contactAccess: false,
+    },
+    vaultRecovery: {
+      email: '',
+      phone: '',
+      pin: '',
+    },
+  },
+  sessions: []
+};
+
 const AppContent: React.FC = () => {
     const { i18n } = useTranslation();
     const [user, setUser] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+    const [guestSettings, setGuestSettings] = useState<UserSettings>(() => {
+        try {
+            const saved = localStorage.getItem('valifi_guest_settings');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {
+            console.error("Failed to parse guest settings from localStorage", e);
+        }
+        return defaultGuestSettings;
+    });
     const [currentView, _setCurrentView] = useState<ViewType>('dashboard');
     const [isDepositModalOpen, setDepositModalOpen] = useState(false);
     const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -146,6 +191,12 @@ const AppContent: React.FC = () => {
 
     const setCurrentView = useCallback((view: ViewType) => { window.scrollTo(0, 0); _setCurrentView(view); }, []);
     
+    useEffect(() => {
+        if (!user) {
+            localStorage.setItem('valifi_guest_settings', JSON.stringify(guestSettings));
+        }
+    }, [guestSettings, user]);
+
     const loadAppData = useCallback(async (token: string) => {
         setIsLoading(true);
         try {
@@ -266,7 +317,7 @@ const AppContent: React.FC = () => {
     }
 
     if (!user || !userSettings || !portfolio) {
-        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onSocialLogin={handleSocialLogin} userSettings={userSettings!} setUserSettings={setUserSettings!} />;
+        return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onSocialLogin={handleSocialLogin} userSettings={guestSettings} setUserSettings={setGuestSettings} />;
     }
 
     const renderView = () => {
@@ -344,7 +395,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         try {
-            const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || '{}');
+            const savedSettings = JSON.parse(localStorage.getItem('valifi_user_settings') || localStorage.getItem('valifi_guest_settings') || '{}');
             const currency = savedSettings?.settings?.preferences?.currency || 'USD';
             setInitialCurrency(currency);
         } catch (error) {
