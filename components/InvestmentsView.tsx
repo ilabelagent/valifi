@@ -108,7 +108,7 @@ const InvestmentSummary: React.FC<{ assets: Asset[] }> = ({ assets }) => {
             />
             <StatCard 
                 title="Net ROI" 
-                value={`${summary.netROI.toFixed(2)}%`}
+                value={`${(summary.netROI || 0).toFixed(2)}%`}
                 Icon={TrendingUpIcon}
                 colorClass="text-amber-400"
             />
@@ -297,14 +297,14 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = (props) => {
                             </td>
                             <td className="p-4 font-mono text-foreground font-semibold text-right"><span className="blur-balance">{formatCurrency(asset.valueUSD)}</span></td>
                             <td className={`p-4 font-semibold text-right ${asset.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                {asset.change24h >= 0 ? '+' : ''}{asset.change24h.toFixed(2)}%
+                                {asset.change24h >= 0 ? '+' : ''}{(asset.change24h || 0).toFixed(2)}%
                             </td>
                             <td className="p-4 min-w-[150px]">
                                 <div className="flex items-center gap-3">
                                     <div className="w-full bg-secondary rounded-full h-2">
-                                        <div className="bg-gradient-to-r from-primary to-primary/70 h-2 rounded-full" style={{ width: `${asset.allocation}%` }}></div>
+                                        <div className="bg-gradient-to-r from-primary to-primary/70 h-2 rounded-full" style={{ width: `${asset.allocation || 0}%` }}></div>
                                     </div>
-                                    <span className="text-sm text-muted-foreground w-12 text-right">{asset.allocation.toFixed(1)}%</span>
+                                    <span className="text-sm text-muted-foreground w-12 text-right">{(asset.allocation || 0).toFixed(1)}%</span>
                                 </div>
                             </td>
                             <td className="p-4 text-right">

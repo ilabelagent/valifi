@@ -28,7 +28,7 @@ interface ForumChatProps {
 }
 
 const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api, spectrumPlans, stakableCrypto }) => {
-    const isEligible = portfolio.totalValueUSD >= 100000;
+    const isEligible = (portfolio?.totalValueUSD || 0) >= 100000;
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -58,9 +58,9 @@ const ForumChat: React.FC<ForumChatProps> = ({ portfolio, api, spectrumPlans, st
         
         setIsLoading(true);
         const portfolioSummary = `User's Portfolio Context (for your analysis only, do not repeat it back):
-- Total Value: $${portfolio.totalValueUSD.toFixed(2)}
-- Top 5 Assets: ${portfolio.assets.slice(0, 5).map(a => `${a.name} (${a.ticker}): $${a.valueUSD.toFixed(2)} (${a.allocation.toFixed(2)}%)`).join(', ')}
-- Cash Balance: $${portfolio.assets.find(a => a.type === 'Cash')?.valueUSD.toFixed(2) || '0.00'}`;
+- Total Value: ${(portfolio?.totalValueUSD || 0).toFixed(2)}
+- Top 5 Assets: ${(portfolio?.assets || []).slice(0, 5).map(a => `${a.name} (${a.ticker}): ${(a.valueUSD || 0).toFixed(2)} (${(a.allocation || 0).toFixed(2)}%)`).join(', ')}
+- Cash Balance: ${(portfolio?.assets?.find(a => a.type === 'Cash')?.valueUSD || 0).toFixed(2)}`;
 
         const spectrumPlansSummary = `Available 'Spectrum Equity Plans' (for your analysis and recommendation):
 ${spectrumPlans.map(p => `- Plan: ${p.name}, Investment: ${p.investmentRange}, Daily Returns: ${p.dailyReturns}, Total Periods: ${p.totalPeriods}`).join('\n')}`;
@@ -122,9 +122,9 @@ User question: "${newMessage}"
                     Access exclusive AI insights and discussions by growing your portfolio to $100,000.
                 </p>
                 <div className="mt-4 w-full bg-border rounded-full h-2.5">
-                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(portfolio.totalValueUSD / 100000) * 100}%` }}></div>
+                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((portfolio?.totalValueUSD || 0) / 100000) * 100}%` }}></div>
                 </div>
-                 <p className="text-sm text-muted-foreground mt-2">Current Value: ${portfolio.totalValueUSD.toLocaleString()}</p>
+                 <p className="text-sm text-muted-foreground mt-2">Current Value: ${(portfolio?.totalValueUSD || 0).toLocaleString()}</p>
             </Card>
         );
     }

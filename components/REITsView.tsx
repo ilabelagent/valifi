@@ -14,39 +14,39 @@ const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ child
 
 const PropertyCard: React.FC<{ property: REITProperty; onInvest: () => void; onManage: () => void; hasInvested: boolean }> = ({ property, onInvest, onManage, hasInvested }) => {
     const { formatCurrency } = useCurrency();
-    const sharesRemaining = property.totalShares - property.sharesSold;
-    const progress = (property.sharesSold / property.totalShares) * 100;
+    const sharesRemaining = (property.totalShares || 0) - (property.sharesSold || 0);
+    const progress = property.totalShares ? ((property.sharesSold || 0) / property.totalShares) * 100 : 0;
 
     return (
         <Card className="flex flex-col overflow-hidden group transition-all duration-300 hover:border-primary/50 hover:-translate-y-1">
             <div className="aspect-video w-full overflow-hidden relative">
-                <img src={property.imageUrl} alt={property.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                <img src={property.imageUrl || '/placeholder-property.jpg'} alt={property.name || 'Property'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                 <div className={`absolute top-2 right-2 px-2 py-1 text-xs font-bold rounded-full text-white ${property.status === 'Open for Shares' ? 'bg-success/80' : 'bg-muted/80'}`}>
                     {property.status}
                 </div>
             </div>
             <div className="p-4 flex-grow flex flex-col">
-                <h3 className="font-bold text-lg text-foreground truncate">{property.name}</h3>
+                <h3 className="font-bold text-lg text-foreground truncate">{property.name || 'Unnamed Property'}</h3>
                 <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                     <LocationIcon className="w-4 h-4 flex-shrink-0" />
-                    {property.address}
+                    {property.address || 'Location not specified'}
                 </p>
                 
                 <div className="mt-4 space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Monthly ROI</span>
-                        <span className="font-semibold text-success">{property.monthlyROI.toFixed(2)}%</span>
+                        <span className="font-semibold text-success">{(property.monthlyROI || 0).toFixed(2)}%</span>
                     </div>
                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Investment Range</span>
-                        <span className="font-semibold text-foreground">{formatCurrency(property.investmentRange.min)} - {formatCurrency(property.investmentRange.max)}</span>
+                        <span className="font-semibold text-foreground">{formatCurrency(property.investmentRange?.min || 0)} - {formatCurrency(property.investmentRange?.max || 0)}</span>
                     </div>
                 </div>
                 
                 <div className="mt-4 flex-grow">
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Shares Remaining</span>
-                        <span>{Math.round(sharesRemaining)} / {property.totalShares}</span>
+                        <span>{Math.round(sharesRemaining)} / {property.totalShares || 0}</span>
                     </div>
                     <div className="w-full bg-secondary rounded-full h-2">
                         <div className="bg-primary h-2 rounded-full" style={{ width: `${progress}%` }}></div>
