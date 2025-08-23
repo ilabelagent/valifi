@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import db from '../../lib/db';
+import { createClient } from '@libsql/client';
 
 // Validation schema
 const signUpSchema = z.object({
@@ -14,6 +14,12 @@ const signUpSchema = z.object({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
 
+// Initialize Turso client directly in this file
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || '',
+  authToken: process.env.TURSO_AUTH_TOKEN || ''
+});
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -23,9 +29,57 @@ export default async function handler(
   }
 
   try {
+    // Check if database is configured
+    if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+      console.error('Database not configured');
+      return res.status(503).json({
+        success: false,
+        message: 'Database configuration is missing. Please contact support.'
+      });
+    }
+
     // Validate request body
     const validatedData = signUpSchema.parse(req.body);
     const { email, password, name } = validatedData;
+
+    // Initialize tables if they don't exist
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        is_verified INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        role TEXT DEFAULT 'user',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        refresh_token TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS portfolios (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        user_id TEXT NOT NULL,
+        total_value_usd REAL DEFAULT 0,
+        cash_balance REAL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
 
     // Check if user already exists
     const existingUser = await db.execute({

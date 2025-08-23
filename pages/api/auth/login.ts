@@ -1,9 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../../lib/db';
+import { createClient } from '@libsql/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
+
+// Initialize Turso client directly in this file
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || '',
+  authToken: process.env.TURSO_AUTH_TOKEN || ''
+});
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,6 +29,15 @@ export default async function handler(
   }
 
   try {
+    // Check if database is configured
+    if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+      console.error('Database not configured');
+      return res.status(503).json({
+        success: false,
+        message: 'Database configuration is missing. Please contact support.'
+      });
+    }
+
     // Find user in database
     const result = await db.execute({
       sql: 'SELECT id, email, name, password_hash, is_verified, role FROM users WHERE email = ?',
