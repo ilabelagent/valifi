@@ -4,9 +4,6 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "env": {
-    "JWT_SECRET": "@jwt-secret",
-    "JWT_REFRESH_SECRET": "@jwt-refresh-secret",
-    "NEXT_PUBLIC_API_URL": "@api-url",
     "NODE_ENV": "production"
   },
   "functions": {
