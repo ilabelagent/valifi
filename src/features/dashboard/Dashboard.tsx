@@ -9,8 +9,8 @@ import {
   ChartBarIcon,
   CreditCardIcon,
   DocumentTextIcon,
-  LogoutIcon 
-} from '@heroicons/react/outline';
+  ArrowLeftOnRectangleIcon as LogoutIcon 
+} from '@heroicons/react/24/outline';
 
 interface DashboardStats {
   totalTransactions: number;
