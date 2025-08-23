@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-const SignInForm: React.FC = () => {
+const SignUpForm: React.FC = () => {
   const router = useRouter();
   
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -16,6 +19,12 @@ const SignInForm: React.FC = () => {
   // Validate form inputs
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.name) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
 
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -27,6 +36,14 @@ const SignInForm: React.FC = () => {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.acceptTerms) {
+      newErrors.acceptTerms = 'You must accept the terms and conditions';
     }
 
     setErrors(newErrors);
@@ -43,12 +60,17 @@ const SignInForm: React.FC = () => {
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          acceptTerms: formData.acceptTerms
+        }),
       });
 
       const data = await response.json();
@@ -62,7 +84,7 @@ const SignInForm: React.FC = () => {
         // Redirect to main app
         window.location.href = '/';
       } else {
-        setErrors({ general: data.message || 'Sign in failed' });
+        setErrors({ general: data.message || 'Sign up failed' });
       }
     } catch (error) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' });
@@ -83,10 +105,10 @@ const SignInForm: React.FC = () => {
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Welcome Back
+            Create Your Account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Sign in to access your financial dashboard
+            Start your journey with Valifi today
           </p>
         </div>
 
@@ -98,6 +120,27 @@ const SignInForm: React.FC = () => {
           )}
 
           <div className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-200">
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-white/10 border border-gray-600 placeholder-gray-400 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                disabled={isLoading}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+              )}
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-200">
                 Email address
@@ -120,22 +163,17 @@ const SignInForm: React.FC = () => {
             </div>
             
             <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-200">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
-                  Forgot password?
-                </Link>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-200">
+                Password
+              </label>
               <input
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 bg-white/10 border border-gray-600 placeholder-gray-400 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your password"
+                placeholder="Create a strong password (min 8 characters)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 disabled={isLoading}
@@ -144,19 +182,52 @@ const SignInForm: React.FC = () => {
                 <p className="mt-1 text-sm text-red-400">{errors.password}</p>
               )}
             </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-white/10 border border-gray-600 placeholder-gray-400 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                disabled={isLoading}
+              />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center">
             <input
-              id="remember-me"
-              name="remember-me"
+              id="accept-terms"
+              name="accept-terms"
               type="checkbox"
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={formData.acceptTerms}
+              onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
             />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-              Remember me
+            <label htmlFor="accept-terms" className="ml-2 block text-sm text-gray-300">
+              I agree to the{' '}
+              <Link href="/terms" className="text-blue-400 hover:text-blue-300">
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link href="/privacy" className="text-blue-400 hover:text-blue-300">
+                Privacy Policy
+              </Link>
             </label>
           </div>
+          {errors.acceptTerms && (
+            <p className="mt-1 text-sm text-red-400">{errors.acceptTerms}</p>
+          )}
 
           <div>
             <button
@@ -170,10 +241,10 @@ const SignInForm: React.FC = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  Creating account...
                 </span>
               ) : (
-                'Sign In'
+                'Create Account'
               )}
             </button>
           </div>
@@ -184,7 +255,7 @@ const SignInForm: React.FC = () => {
                 <div className="w-full border-t border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-transparent text-gray-400">Or continue with</span>
+                <span className="px-2 bg-transparent text-gray-400">Or sign up with</span>
               </div>
             </div>
 
@@ -218,25 +289,16 @@ const SignInForm: React.FC = () => {
 
           <div className="text-center">
             <p className="text-sm text-gray-300">
-              Don't have an account?{' '}
-              <Link href="/signup" className="font-medium text-blue-400 hover:text-blue-300">
-                Sign up now
+              Already have an account?{' '}
+              <Link href="/signin" className="font-medium text-blue-400 hover:text-blue-300">
+                Sign in here
               </Link>
             </p>
           </div>
         </form>
-
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{' '}
-            <Link href="/terms" className="text-blue-400 hover:text-blue-300">Terms of Service</Link>
-            {' '}and{' '}
-            <Link href="/privacy" className="text-blue-400 hover:text-blue-300">Privacy Policy</Link>
-          </p>
-        </div>
       </div>
     </div>
   );
 };
 
-export default SignInForm;
+export default SignUpForm;
