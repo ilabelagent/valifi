@@ -40,7 +40,7 @@ export default async function handler(
 
     // Find user in database
     const result = await db.execute({
-      sql: 'SELECT id, email, name, password_hash, is_verified, role FROM users WHERE email = ?',
+      sql: 'SELECT id, email, name, password_hash, is_verified, is_active, role FROM users WHERE email = ?',
       args: [email.toLowerCase()]
     });
 
@@ -53,7 +53,15 @@ export default async function handler(
 
     const user = result.rows[0];
 
-    // Verify password
+    // Check if account is active
+    if (user.is_active === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is currently inactive. Please contact support.'
+      });
+    }
+
+    // Verify password - REAL verification only
     const isValidPassword = await bcrypt.compare(password, user.password_hash as string);
 
     if (!isValidPassword) {

@@ -105,10 +105,10 @@ export default async function handler(
 
     const newUser = result.rows[0];
 
-    // Create portfolio for the new user
+    // Create portfolio for the new user with $0 balance (no demo money)
     await db.execute({
       sql: 'INSERT INTO portfolios (user_id, cash_balance) VALUES (?, ?)',
-      args: [newUser.id, 1000] // Start with $1000 demo balance
+      args: [newUser.id, 0]
     });
 
     // Generate JWT token

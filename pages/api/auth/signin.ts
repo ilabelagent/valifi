@@ -65,7 +65,7 @@ export default async function handler(
       });
     }
 
-    // Verify password
+    // Verify password - REAL password verification, no demo mode
     const isValidPassword = await bcrypt.compare(password, user.password_hash as string);
 
     if (!isValidPassword) {
@@ -119,8 +119,7 @@ export default async function handler(
         name: user.name,
         isVerified: Boolean(user.is_verified),
         role: user.role,
-        permissions: user.role === 'admin' ? ['all'] : ['user'],
-        mfaEnabled: false
+        permissions: user.role === 'admin' ? ['all'] : ['user']
       }
     });
 

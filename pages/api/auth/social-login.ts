@@ -48,12 +48,21 @@ export default async function handler(
       });
     }
 
-    // Disable social login in production until properly configured
-    if (process.env.NODE_ENV === 'production' && 
-        (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET)) {
+    // Check if OAuth is properly configured
+    const isGoogleConfigured = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+    const isGithubConfigured = process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET;
+
+    if (provider === 'google' && !isGoogleConfigured) {
       return res.status(501).json({
         success: false,
-        message: 'Social login is not yet configured. Please use email/password login.'
+        message: 'Google login is not configured. Please use email/password login.'
+      });
+    }
+
+    if (provider === 'github' && !isGithubConfigured) {
+      return res.status(501).json({
+        success: false,
+        message: 'GitHub login is not configured. Please use email/password login.'
       });
     }
 
@@ -103,7 +112,7 @@ export default async function handler(
       // Create portfolio for new user
       await db.execute({
         sql: 'INSERT INTO portfolios (user_id, cash_balance) VALUES (?, ?)',
-        args: [userId, 1000] // Start with $1000 demo balance
+        args: [userId, 0] // Start with $0 balance - no demo money
       });
     }
 

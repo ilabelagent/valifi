@@ -1,243 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import jwt from 'jsonwebtoken';
+import { createClient } from '@libsql/client';
 
-// Mock investment data with complete fields
-const mockInvestmentData = {
-  stakableStocks: [
-    { 
-      id: "stock-1",
-      ticker: "AAPL", 
-      name: "Apple Inc.", 
-      price: 178.50, 
-      change24h: 2.5,
-      poolSize: 85,
-      sector: "Technology" as const,
-      status: "Available" as const,
-      logo: "AppleIcon" 
-    },
-    { 
-      id: "stock-2",
-      ticker: "GOOGL", 
-      name: "Alphabet Inc.", 
-      price: 139.25, 
-      change24h: -0.8,
-      poolSize: 72,
-      sector: "Technology" as const,
-      status: "Available" as const,
-      logo: "GoogleIcon" 
-    },
-    { 
-      id: "stock-3",
-      ticker: "MSFT", 
-      name: "Microsoft Corp.", 
-      price: 378.85, 
-      change24h: 1.2,
-      poolSize: 90,
-      sector: "Technology" as const,
-      status: "Available" as const,
-      logo: "MicrosoftIcon" 
-    },
-    { 
-      id: "stock-4",
-      ticker: "NVDA", 
-      name: "NVIDIA Corp.", 
-      price: 495.50, 
-      change24h: 3.8,
-      poolSize: 95,
-      sector: "Technology" as const,
-      status: "Available" as const,
-      logo: "NvidiaIcon" 
-    },
-    { 
-      id: "stock-5",
-      ticker: "TSLA", 
-      name: "Tesla Inc.", 
-      price: 253.75, 
-      change24h: -1.5,
-      poolSize: 78,
-      sector: "Consumer Discretionary" as const,
-      status: "Available" as const,
-      logo: "TeslaIcon" 
-    },
-    { 
-      id: "stock-6",
-      ticker: "AMZN", 
-      name: "Amazon.com Inc.", 
-      price: 145.50, 
-      change24h: 0.5,
-      poolSize: 88,
-      sector: "Consumer Discretionary" as const,
-      status: "Available" as const,
-      logo: "AmazonIcon" 
-    },
-    {
-      id: "stock-7",
-      ticker: "JPM",
-      name: "JPMorgan Chase",
-      price: 152.30,
-      change24h: 0.8,
-      poolSize: 65,
-      sector: "Financials" as const,
-      status: "Available" as const,
-      logo: "JpmIcon"
-    },
-    {
-      id: "stock-8",
-      ticker: "V",
-      name: "Visa Inc.",
-      price: 245.60,
-      change24h: 1.1,
-      poolSize: 70,
-      sector: "Financials" as const,
-      status: "Available" as const,
-      logo: "VisaIcon"
-    }
-  ],
-  stakableCrypto: [
-    { 
-      id: "btc", 
-      ticker: "BTC", 
-      name: "Bitcoin", 
-      apr: 5.5, 
-      minDuration: 30,
-      maxDuration: 365,
-      payoutCycle: "Monthly",
-      minAmount: 0.001,
-      maxAmount: 100,
-      adminWalletAddress: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-      Icon: "BtcIcon" 
-    },
-    { 
-      id: "eth", 
-      ticker: "ETH", 
-      name: "Ethereum", 
-      apr: 6.8, 
-      minDuration: 30,
-      maxDuration: 365,
-      payoutCycle: "Monthly",
-      minAmount: 0.01,
-      maxAmount: 1000,
-      adminWalletAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
-      Icon: "EthIcon" 
-    },
-    { 
-      id: "sol", 
-      ticker: "SOL", 
-      name: "Solana", 
-      apr: 8.2, 
-      minDuration: 30,
-      maxDuration: 365,
-      payoutCycle: "Monthly",
-      minAmount: 0.1,
-      maxAmount: 10000,
-      adminWalletAddress: "7EYnhQoR9YM3N7UoaKRoA44Uy8JeaZV3qyouov87awMs",
-      Icon: "SolanaIcon" 
-    }
-  ],
-  reitProperties: [
-    {
-      id: "reit-1",
-      name: "Manhattan Commercial Tower",
-      address: "350 5th Avenue, New York, NY 10118",
-      imageUrl: "/placeholder-property.svg",
-      description: "Prime commercial real estate in the heart of Manhattan",
-      investmentRange: { min: 250, max: 100000 },
-      monthlyROI: 0.625,
-      totalShares: 10000,
-      sharesSold: 9500,
-      status: "Open for Shares" as const
-    },
-    {
-      id: "reit-2",
-      name: "Silicon Valley Tech Park",
-      address: "1 Infinite Loop, Cupertino, CA 95014",
-      imageUrl: "/placeholder-property.svg",
-      description: "Modern tech campus in the heart of Silicon Valley",
-      investmentRange: { min: 500, max: 250000 },
-      monthlyROI: 0.567,
-      totalShares: 20000,
-      sharesSold: 20000,
-      status: "Fully Funded" as const
-    }
-  ],
-  investableNFTs: [
-    {
-      id: "nft-1",
-      title: "Bored Ape #3749",
-      collection: "BAYC",
-      imageUrl: "/placeholder-property.svg",
-      floorPrice: 250000,
-      totalShares: 1000,
-      sharesAvailable: 250,
-      investors: 750,
-      apyAnnual: 12.5,
-      apyMonthly: 1.04,
-      adminBtcAddress: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
-    },
-    {
-      id: "nft-2",
-      title: "CryptoPunk #2140",
-      collection: "CryptoPunks",
-      imageUrl: "/placeholder-property.svg",
-      floorPrice: 350000,
-      totalShares: 1000,
-      sharesAvailable: 100,
-      investors: 900,
-      apyAnnual: 15.0,
-      apyMonthly: 1.25,
-      adminBtcAddress: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
-    }
-  ],
-  spectrumPlans: [
-    {
-      id: "starter",
-      name: "Starter",
-      investmentRange: "$100 - $999",
-      dailyReturns: "0.5%",
-      capitalReturn: "After 200 days",
-      returnType: "Daily",
-      totalPeriods: "200 days",
-      cancellation: "Not Available",
-      totalRevenue: "100% + Capital",
-      note: "Perfect for beginners",
-      colorClass: "bg-gradient-to-r from-blue-500 to-blue-600",
-      borderColor: "border-blue-500",
-      buttonColor: "bg-blue-500 hover:bg-blue-600",
-      shadowColor: "shadow-blue-500/20"
-    },
-    {
-      id: "growth",
-      name: "Growth",
-      investmentRange: "$1,000 - $4,999",
-      dailyReturns: "0.8%",
-      capitalReturn: "After 150 days",
-      returnType: "Daily",
-      totalPeriods: "150 days",
-      cancellation: "After 30 days",
-      totalRevenue: "120% + Capital",
-      note: "Accelerated returns",
-      colorClass: "bg-gradient-to-r from-purple-500 to-purple-600",
-      borderColor: "border-purple-500",
-      buttonColor: "bg-purple-500 hover:bg-purple-600",
-      shadowColor: "shadow-purple-500/20"
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      investmentRange: "$5,000 - $19,999",
-      dailyReturns: "1.2%",
-      capitalReturn: "After 100 days",
-      returnType: "Daily",
-      totalPeriods: "100 days",
-      cancellation: "After 15 days",
-      totalRevenue: "120% + Capital",
-      note: "Maximum efficiency",
-      colorClass: "bg-gradient-to-r from-yellow-500 to-yellow-600",
-      borderColor: "border-yellow-500",
-      buttonColor: "bg-yellow-500 hover:bg-yellow-600",
-      shadowColor: "shadow-yellow-500/20"
-    }
-  ]
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
+
+// Initialize Turso client
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || '',
+  authToken: process.env.TURSO_AUTH_TOKEN || ''
+});
+
+// Verify JWT token
+function verifyToken(token: string): any {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -247,111 +27,161 @@ export default async function handler(
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  // Check for auth token (simplified - accepts any token for demo)
+  // Check for auth token
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 
-  // Return mock app data with complete structure
-  const appData = {
-    profile: {
-      id: 'demo_user',
-      fullName: 'Demo User',
-      username: 'demouser',
-      email: 'demo@valifi.net',
-      profilePhotoUrl: 'https://i.pravatar.cc/150?u=demo',
-      kycStatus: 'Not Started' as const
-    },
-    settings: {
-      twoFactorAuth: { enabled: false, method: 'none' as const },
-      loginAlerts: true,
-      autoLogout: '1h' as const,
-      preferences: {
-        currency: 'USD',
-        language: 'en' as const,
-        dateFormat: 'MM/DD/YYYY' as const,
-        timezone: 'UTC',
-        balancePrivacy: false,
-        sidebarCollapsed: false,
-        openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance']
-      },
-      privacy: {
-        emailMarketing: false,
-        platformMessages: true,
-        contactAccess: false
-      },
-      vaultRecovery: {
-        email: '',
-        phone: '',
-        pin: ''
-      }
-    },
-    sessions: [],
-    portfolio: {
-      totalValue: 10000,
-      totalProfit: 0,
-      dailyChange: 0,
-      weeklyChange: 0,
-      change24hValue: 0,
-      change24hPercent: 0,
-      assets: [
-        {
-          id: 'cash-1',
-          type: 'Cash' as const,
-          ticker: 'USD',
-          name: 'US Dollar',
-          balance: 10000,
-          valueUSD: 10000,
-          change24h: 0,
-          allocation: 100,
-          Icon: 'UsdIcon'
-        }
-      ],
-      transactions: [],
-      tradeAssets: []
-    },
-    notifications: [],
-    userActivity: [],
-    newsItems: [
-      {
-        id: '1',
-        title: 'Welcome to Valifi',
-        content: 'Start your investment journey today with our comprehensive platform',
-        timestamp: new Date().toISOString(),
-        link: '/dashboard',
-        linkText: 'Get Started'
-      }
-    ],
-    cardDetails: {
-      status: 'Not Applied' as const,
-      type: 'Virtual' as const,
-      currency: 'USD' as const,
-      theme: 'Obsidian' as const,
-      isFrozen: false
-    },
-    linkedBankAccounts: [],
-    loanApplications: [],
-    p2pOffers: [],
-    p2pOrders: [],
-    userPaymentMethods: [],
-    reitProperties: mockInvestmentData.reitProperties,
-    stakableStocks: mockInvestmentData.stakableStocks,
-    investableNFTs: mockInvestmentData.investableNFTs,
-    spectrumPlans: mockInvestmentData.spectrumPlans,
-    stakableCrypto: mockInvestmentData.stakableCrypto,
-    userStakedStocks: [],
-    cashBalance: 10000,
-    referralSummary: {
-      tree: null,
-      activities: []
+  // Verify token
+  const decoded = verifyToken(token);
+  if (!decoded || !decoded.userId) {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+
+  try {
+    // Get user data from database
+    const userResult = await db.execute({
+      sql: 'SELECT id, email, name, is_verified, is_active, role FROM users WHERE id = ?',
+      args: [decoded.userId]
+    });
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-  };
 
-  // Add CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    const user = userResult.rows[0];
 
-  res.status(200).json({ success: true, data: appData });
+    // Get user's portfolio
+    const portfolioResult = await db.execute({
+      sql: 'SELECT * FROM portfolios WHERE user_id = ?',
+      args: [decoded.userId]
+    });
+
+    const portfolio = portfolioResult.rows[0] || {
+      total_value_usd: 0,
+      cash_balance: 0
+    };
+
+    // Get user's assets
+    const assetsResult = await db.execute({
+      sql: 'SELECT * FROM assets WHERE portfolio_id = ?',
+      args: [portfolio?.id || '']
+    });
+
+    // Get user's transactions
+    const transactionsResult = await db.execute({
+      sql: 'SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+      args: [decoded.userId]
+    });
+
+    // Build app data response with REAL user data
+    const appData = {
+      profile: {
+        id: user.id,
+        fullName: user.name,
+        username: user.email?.split('@')[0] || 'user',
+        email: user.email,
+        profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name as string)}&background=4F46E5&color=fff`,
+        kycStatus: 'Not Started' as const,
+        isVerified: Boolean(user.is_verified),
+        isActive: Boolean(user.is_active),
+        role: user.role
+      },
+      settings: {
+        twoFactorAuth: { enabled: false, method: 'none' as const },
+        loginAlerts: true,
+        autoLogout: '1h' as const,
+        preferences: {
+          currency: 'USD',
+          language: 'en' as const,
+          dateFormat: 'MM/DD/YYYY' as const,
+          timezone: 'UTC',
+          balancePrivacy: false,
+          sidebarCollapsed: false,
+          openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance']
+        },
+        privacy: {
+          emailMarketing: false,
+          platformMessages: true,
+          contactAccess: false
+        },
+        vaultRecovery: {
+          email: '',
+          phone: '',
+          pin: ''
+        }
+      },
+      sessions: [],
+      portfolio: {
+        totalValue: Number(portfolio?.total_value_usd) || 0,
+        totalProfit: 0,
+        dailyChange: 0,
+        weeklyChange: 0,
+        change24hValue: 0,
+        change24hPercent: 0,
+        cashBalance: Number(portfolio?.cash_balance) || 0,
+        assets: assetsResult.rows.map((asset: any) => ({
+          id: asset.id,
+          type: asset.type,
+          ticker: asset.ticker,
+          name: asset.name,
+          balance: Number(asset.quantity) || 0,
+          valueUSD: Number(asset.value_usd) || 0,
+          change24h: Number(asset.change_24h) || 0,
+          allocation: 0,
+          Icon: 'GenericIcon'
+        })),
+        transactions: transactionsResult.rows.map((tx: any) => ({
+          id: tx.id,
+          date: tx.created_at,
+          description: tx.description || 'Transaction',
+          amountUSD: Number(tx.amount_usd) || 0,
+          status: tx.status || 'Completed',
+          type: tx.type || 'Trade'
+        })),
+        tradeAssets: []
+      },
+      notifications: [],
+      userActivity: [],
+      newsItems: [],
+      cardDetails: {
+        status: 'Not Applied' as const,
+        type: 'Virtual' as const,
+        currency: 'USD' as const,
+        theme: 'Obsidian' as const,
+        isFrozen: false
+      },
+      linkedBankAccounts: [],
+      loanApplications: [],
+      p2pOffers: [],
+      p2pOrders: [],
+      userPaymentMethods: [],
+      // Empty investment options - no demo data
+      reitProperties: [],
+      stakableStocks: [],
+      investableNFTs: [],
+      spectrumPlans: [],
+      stakableCrypto: [],
+      userStakedStocks: [],
+      referralSummary: {
+        tree: null,
+        activities: []
+      }
+    };
+
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+
+    res.status(200).json({ success: true, data: appData });
+
+  } catch (error) {
+    console.error('Error fetching app data:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch application data' 
+    });
+  }
 }
