@@ -14,6 +14,11 @@ const Card: React.FC<{ children: React.ReactNode, className?: string }> = ({ chi
 const StockCard: React.FC<{ stock: StakableStock; onStake: () => void; onManage: () => void; userStake: Asset | undefined }> = ({ stock, onStake, onManage, userStake }) => {
     const { formatCurrency } = useCurrency();
     const isStaked = !!userStake;
+    
+    // Safely handle potentially undefined values
+    const change24h = stock.change24h ?? 0;
+    const poolSize = stock.poolSize ?? 0;
+    const price = stock.price ?? 0;
 
     return (
         <Card className="flex flex-col overflow-hidden group transition-all duration-300 hover:border-primary/50 hover:-translate-y-1">
@@ -27,20 +32,22 @@ const StockCard: React.FC<{ stock: StakableStock; onStake: () => void; onManage:
                         </div>
                     </div>
                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${stock.status === 'Available' ? 'bg-success/10 text-success' : 'bg-secondary text-muted-foreground'}`}>
-                        {stock.status}
+                        {stock.status || 'Available'}
                     </span>
                 </div>
                 <div className="flex justify-between items-baseline mt-4">
-                    <p className="text-2xl font-semibold text-foreground">{formatCurrency(stock.price)}</p>
-                    <p className={`font-semibold ${stock.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>{stock.change24h.toFixed(2)}%</p>
+                    <p className="text-2xl font-semibold text-foreground">{formatCurrency(price)}</p>
+                    <p className={`font-semibold ${change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
+                        {change24h.toFixed(2)}%
+                    </p>
                 </div>
                  <div className="mt-2">
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Pool Size</span>
-                        <span>{stock.poolSize}%</span>
+                        <span>{poolSize.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-secondary rounded-full h-1.5">
-                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${stock.poolSize}%` }}></div>
+                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min(poolSize, 100)}%` }}></div>
                     </div>
                 </div>
             </div>
@@ -57,22 +64,30 @@ const StockCard: React.FC<{ stock: StakableStock; onStake: () => void; onManage:
     );
 };
 
-const LeaderboardItem: React.FC<{ stock: StakableStock, rank: number }> = ({ stock, rank }) => (
-    <li className="flex items-center justify-between p-2 rounded-md hover:bg-accent">
-        <div className="flex items-center gap-3">
-            <span className="font-mono text-muted-foreground text-sm w-5">{rank}.</span>
-            <stock.logo className="w-8 h-8 rounded-full" />
-            <div>
-                <p className="font-semibold text-foreground text-sm">{stock.ticker}</p>
-                <p className="text-xs text-muted-foreground">{stock.sector}</p>
+const LeaderboardItem: React.FC<{ stock: StakableStock, rank: number }> = ({ stock, rank }) => {
+    // Safely handle potentially undefined values
+    const change24h = stock.change24h ?? 0;
+    const poolSize = stock.poolSize ?? 0;
+    
+    return (
+        <li className="flex items-center justify-between p-2 rounded-md hover:bg-accent">
+            <div className="flex items-center gap-3">
+                <span className="font-mono text-muted-foreground text-sm w-5">{rank}.</span>
+                <stock.logo className="w-8 h-8 rounded-full" />
+                <div>
+                    <p className="font-semibold text-foreground text-sm">{stock.ticker}</p>
+                    <p className="text-xs text-muted-foreground">{stock.sector}</p>
+                </div>
             </div>
-        </div>
-        <div className="text-right">
-             <p className={`font-semibold text-sm ${stock.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>{stock.change24h.toFixed(2)}%</p>
-             <p className="text-xs text-muted-foreground">Pool: {stock.poolSize}%</p>
-        </div>
-    </li>
-);
+            <div className="text-right">
+                 <p className={`font-semibold text-sm ${change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {change24h.toFixed(2)}%
+                 </p>
+                 <p className="text-xs text-muted-foreground">Pool: {poolSize.toFixed(0)}%</p>
+            </div>
+        </li>
+    );
+};
 
 interface StockStakingViewProps {
     stakableStocks: StakableStock[];
@@ -84,16 +99,28 @@ interface StockStakingViewProps {
     clearSearch: () => void;
 }
 
-const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, userStakedStocks, cashBalance, onStake, searchResultTickers, clearSearch }) => {
+const StockStakingView: React.FC<StockStakingViewProps> = ({ 
+    stakableStocks = [], 
+    userStakedStocks = [], 
+    cashBalance = 0, 
+    onStake, 
+    searchResultTickers, 
+    clearSearch 
+}) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sectorFilter, setSectorFilter] = useState('All');
     const [sortBy, setSortBy] = useState('poolSize');
     const [stakeModalStock, setStakeModalStock] = useState<StakableStock | null>(null);
     const [manageModalAsset, setManageModalAsset] = useState<Asset | null>(null);
     
-    const sectors = useMemo(() => ['All', ...Array.from(new Set(stakableStocks.map(s => s.sector)))], [stakableStocks]);
+    const sectors = useMemo(() => {
+        if (!stakableStocks || stakableStocks.length === 0) return ['All'];
+        return ['All', ...Array.from(new Set(stakableStocks.map(s => s.sector)))];
+    }, [stakableStocks]);
     
     const filteredAndSortedStocks = useMemo(() => {
+        if (!stakableStocks || stakableStocks.length === 0) return [];
+        
         let stocks = stakableStocks
             .filter(s => 
                 (s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.ticker.toLowerCase().includes(searchTerm.toLowerCase())) &&
@@ -110,18 +137,30 @@ const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, use
         }
         
         stocks.sort((a, b) => {
+            const aPrice = a.price ?? 0;
+            const bPrice = b.price ?? 0;
+            const aChange = a.change24h ?? 0;
+            const bChange = b.change24h ?? 0;
+            const aPoolSize = a.poolSize ?? 0;
+            const bPoolSize = b.poolSize ?? 0;
+            
             switch (sortBy) {
                 case 'name': return a.name.localeCompare(b.name);
-                case 'price': return b.price - a.price;
-                case 'change24h': return b.change24h - a.change24h;
-                default: return b.poolSize - a.poolSize; // poolSize is default
+                case 'price': return bPrice - aPrice;
+                case 'change24h': return bChange - aChange;
+                default: return bPoolSize - aPoolSize; // poolSize is default
             }
         });
 
         return stocks;
     }, [stakableStocks, searchTerm, sectorFilter, sortBy, searchResultTickers]);
 
-    const leaderboardStocks = useMemo(() => [...stakableStocks].sort((a,b) => b.poolSize - a.poolSize).slice(0, 10), [stakableStocks]);
+    const leaderboardStocks = useMemo(() => {
+        if (!stakableStocks || stakableStocks.length === 0) return [];
+        return [...stakableStocks]
+            .sort((a, b) => (b.poolSize ?? 0) - (a.poolSize ?? 0))
+            .slice(0, 10);
+    }, [stakableStocks]);
     
     const selectClass = "w-full bg-secondary border border-border rounded-lg py-2 pl-4 pr-8 text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none";
 
@@ -171,7 +210,7 @@ const StockStakingView: React.FC<StockStakingViewProps> = ({ stakableStocks, use
                                                 stock={stock}
                                                 userStake={userStake}
                                                 onStake={() => setStakeModalStock(stock)}
-                                                onManage={() => setManageModalAsset(userStake!)}
+                                                onManage={() => userStake && setManageModalAsset(userStake)}
                                             />
                                         )
                                     })}
