@@ -28,7 +28,7 @@ const PortfolioPerformanceChart: React.FC<{ portfolio: Portfolio }> = ({ portfol
     const chartData = useMemo(() => {
         const data: { day: number; value: number }[] = [];
         const days = timeRange === '7D' ? 7 : timeRange === '30D' ? 30 : 90;
-        const endValue = portfolio.totalValueUSD;
+        const endValue = portfolio?.totalValueUSD || 0;
 
         let currentValue = endValue * (1 - (Math.random() * 0.05 + 0.02) * (days/30));
         if (currentValue <= 0) currentValue = endValue * 0.8;
@@ -48,7 +48,7 @@ const PortfolioPerformanceChart: React.FC<{ portfolio: Portfolio }> = ({ portfol
         }
         
         return data;
-    }, [portfolio.totalValueUSD, timeRange]);
+    }, [portfolio?.totalValueUSD, timeRange]);
     
     const TimeRangeButton: React.FC<{label: '7D' | '30D' | 'All'}> = ({label}) => (
         <button onClick={() => setTimeRange(label)} className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${timeRange === label ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
@@ -126,7 +126,7 @@ const TopMovers: React.FC<{ assets: Asset[] }> = ({ assets }) => {
                 </div>
             </div>
             <p className={`font-semibold text-sm ${asset.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {asset.change24h >= 0 ? '+' : ''}{asset.change24h.toFixed(2)}%
+                {asset.change24h >= 0 ? '+' : ''}{(asset.change24h || 0).toFixed(2)}%
             </p>
         </li>
     );
@@ -183,7 +183,7 @@ const DualBalanceSummary: React.FC<{
                         <p className="text-5xl font-bold text-foreground tracking-tighter"><span className="blur-balance">{formatCurrency(investmentBalance)}</span></p>
                         <div className={`flex items-center text-lg font-semibold px-2 py-0.5 rounded-md ${isPositive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                           {isPositive ? <ArrowUpIcon className="w-5 h-5"/> : <ArrowDownIcon className="w-5 h-5"/>}
-                          <span className="ml-1">{totalChangePercent.toFixed(2)}%</span>
+                          <span className="ml-1">{(totalChangePercent || 0).toFixed(2)}%</span>
                         </div>
                     </div>
                      <p className={`text-sm font-medium ml-1 mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
@@ -314,17 +314,17 @@ interface DashboardViewProps {
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ portfolio, setCurrentView, onTransferToMain, onDepositClick, onWithdrawClick, spectrumPlans, stakableCrypto }) => {
-  const mainBalance = portfolio.assets.find(a => a.type === AssetType.CASH)?.valueUSD || 0;
-  const investmentBalance = portfolio.totalValueUSD - mainBalance;
-  const investmentAssets = portfolio.assets.filter(a => a.type !== AssetType.CASH);
+  const mainBalance = portfolio?.assets?.find(a => a.type === AssetType.CASH)?.valueUSD || 0;
+  const investmentBalance = (portfolio?.totalValueUSD || 0) - mainBalance;
+  const investmentAssets = portfolio?.assets?.filter(a => a.type !== AssetType.CASH) || [];
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 view-container">
       <DualBalanceSummary
           mainBalance={mainBalance} 
           investmentBalance={investmentBalance}
-          totalChangeValue={portfolio.change24hValue}
-          totalChangePercent={portfolio.change24hPercent}
+          totalChangeValue={portfolio?.change24hValue || 0}
+          totalChangePercent={portfolio?.change24hPercent || 0}
           onDepositClick={onDepositClick}
           onWithdrawClick={onWithdrawClick}
       />
@@ -336,13 +336,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ portfolio, setCurrentView
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
             <InvestmentList investments={investmentAssets} onTransfer={onTransferToMain} />
-            <TransactionHistory transactions={portfolio.transactions} />
+            <TransactionHistory transactions={portfolio?.transactions || []} />
         </div>
         <div className="lg:col-span-1 space-y-8">
             <PortfolioPerformanceChart portfolio={portfolio} />
             <ForumChat portfolio={portfolio} api={apiService.callCoPilot} spectrumPlans={spectrumPlans} stakableCrypto={stakableCrypto} />
             <WorldClockFXTicker />
-            <TopMovers assets={portfolio.assets} />
+            <TopMovers assets={portfolio?.assets || []} />
         </div>
       </div>
     </div>
