@@ -1,0 +1,45 @@
+VALIFI PLATFORM - GENERATED TOKENS
+===================================
+Generated: 2025-08-23T11:32:55.175Z
+
+Copy these values to your Vercel Environment Variables:
+https://vercel.com/dashboard/[your-project]/settings/environment-variables
+
+JWT_SECRET:
+hHXFL8f6RtSricXofQofp7qw1KO4rBpgQ9lJfu4M2Upym6SimEnMHLC6PiHGxHt5
+
+JWT_REFRESH_SECRET:
+nbR2ynJthz2GJOH5g685ffbJZMVvhBQuOzKiJSnzGADX2O50EeiNxCc5Qn88EBe0
+
+API_KEY:
+FQS8mCLzaOjq3OllMwgoSQhAMv2Jsq4ivh1o2ABpuxgs5qjr
+
+===================================
+VERCEL CLI COMMANDS:
+===================================
+
+Run these commands in your terminal:
+
+vercel env add JWT_SECRET production
+(Then paste: hHXFL8f6RtSricXofQofp7qw1KO4rBpgQ9lJfu4M2Upym6SimEnMHLC6PiHGxHt5)
+
+vercel env add JWT_REFRESH_SECRET production
+(Then paste: nbR2ynJthz2GJOH5g685ffbJZMVvhBQuOzKiJSnzGADX2O50EeiNxCc5Qn88EBe0)
+
+vercel env add API_KEY production
+(Then paste: FQS8mCLzaOjq3OllMwgoSQhAMv2Jsq4ivh1o2ABpuxgs5qjr)
+
+vercel env add NODE_ENV production
+(Then paste: production)
+
+===================================
+REMEMBER TO ALSO SET:
+===================================
+
+vercel env add TURSO_DATABASE_URL production
+(Paste your Turso database URL)
+
+vercel env add TURSO_AUTH_TOKEN production
+(Paste your Turso auth token)
+
+===================================
