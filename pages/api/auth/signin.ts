@@ -1,7 +1,8 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { createClient } from '@libsql/client';
 
 // Validation schema
 const signInSchema = z.object({
@@ -9,99 +10,133 @@ const signInSchema = z.object({
   password: z.string().min(6)
 });
 
-// Mock user database (replace with actual database)
-const users = [
-  {
-    id: '1',
-    email: 'admin@valifi.com',
-    password: '$2a$10$K7L1OvYJP8ZL/2Q.', // hashed password
-    name: 'Admin User',
-    role: 'admin',
-    permissions: ['all'],
-    isVerified: true,
-    mfaEnabled: false
-  }
-];
+const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
+
+// Initialize Turso client directly in this file
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || '',
+  authToken: process.env.TURSO_AUTH_TOKEN || ''
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({ 
+      success: false, 
+      message: 'Method not allowed' 
+    });
   }
 
   try {
-    // Validate request body
-    const { email, password } = signInSchema.parse(req.body);
-
-    // Find user
-    const user = users.find(u => u.email === email);
-
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Verify password (for demo, accept any password)
-    // In production, use: const isValid = await bcrypt.compare(password, user.password);
-    const isValid = true; // Demo mode
-
-    if (!isValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Check if MFA is enabled
-    if (user.mfaEnabled) {
-      return res.status(200).json({
-        requiresMFA: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name
-        }
+    // Check if database is configured
+    if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+      console.error('Database not configured');
+      return res.status(503).json({
+        success: false,
+        message: 'Database configuration is missing. Please contact support.'
       });
     }
 
-    // Generate tokens
+    // Validate request body
+    const { email, password } = signInSchema.parse(req.body);
+
+    // Find user in database
+    const result = await db.execute({
+      sql: 'SELECT id, email, name, password_hash, is_verified, is_active, role FROM users WHERE email = ?',
+      args: [email.toLowerCase()]
+    });
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Check if account is active
+    if (user.is_active === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is currently inactive. Please contact support.'
+      });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash as string);
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Generate JWT token
     const token = jwt.sign(
       { 
-        userId: user.id, 
+        userId: user.id,
         email: user.email,
-        role: user.role 
+        name: user.name,
+        role: user.role
       },
-      process.env.JWT_SECRET || 'valifi-secret-key',
-      { expiresIn: '30m' }
+      JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
+    // Generate refresh token
     const refreshToken = jwt.sign(
       { userId: user.id },
-      process.env.JWT_REFRESH_SECRET || 'valifi-refresh-secret',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Return success response
-    res.status(200).json({
+    // Store/update session in database
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Delete any existing sessions for this user
+    await db.execute({
+      sql: 'DELETE FROM sessions WHERE user_id = ?',
+      args: [user.id]
+    });
+
+    // Create new session
+    await db.execute({
+      sql: 'INSERT INTO sessions (user_id, token, refresh_token, expires_at) VALUES (?, ?, ?, ?)',
+      args: [user.id, token, refreshToken, expiresAt.toISOString()]
+    });
+
+    return res.status(200).json({
+      success: true,
       token,
       refreshToken,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
+        isVerified: Boolean(user.is_verified),
         role: user.role,
-        permissions: user.permissions,
-        isVerified: user.isVerified,
-        mfaEnabled: user.mfaEnabled
+        permissions: user.role === 'admin' ? ['all'] : ['user'],
+        mfaEnabled: false
       }
     });
+
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ 
+        success: false,
         message: 'Invalid request data',
         errors: error.errors 
       });
     }
 
     console.error('Sign in error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      message: 'An error occurred during sign in. Please try again.' 
+    });
   }
 }

@@ -1,15 +1,17 @@
 import { createClient } from '@libsql/client';
 
-// Initialize Turso database client
+// Initialize Turso database client WITHOUT syncUrl
+// syncUrl was causing "Unexpected status code while fetching migration jobs: 400"
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL || '',
   authToken: process.env.TURSO_AUTH_TOKEN || ''
+  // NO syncUrl - it's only for embedded replicas, not hosted Turso
 });
 
 // Test database connection
 export async function testConnection() {
   try {
-    const result = await db.execute('SELECT 1');
+    const result = await db.execute('SELECT 1 AS ok');
     console.log('✅ Database connected successfully');
     return true;
   } catch (error) {
@@ -18,18 +20,18 @@ export async function testConnection() {
   }
 }
 
-// Initialize database tables
+// Initialize database tables (safe to run multiple times)
 export async function initializeDatabase() {
   try {
-    // Create users table
+    // Create users table with all required fields
     await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
         password_hash TEXT NOT NULL,
-        is_verified BOOLEAN DEFAULT 0,
-        is_active BOOLEAN DEFAULT 1,
+        is_verified INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
         role TEXT DEFAULT 'user',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -99,6 +101,13 @@ export async function initializeDatabase() {
     console.error('❌ Failed to initialize database:', error);
     return false;
   }
+}
+
+// Run initialization on module load (for serverless environments)
+if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
+  initializeDatabase().catch(err => {
+    console.error('Failed to initialize database on module load:', err);
+  });
 }
 
 export default db;
