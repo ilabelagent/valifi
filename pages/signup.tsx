@@ -53,9 +53,10 @@ const SignUpPage: React.FC = () => {
         },
         body: JSON.stringify({
           name: formData.name,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
-          acceptTerms: acceptTerms
+          acceptTerms: acceptTerms,
         }),
       });
 

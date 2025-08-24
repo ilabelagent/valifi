@@ -5,11 +5,15 @@ import { z } from 'zod';
 import { createClient } from '@libsql/client';
 
 // Validation schema
+// Accepts username in addition to name and email.  Username is required and must be
+// at least 3 characters.  We intentionally enforce a minimum length to avoid
+// empty or trivial usernames, and we require the user to accept the terms.
 const signUpSchema = z.object({
   email: z.string().email(),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  acceptTerms: z.boolean().refine(val => val === true, 'You must accept the terms')
+  acceptTerms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
@@ -22,7 +26,7 @@ const db = createClient({
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -38,15 +42,16 @@ export default async function handler(
       });
     }
 
-    // Validate request body
+    // Validate request body.  Parsing will throw if any field is invalid.
     const validatedData = signUpSchema.parse(req.body);
-    const { email, password, name } = validatedData;
+    const { email, username, password, name } = validatedData;
 
     // Initialize tables if they don't exist
     await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         email TEXT UNIQUE NOT NULL,
+        username TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         is_verified INTEGER DEFAULT 0,
@@ -81,26 +86,27 @@ export default async function handler(
       )
     `);
 
-    // Check if user already exists
+    // Check if user already exists (by email or username)
     const existingUser = await db.execute({
-      sql: 'SELECT id FROM users WHERE email = ?',
-      args: [email.toLowerCase()]
+      sql: 'SELECT id FROM users WHERE email = ? OR username = ?',
+      args: [email.toLowerCase(), username.toLowerCase()],
     });
-    
+
     if (existingUser.rows.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists'
+        message: 'An account with this email or username already exists',
       });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // Create new user (store username as well).  The RETURNING clause will
+    // return the inserted id, email, username, name, verification state and role.
     const result = await db.execute({
-      sql: 'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?) RETURNING id, email, name, is_verified, role',
-      args: [email.toLowerCase(), name, hashedPassword]
+      sql: 'INSERT INTO users (email, username, name, password_hash) VALUES (?, ?, ?, ?) RETURNING id, email, username, name, is_verified, role',
+      args: [email.toLowerCase(), username.toLowerCase(), name, hashedPassword],
     });
 
     const newUser = result.rows[0];
@@ -143,11 +149,12 @@ export default async function handler(
       user: {
         id: newUser.id,
         email: newUser.email,
+        username: newUser.username,
         name: newUser.name,
         isVerified: Boolean(newUser.is_verified),
-        role: newUser.role
+        role: newUser.role,
       },
-      message: 'Account created successfully'
+      message: 'Account created successfully',
     });
 
   } catch (error: any) {
