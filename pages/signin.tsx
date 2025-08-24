@@ -59,13 +59,13 @@ const SignInPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0b1e] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-[#1a1b3a] rounded-2xl p-8 shadow-2xl border border-gray-800 relative">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md animate-slide-up-fade">
+        <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border relative">
           {/* Close button */}
           <button 
             onClick={() => router.push('/')}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Close"
             type="button"
           >
@@ -76,8 +76,8 @@ const SignInPage: React.FC = () => {
 
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-10 h-10 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                   d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
@@ -85,25 +85,25 @@ const SignInPage: React.FC = () => {
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-white text-center mb-2">Welcome Back</h2>
-          <p className="text-gray-400 text-center mb-6">Sign in to access your financial dashboard.</p>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Welcome Back</h2>
+          <p className="text-muted-foreground text-center mb-6">Sign in to access your financial dashboard.</p>
 
-          {/* Removed Social Login Section */}
+          {/* NO SOCIAL LOGIN - REMOVED COMPLETELY */}
 
-          {/* OR Divider */}
+          {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700"></div>
+              <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-[#1a1b3a] text-gray-400">Sign in with email</span>
+              <span className="px-2 bg-card text-muted-foreground">Sign in with email</span>
             </div>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <p className="text-red-400 text-sm text-center">{error}</p>
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg animate-slide-in-fade">
+              <p className="text-destructive text-sm text-center">{error}</p>
             </div>
           )}
 
@@ -118,7 +118,7 @@ const SignInPage: React.FC = () => {
                   setEmail(e.target.value);
                   if (error) setError('');
                 }}
-                className="w-full bg-[#2a2b4a] text-white placeholder-gray-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full bg-secondary text-foreground placeholder-muted-foreground px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 disabled={isLoading}
                 required
               />
@@ -133,14 +133,14 @@ const SignInPage: React.FC = () => {
                   setPassword(e.target.value);
                   if (error) setError('');
                 }}
-                className="w-full bg-[#2a2b4a] text-white placeholder-gray-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
+                className="w-full bg-secondary text-foreground placeholder-muted-foreground px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all pr-12"
                 disabled={isLoading}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +156,7 @@ const SignInPage: React.FC = () => {
             </div>
 
             <div className="text-right">
-              <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
+              <Link href="/forgot-password" className="text-primary hover:text-primary/80 text-sm transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -164,11 +164,11 @@ const SignInPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center shadow-lg"
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-foreground" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -180,13 +180,13 @@ const SignInPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Removed database warning message */}
+          {/* NO DATABASE WARNING - REMOVED */}
 
           {/* Sign up link */}
           <div className="mt-6 text-center">
-            <span className="text-gray-400">Not a member? </span>
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
-              Sign up
+            <span className="text-muted-foreground">Not a member? </span>
+            <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold transition-colors">
+              Start your journey today
             </Link>
           </div>
         </div>
