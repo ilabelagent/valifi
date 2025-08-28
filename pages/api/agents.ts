@@ -1,9 +1,9 @@
 // API Route for LangGraph Agents
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { AgentFactory, AgentType } from '../../../lib/agents/agent-config';
-import { AgentBotFactory } from '../../../lib/agents/bot-agent-integration';
-import KingdomCore from '../../../lib/core/KingdomCore';
-import { getDbAdapter } from '../../../lib/db-adapter';
+import { AgentFactory, AgentType } from '../../lib/agents/agent-config';
+import { AgentBotFactory } from '../../lib/agents/bot-agent-integration';
+import KingdomCore from '../../lib/core/KingdomCore';
+import { getDbAdapter } from '../../lib/db-adapter';
 
 // Rate limiting
 const rateLimit = new Map<string, { count: number; timestamp: number }>();

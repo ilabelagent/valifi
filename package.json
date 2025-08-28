@@ -13,6 +13,7 @@
     "vercel-build": "npm run build"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@libsql/client": "^0.3.5",
     "autoprefixer": "^10.4.14",
     "axios": "^1.5.0",
@@ -25,7 +26,7 @@
     "lucide-react": "^0.263.1",
     "next": "^15.5.2",
     "otpauth": "^9.4.1",
-    "pg": "^8.11.3",
+    "pg": "^8.16.3",
     "postcss": "^8.4.24",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",

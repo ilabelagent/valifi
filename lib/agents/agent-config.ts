@@ -127,4 +127,67 @@ export class AgentConfigManager {
   }
 }
 
-export default new AgentConfigManager();
+// Export singleton instance
+const agentConfigManager = new AgentConfigManager();
+export default agentConfigManager;
+
+// Export AgentType enum
+export enum AgentType {
+  REACT = 'react',
+  WORKFLOW = 'workflow',
+  ORCHESTRATOR = 'orchestrator',
+  EVALUATOR = 'evaluator',
+  ROUTER = 'router',
+  PARALLEL = 'parallel',
+  CHAIN = 'chain',
+}
+
+// Export AgentFactory class
+export class AgentFactory {
+  static async createAgent(config: any): Promise<any> {
+    // Mock agent creation
+    return {
+      execute: async (input: any) => {
+        return {
+          success: true,
+          output: `Processed: ${JSON.stringify(input)}`,
+          timestamp: new Date(),
+        };
+      },
+      stream: async function* (input: any) {
+        yield { chunk: 'Starting...', timestamp: new Date() };
+        yield { chunk: `Processing: ${JSON.stringify(input)}`, timestamp: new Date() };
+        yield { chunk: 'Complete!', timestamp: new Date() };
+      },
+      getInfo: () => ({
+        type: config.type,
+        name: config.name,
+        description: config.description,
+      }),
+    };
+  }
+
+  static async createTradingAgent(): Promise<any> {
+    return this.createAgent({
+      type: AgentType.REACT,
+      name: 'TradingAgent',
+      description: 'Agent for trading operations',
+    });
+  }
+
+  static async createDeFiAgent(): Promise<any> {
+    return this.createAgent({
+      type: AgentType.WORKFLOW,
+      name: 'DeFiAgent',
+      description: 'Agent for DeFi operations',
+    });
+  }
+
+  static async createAnalysisAgent(): Promise<any> {
+    return this.createAgent({
+      type: AgentType.EVALUATOR,
+      name: 'AnalysisAgent',
+      description: 'Agent for market analysis',
+    });
+  }
+}

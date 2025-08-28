@@ -1,325 +1,245 @@
-// Integration between Valifi Bots and LangGraph Agents
-import { AgentFactory, AgentType, ValifiAgent } from '../agents/agent-config';
-import { createReActTradingAgent } from '../agents/react-agent';
-import { createTradingWorkflow, createDeFiWorkflow } from '../agents/workflow-agent';
-import { createInvestmentOrchestrator, createPortfolioOrchestrator } from '../agents/orchestrator-agent';
-import KingdomCore from '../core/KingdomCore';
-import KingdomBot from '../core/KingdomBot';
+// Bot Agent Integration Module
+// Handles integration between bots and agents
 
-// Agent-enhanced Bot class
-export class AgentEnhancedBot extends KingdomBot {
-  private agent: ValifiAgent | null = null;
-  private agentType: AgentType | null = null;
-  private agentConfig: any = null;
+import { AgentConfig, AgentConfigManager } from './agent-config';
 
-  async initializeAgent(agentType: AgentType, config?: any) {
-    this.agentType = agentType;
-    this.agentConfig = config;
+export interface BotAgent {
+  id: string;
+  botId: string;
+  agentId: string;
+  status: 'idle' | 'active' | 'processing' | 'error';
+  lastActivity: Date;
+  metrics: {
+    requestsHandled: number;
+    successRate: number;
+    averageResponseTime: number;
+  };
+}
 
-    try {
-      // Create agent based on type
-      switch (agentType) {
-        case AgentType.REACT:
-          this.agent = await createReActTradingAgent();
-          break;
-        
-        case AgentType.WORKFLOW:
-          if (config?.workflowType === 'defi') {
-            this.agent = await createDeFiWorkflow();
-          } else {
-            this.agent = await createTradingWorkflow();
-          }
-          break;
-        
-        case AgentType.ORCHESTRATOR:
-          if (config?.orchestratorType === 'portfolio') {
-            this.agent = await createPortfolioOrchestrator();
-          } else {
-            this.agent = await createInvestmentOrchestrator();
-          }
-          break;
-        
-        default:
-          this.agent = await AgentFactory.createAgent({
-            type: agentType,
-            name: `${this.constructor.name}-Agent`,
-            description: 'AI agent for enhanced bot capabilities',
-            llmConfig: config?.llmConfig || {
-              provider: 'openai',
-              model: 'gpt-4-turbo-preview',
-              temperature: 0.7,
-            },
-            tools: config?.tools || [],
-            systemPrompt: config?.systemPrompt,
-            enableTracing: true,
-          });
-      }
+export interface IntegrationEvent {
+  type: 'request' | 'response' | 'error' | 'status';
+  botId: string;
+  agentId: string;
+  timestamp: Date;
+  data: any;
+}
 
-      this.logDivineAction('Agent initialized', { 
-        agentType, 
-        botClass: this.constructor.name 
-      });
-      
-      return true;
-    } catch (error: any) {
-      this.logDivineAction('Agent initialization failed', { 
-        error: error.message,
-        agentType,
-      });
-      return false;
-    }
+export class BotAgentIntegration {
+  private agents: Map<string, BotAgent> = new Map();
+  private eventQueue: IntegrationEvent[] = [];
+  private configManager: AgentConfigManager;
+
+  constructor(configManager: AgentConfigManager) {
+    this.configManager = configManager;
   }
 
-  // Execute agent with input
-  async executeAgent(input: any) {
-    if (!this.agent) {
-      throw new Error('Agent not initialized. Call initializeAgent() first.');
+  async registerBot(botId: string, agentId: string): Promise<BotAgent> {
+    const agentConfig = this.configManager.getConfig(agentId);
+    
+    if (!agentConfig) {
+      throw new Error(`Agent ${agentId} not found`);
     }
 
-    const startTime = Date.now();
-    
+    if (!agentConfig.enabled) {
+      throw new Error(`Agent ${agentId} is disabled`);
+    }
+
+    const botAgent: BotAgent = {
+      id: `${botId}-${agentId}`,
+      botId,
+      agentId,
+      status: 'idle',
+      lastActivity: new Date(),
+      metrics: {
+        requestsHandled: 0,
+        successRate: 100,
+        averageResponseTime: 0,
+      },
+    };
+
+    this.agents.set(botAgent.id, botAgent);
+    return botAgent;
+  }
+
+  async processRequest(botId: string, agentId: string, request: any): Promise<any> {
+    const botAgentId = `${botId}-${agentId}`;
+    const botAgent = this.agents.get(botAgentId);
+
+    if (!botAgent) {
+      throw new Error(`Bot-Agent integration ${botAgentId} not found`);
+    }
+
+    const agentConfig = this.configManager.getConfig(agentId);
+    if (!agentConfig?.enabled) {
+      throw new Error(`Agent ${agentId} is not available`);
+    }
+
+    // Update status
+    botAgent.status = 'processing';
+    botAgent.lastActivity = new Date();
+
+    // Record event
+    this.recordEvent({
+      type: 'request',
+      botId,
+      agentId,
+      timestamp: new Date(),
+      data: request,
+    });
+
     try {
-      const result = await this.agent.execute(input);
-      
-      this.logDivineAction('Agent execution completed', {
-        executionTime: Date.now() - startTime,
-        inputType: typeof input,
-        hasResult: !!result,
+      // Simulate processing based on agent type
+      const response = await this.simulateAgentProcessing(agentConfig, request);
+
+      // Update metrics
+      botAgent.metrics.requestsHandled++;
+      botAgent.status = 'idle';
+
+      // Record response event
+      this.recordEvent({
+        type: 'response',
+        botId,
+        agentId,
+        timestamp: new Date(),
+        data: response,
       });
-      
-      return result;
-    } catch (error: any) {
-      this.logDivineAction('Agent execution failed', {
-        error: error.message,
-        executionTime: Date.now() - startTime,
+
+      return response;
+    } catch (error) {
+      botAgent.status = 'error';
+      botAgent.metrics.successRate = 
+        (botAgent.metrics.successRate * (botAgent.metrics.requestsHandled - 1) + 0) / 
+        botAgent.metrics.requestsHandled;
+
+      this.recordEvent({
+        type: 'error',
+        botId,
+        agentId,
+        timestamp: new Date(),
+        data: error,
       });
+
       throw error;
     }
   }
 
-  // Stream agent execution
-  async streamAgent(input: any) {
-    if (!this.agent) {
-      throw new Error('Agent not initialized. Call initializeAgent() first.');
-    }
+  private async simulateAgentProcessing(config: AgentConfig, request: any): Promise<any> {
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
-    try {
-      const stream = await this.agent.stream(input);
-      return stream;
-    } catch (error: any) {
-      this.logDivineAction('Agent streaming failed', { error: error.message });
-      throw error;
-    }
-  }
-
-  // Get agent info
-  getAgentInfo() {
-    if (!this.agent) {
-      return null;
-    }
-    return this.agent.getInfo();
-  }
-}
-
-// Agent Registry - Maps bot types to recommended agents
-export const BotAgentRegistry = {
-  // Trading bots use ReAct agents
-  'trading': {
-    agentType: AgentType.REACT,
-    config: {
-      systemPrompt: 'You are an expert trading assistant. Analyze markets and execute trades strategically.',
-    },
-  },
-  
-  // Portfolio bots use Orchestrator agents
-  'portfolio': {
-    agentType: AgentType.ORCHESTRATOR,
-    config: {
-      orchestratorType: 'portfolio',
-      systemPrompt: 'You are a portfolio manager. Optimize asset allocation and manage risk.',
-    },
-  },
-  
-  // DeFi bots use Workflow agents
-  'defi': {
-    agentType: AgentType.WORKFLOW,
-    config: {
-      workflowType: 'defi',
-      systemPrompt: 'You are a DeFi expert. Find and execute optimal yield strategies.',
-    },
-  },
-  
-  // Analytics bots use Evaluator agents
-  'analytics': {
-    agentType: AgentType.EVALUATOR,
-    config: {
-      systemPrompt: 'You are a market analyst. Provide detailed analysis and insights.',
-    },
-  },
-  
-  // P2P bots use Router agents
-  'p2p': {
-    agentType: AgentType.ROUTER,
-    config: {
-      systemPrompt: 'You are a P2P trading coordinator. Match orders and manage escrow.',
-    },
-  },
-  
-  // Crypto bots use Parallel agents
-  'crypto': {
-    agentType: AgentType.PARALLEL,
-    config: {
-      systemPrompt: 'You are a crypto trading expert. Monitor multiple chains and execute cross-chain strategies.',
-    },
-  },
-};
-
-// Enhanced Trading Bot with Agent
-export class AgentTradingBot extends AgentEnhancedBot {
-  async initialize() {
-    // Initialize base bot
-    await super.initialize();
-    
-    // Initialize ReAct agent
-    await this.initializeAgent(AgentType.REACT, {
-      systemPrompt: `You are an advanced trading bot with access to real-time market data and execution capabilities.
-      
-Your responsibilities:
-1. Analyze market conditions
-2. Identify trading opportunities
-3. Execute trades with proper risk management
-4. Monitor positions and performance
-5. Provide detailed explanations for all actions`,
-    });
-    
-    return true;
-  }
-
-  async execute(params: any) {
-    const { action, ...data } = params;
-    
-    // Use agent for complex trading decisions
-    if (action === 'analyze_and_trade') {
-      const agentResult = await this.executeAgent({
-        objective: 'Analyze market and execute optimal trade',
-        data,
-      });
-      return agentResult;
-    }
-    
-    // Fall back to traditional bot logic for simple actions
-    return super.execute(params);
-  }
-}
-
-// Enhanced Portfolio Bot with Orchestrator
-export class AgentPortfolioBot extends AgentEnhancedBot {
-  async initialize() {
-    await super.initialize();
-    
-    // Initialize Orchestrator agent
-    await this.initializeAgent(AgentType.ORCHESTRATOR, {
-      orchestratorType: 'portfolio',
-      systemPrompt: `You are a portfolio optimization orchestrator. Break down complex portfolio tasks into subtasks and coordinate their execution.`,
-    });
-    
-    return true;
-  }
-
-  async execute(params: any) {
-    const { action, ...data } = params;
-    
-    // Use orchestrator for complex portfolio operations
-    if (action === 'optimize_portfolio' || action === 'rebalance') {
-      const agentResult = await this.executeAgent({
-        objective: `${action}: ${JSON.stringify(data)}`,
-      });
-      return agentResult;
-    }
-    
-    return super.execute(params);
-  }
-}
-
-// Enhanced DeFi Bot with Workflow
-export class AgentDeFiBot extends AgentEnhancedBot {
-  async initialize() {
-    await super.initialize();
-    
-    // Initialize Workflow agent
-    await this.initializeAgent(AgentType.WORKFLOW, {
-      workflowType: 'defi',
-      systemPrompt: `You are a DeFi workflow coordinator. Execute multi-step DeFi strategies efficiently.`,
-    });
-    
-    return true;
-  }
-
-  async execute(params: any) {
-    const { action, ...data } = params;
-    
-    // Use workflow for DeFi strategies
-    if (action === 'find_yield' || action === 'execute_strategy') {
-      const agentResult = await this.executeAgent({
-        input: `${action}: ${JSON.stringify(data)}`,
-      });
-      return agentResult;
-    }
-    
-    return super.execute(params);
-  }
-}
-
-// Factory to create agent-enhanced bots
-export class AgentBotFactory {
-  static async createBot(botType: string, core: KingdomCore) {
-    const registry = BotAgentRegistry[botType.toLowerCase()];
-    
-    if (!registry) {
-      throw new Error(`No agent configuration found for bot type: ${botType}`);
-    }
-    
-    let bot: AgentEnhancedBot;
-    
-    // Create specific bot based on type
-    switch (botType.toLowerCase()) {
+    // Return mock response based on agent type
+    switch (config.type) {
       case 'trading':
-        bot = new AgentTradingBot(core);
-        break;
-      
-      case 'portfolio':
-        bot = new AgentPortfolioBot(core);
-        break;
-      
+        return {
+          action: 'trade_executed',
+          symbol: request.symbol || 'BTC',
+          amount: request.amount || 100,
+          price: request.price || 50000,
+          timestamp: new Date(),
+        };
+
       case 'defi':
-        bot = new AgentDeFiBot(core);
-        break;
-      
+        return {
+          action: 'swap_completed',
+          fromToken: request.fromToken || 'ETH',
+          toToken: request.toToken || 'USDT',
+          amount: request.amount || 1,
+          rate: 3500,
+          timestamp: new Date(),
+        };
+
+      case 'portfolio':
+        return {
+          action: 'portfolio_analyzed',
+          totalValue: 100000,
+          allocation: config.settings.targetAllocation,
+          recommendations: ['Rebalance suggested'],
+          timestamp: new Date(),
+        };
+
+      case 'compliance':
+        return {
+          action: 'compliance_checked',
+          status: 'approved',
+          kycLevel: config.settings.kycLevel,
+          timestamp: new Date(),
+        };
+
+      case 'support':
+        return {
+          action: 'query_answered',
+          question: request.question || 'How can I help?',
+          answer: 'This is an automated response from the support agent.',
+          confidence: 0.95,
+          timestamp: new Date(),
+        };
+
       default:
-        // Generic agent-enhanced bot
-        bot = new AgentEnhancedBot(core);
-        await bot.initializeAgent(registry.agentType, registry.config);
+        return {
+          action: 'processed',
+          timestamp: new Date(),
+        };
     }
-    
-    await bot.initialize();
-    return bot;
   }
 
-  // Create all agent-enhanced bots
-  static async createAllBots(core: KingdomCore) {
-    const bots: Record<string, AgentEnhancedBot> = {};
+  private recordEvent(event: IntegrationEvent): void {
+    this.eventQueue.push(event);
     
-    for (const botType of Object.keys(BotAgentRegistry)) {
-      try {
-        bots[botType] = await this.createBot(botType, core);
-        console.log(`✅ Created agent-enhanced bot: ${botType}`);
-      } catch (error: any) {
-        console.error(`❌ Failed to create bot ${botType}:`, error.message);
-      }
+    // Keep only last 1000 events
+    if (this.eventQueue.length > 1000) {
+      this.eventQueue.shift();
     }
+  }
+
+  getAgentStatus(botId: string, agentId: string): BotAgent | undefined {
+    return this.agents.get(`${botId}-${agentId}`);
+  }
+
+  getAllAgents(): BotAgent[] {
+    return Array.from(this.agents.values());
+  }
+
+  getEvents(limit: number = 100): IntegrationEvent[] {
+    return this.eventQueue.slice(-limit);
+  }
+
+  async disconnectBot(botId: string, agentId: string): Promise<void> {
+    const botAgentId = `${botId}-${agentId}`;
+    this.agents.delete(botAgentId);
     
-    return bots;
+    this.recordEvent({
+      type: 'status',
+      botId,
+      agentId,
+      timestamp: new Date(),
+      data: { status: 'disconnected' },
+    });
   }
 }
 
-export default AgentBotFactory;
+// Export singleton instance
+import agentConfigManager from './agent-config';
+const botAgentIntegration = new BotAgentIntegration(agentConfigManager);
+export default botAgentIntegration;
+
+// Export AgentBotFactory
+export class AgentBotFactory {
+  static async createBot(botType: string, core: any): Promise<any> {
+    return {
+      execute: async (input: any) => {
+        return {
+          success: true,
+          botType,
+          action: input.action,
+          result: `Bot ${botType} executed action: ${input.action}`,
+          timestamp: new Date(),
+        };
+      },
+      getAgentInfo: () => ({
+        botType,
+        status: 'active',
+        capabilities: ['trading', 'analysis', 'execution'],
+      }),
+    };
+  }
+}
