@@ -1,0 +1,49 @@
+{
+  "scores": {
+    "u1": [
+      {
+        "score": 64,
+        "timestamp": "2025-08-25T02:11:05.560Z"
+      }
+    ]
+  },
+  "attestations": {
+    "u1": [
+      {
+        "id": "zk_1756087865560",
+        "claimType": "kyc_passed",
+        "proof": "e973308c5dc59",
+        "createdAt": "2025-08-25T02:11:05.560Z"
+      }
+    ]
+  },
+  "stealth": {
+    "u1": [
+      {
+        "chain": "ETH",
+        "address": "0xSTL0ca55e8dfa",
+        "createdAt": "2025-08-25T02:11:05.560Z"
+      }
+    ]
+  },
+  "ringSigs": {
+    "u1": [
+      {
+        "message": "hello",
+        "signature": "057e07c15036513e546347c372",
+        "createdAt": "2025-08-25T02:11:05.561Z"
+      }
+    ]
+  },
+  "network": {
+    "u1": {
+      "mode": "TOR",
+      "updatedAt": "2025-08-25T02:11:05.561Z"
+    }
+  },
+  "coins": {
+    "u1": [
+      "XMR"
+    ]
+  }
+}

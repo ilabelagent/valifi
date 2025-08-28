@@ -1,24 +1,23 @@
 
-
-import React, { useState, useCallback } from 'react';
-import { ValifiLogo, CloseIcon, GoogleIcon, GithubIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
+import React, { useState } from 'react';
+import { ValifiLogo, CloseIcon, CheckCircleIcon, InfoIcon } from './icons';
 
 interface SignInModalProps {
     isOpen: boolean;
     onClose: () => void;
     onLogin: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
-    onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignUp: () => void;
     onOpenForgotPassword: () => void;
-    dbStatus: 'checking' | 'ok' | 'error';
+    dbStatus: 'checking' | 'ok' | 'error' | 'demo';
     dbErrorMessage: string;
 }
 
-const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onSocialLogin, onOpenSignUp, onOpenForgotPassword, dbStatus, dbErrorMessage }) => {
+const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onOpenSignUp, onOpenForgotPassword, dbStatus, dbErrorMessage }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     if (!isOpen) return null;
 
@@ -32,18 +31,10 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
             setError(result.message || 'An unknown error occurred.');
         }
     };
-
-    const handleSocialLoginClick = async (provider: string) => {
-        setError('');
-        setIsLoading(true);
-        const result = await onSocialLogin(provider);
-        setIsLoading(false);
-        if (!result.success) {
-            setError(result.message || `Failed to sign in with ${provider}.`);
-        }
-    }
     
-    const isDbError = dbStatus === 'error';
+    // Only disable if truly checking or has a critical error (not demo mode)
+    const isDisabled = isLoading || dbStatus === 'checking';
+    const isDemoMode = dbStatus === 'demo' || dbStatus === 'error';
 
     return (
         <div 
@@ -66,57 +57,97 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                     <p className="text-muted-foreground text-sm">Sign in to access your financial dashboard.</p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 my-6">
-                    <button
-                        type="button"
-                        onClick={() => handleSocialLoginClick('google')}
-                        disabled={isLoading || isDbError}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <GoogleIcon className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Continue with Google</span>
-                    </button>
-                     <button
-                        type="button"
-                        onClick={() => handleSocialLoginClick('github')}
-                        disabled={isLoading || isDbError}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-foreground bg-secondary hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <GithubIcon className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Continue with GitHub</span>
-                    </button>
-                </div>
-                
-                <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full border-t border-border" /></div>
-                    <div className="relative flex justify-center text-sm"><span className="bg-card px-2 text-muted-foreground">OR</span></div>
-                </div>
+                {isDemoMode && (
+                    <div className="mt-6 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <InfoIcon className="w-5 h-5 text-primary mt-0.5" />
+                            <div className="text-sm">
+                                <p className="font-semibold text-primary">Demo Mode Active</p>
+                                <p className="text-muted-foreground mt-1">Use these test accounts:</p>
+                                <div className="mt-2 space-y-1 text-xs font-mono">
+                                    <p className="text-foreground">demo@valifi.com / demo123</p>
+                                    <p className="text-foreground">admin@valifi.com / admin123</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                <form onSubmit={handleFormSubmit} className="space-y-4">
+                <form onSubmit={handleFormSubmit} className="space-y-4 mt-6">
                     <div>
                         <label htmlFor="email" className="sr-only">Email Address</label>
-                        <input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Email Address"
+                        <input 
+                            id="email" 
+                            name="email" 
+                            type="email" 
+                            autoComplete="email" 
+                            required 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" 
+                            placeholder="Email Address"
                         />
                     </div>
-                    <div>
-                         <label htmlFor="password" className="sr-only">Password</label>
-                        <input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Password"
+                    <div className="relative">
+                        <label htmlFor="password" className="sr-only">Password</label>
+                        <input 
+                            id="password" 
+                            name="password" 
+                            type={showPassword ? "text" : "password"} 
+                            autoComplete="current-password" 
+                            required 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg py-2.5 px-4 pr-12 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" 
+                            placeholder="Password"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            {showPassword ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
                     
                     <div className="text-right text-sm">
-                        <button type="button" onClick={onOpenForgotPassword} className="font-semibold text-primary hover:text-primary/80">Forgot password?</button>
+                        <button type="button" onClick={onOpenForgotPassword} className="font-semibold text-primary hover:text-primary/80">
+                            Forgot password?
+                        </button>
                     </div>
 
-                    {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-lg text-center">{error}</div>}
+                    {error && (
+                        <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-lg text-center">
+                            {error}
+                        </div>
+                    )}
 
                     <div>
-                        <button type="submit" disabled={isLoading || isDbError}
-                            className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+                        <button 
+                            type="submit" 
+                            disabled={isDisabled}
+                            className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-all"
                         >
-                            {isLoading ? 'Signing In...' : 'Sign In'}
+                            {isLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 text-primary-foreground" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Signing In...
+                                </span>
+                            ) : (
+                                'Sign In'
+                            )}
                         </button>
                     </div>
                 </form>
@@ -124,10 +155,10 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onS
                 <div className="mt-4 text-center text-xs">
                     {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
                     {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
-                    {isDbError && <p className="text-destructive flex items-center justify-center gap-1.5"><AlertTriangleIcon className="w-4 h-4" /> {dbErrorMessage}</p>}
+                    {dbStatus === 'demo' && <p className="text-primary flex items-center justify-center gap-1.5"><InfoIcon className="w-4 h-4" /> Demo mode - No database configured</p>}
                 </div>
 
-                 <p className="mt-6 text-center text-sm text-muted-foreground">
+                <p className="mt-6 text-center text-sm text-muted-foreground">
                     Not a member?{' '}
                     <button type="button" onClick={onOpenSignUp} className="font-semibold leading-6 text-primary hover:text-primary/80">
                         Start your journey today

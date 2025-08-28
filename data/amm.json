@@ -1,0 +1,23 @@
+{
+  "holdings": {
+    "u": {
+      "ETH": 9,
+      "DAI": 10999.000999000971,
+      "BTC": 2,
+      "USDT": 100000
+    }
+  },
+  "pairs": {
+    "ETH-DAI": {
+      "reserveA": 1001,
+      "reserveB": 999000.999000999,
+      "totalLiquidity": 1000
+    },
+    "BTC-USDT": {
+      "reserveA": 100,
+      "reserveB": 5000000,
+      "totalLiquidity": 100
+    }
+  },
+  "liquidity": {}
+}

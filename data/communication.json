@@ -1,0 +1,50 @@
+{
+  "messages": [
+    {
+      "id": "msg_1756083499587",
+      "fromUser": "u1",
+      "toUser": "u2",
+      "subject": "Hi",
+      "body": "Hello there",
+      "timestamp": "2025-08-25T00:58:19.587Z"
+    },
+    {
+      "id": "msg_1756083536694",
+      "fromUser": "a",
+      "toUser": "b",
+      "subject": "",
+      "body": "hi",
+      "timestamp": "2025-08-25T00:58:56.694Z"
+    }
+  ],
+  "forums": {
+    "general": [
+      {
+        "id": "post_1756083499591",
+        "userId": "u1",
+        "content": "Hello world",
+        "timestamp": "2025-08-25T00:58:19.591Z"
+      }
+    ]
+  },
+  "webinars": [
+    {
+      "id": "webinar_1756083499593",
+      "title": "Intro to Investing",
+      "description": "",
+      "scheduledAt": "2025-01-01"
+    }
+  ],
+  "sharedPortfolios": {
+    "sp_1756083499597": {
+      "id": "sp_1756083499597",
+      "name": "Family Fund",
+      "owner": "u1",
+      "members": [
+        "u1",
+        "u2"
+      ],
+      "holdings": {}
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "balances": {
+    "u": {
+      "Ethereum": {
+        "ETH": 2
+      },
+      "Binance": {
+        "ETH": 2
+      }
+    }
+  },
+  "chains": [
+    "Ethereum",
+    "Binance",
+    "Polygon"
+  ],
+  "tokens": [
+    "ETH",
+    "USDT",
+    "DAI",
+    "BNB",
+    "MATIC",
+    "ADA"
+  ]
+}

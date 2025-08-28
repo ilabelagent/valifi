@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Head from 'next/head';
 
 const SignInPage: React.FC = () => {
   const router = useRouter();
@@ -59,7 +60,12 @@ const SignInPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <>
+      <Head>
+        <title>Sign In - Valifi</title>
+        <meta name="description" content="Sign in to your Valifi account" />
+      </Head>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-slide-up-fade">
         <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border relative">
           {/* Close button */}
@@ -192,6 +198,7 @@ const SignInPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -1,0 +1,68 @@
+export default function Home() {
+  return (
+    <div style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
+      <h1>Kingdom FinTech Bot – Node/Next.js Architecture</h1>
+      <p>
+        This application exposes a unified API endpoint at <code>/api/bot</code>.  Each bot module
+        (e.g., banking, trading, crypto) is mapped to a JavaScript class
+        under <code>bots/</code>.  To invoke a bot action, send a POST
+        request with a JSON body specifying the <code>bot</code> and
+        <code>action</code> fields along with any additional parameters.
+      </p>
+      <p>
+        A new <strong>Portfolio Bot</strong> has been added.  Visit the{' '}
+        <a href="/portfolio">portfolio page</a> to view and rebalance positions.
+      </p>
+      <p>
+        The <strong>Onboarding Bot</strong> is available as well.  Use the{' '}
+        <a href="/onboarding">onboarding page</a> to run KYC, get a risk score and set goals.
+      </p>
+      <p>
+        Try our <strong>Trading Bot</strong> to fetch prices, place buy/sell orders and see your positions on the{' '}
+        <a href="/trading">trading page</a>.
+      </p>
+      <p>
+        Manage your crypto addresses with the new <strong>Wallet Bot</strong>.  Create wallets and send tokens on the{' '}
+        <a href="/wallet">wallet page</a>.
+      </p>
+      <p>
+        Example request to create a banking account:
+      </p>
+      <pre>
+        {`
+fetch('/api/bot', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    bot: 'banking',
+    action: 'create_account',
+    name: 'Alice',
+    email: 'alice@example.com'
+  })
+}).then(res => res.json()).then(console.log);
+        `}
+      </pre>
+      <p>
+        Additional bots are available.  For example, you can query the coin mixer pools or
+        translate text:
+      </p>
+      <pre>
+        {`
+// Get the status of all coin mixing pools
+fetch('/api/bot', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ bot: 'coin_mixer', action: 'get_pools' })
+}).then(res => res.json()).then(console.log);
+
+// Translate a phrase into Spanish
+fetch('/api/bot', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ bot: 'translation', action: 'translate', text: 'hello', targetLang: 'es' })
+}).then(res => res.json()).then(console.log);
+        `}
+      </pre>
+    </div>
+  );
+}

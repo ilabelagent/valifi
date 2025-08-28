@@ -1,0 +1,17 @@
+{
+  "settings": {
+    "pwaEnabled": {
+      "enabled": true,
+      "enabledAt": "2025-08-25T02:17:35.169Z",
+      "userId": "admin"
+    }
+  },
+  "apiKeys": [
+    {
+      "name": "TestApp",
+      "key": "pk_40tyi17h28o",
+      "createdAt": "2025-08-25T02:17:35.171Z",
+      "userId": "default"
+    }
+  ]
+}

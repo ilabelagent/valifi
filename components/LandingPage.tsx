@@ -19,7 +19,6 @@ import * as apiService from '../services/api';
 interface LandingPageProps {
     onLogin: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
     onSignUp: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean, message?: string }>;
-    onSocialLogin: (provider: string) => Promise<{ success: boolean, message?: string }>;
     userSettings: UserSettings;
     setUserSettings: React.Dispatch<React.SetStateAction<UserSettings>>;
 }
@@ -1012,7 +1011,7 @@ const LandingFooter: React.FC<{ onLegalLinkClick: (doc: 'terms' | 'privacy' | 'a
     );
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLogin, userSettings, setUserSettings }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, userSettings, setUserSettings }) => {
     const featuresRef = useRef<HTMLDivElement>(null);
     const careersRef = useRef<HTMLDivElement>(null);
     const faqRef = useRef<HTMLDivElement>(null);
@@ -1026,17 +1025,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
     const [isSignInModalOpen, setSignInModalOpen] = useState(false);
     const [isSignUpModalOpen, setSignUpModalOpen] = useState(false);
     const [isForgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
-    const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+    const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error' | 'demo'>('checking');
     const [dbErrorMessage, setDbErrorMessage] = useState('');
 
     useEffect(() => {
         const checkStatus = async () => {
             const result = await apiService.checkDbStatus();
             if (result.success) {
-                setDbStatus('ok');
+                // Check if we're in demo mode or production mode
+                if (result.status === 'demo' || result.database?.status === 'demo-mode') {
+                    setDbStatus('demo');
+                    setDbErrorMessage('');
+                } else {
+                    setDbStatus('ok');
+                }
             } else {
-                setDbStatus('error');
-                setDbErrorMessage(result.message || 'The platform is temporarily unavailable.');
+                // Even in error, allow demo mode
+                setDbStatus('demo');
+                setDbErrorMessage(result.message || 'Database not configured - Demo mode active');
             }
         };
         checkStatus();
@@ -1136,7 +1142,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
                 isOpen={isSignInModalOpen}
                 onClose={handleCloseSignIn}
                 onLogin={onLogin}
-                onSocialLogin={onSocialLogin}
                 onOpenSignUp={handleSwitchToSignUp}
                 onOpenForgotPassword={handleSwitchToForgotPassword}
                 dbStatus={dbStatus}
@@ -1146,7 +1151,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, onSocialLo
                 isOpen={isSignUpModalOpen}
                 onClose={handleCloseSignUp}
                 onSignUp={onSignUp}
-                onSocialLogin={onSocialLogin}
                 onOpenSignIn={handleSwitchToSignIn}
                 dbStatus={dbStatus}
                 dbErrorMessage={dbErrorMessage}

@@ -1,0 +1,24 @@
+{
+  "cards": {
+    "u": [
+      {
+        "id": "card_1756083492265",
+        "type": "debit",
+        "currency": "USD",
+        "balance": 0,
+        "mobilePay": {
+          "provider": "apple",
+          "token": "apple_card_1756083492265_1756083492269"
+        }
+      },
+      {
+        "id": "vcard_1756083492267",
+        "type": "virtual",
+        "currency": "USD",
+        "parentId": "card_1756083492265"
+      }
+    ]
+  },
+  "transactions": {},
+  "rewards": {}
+}

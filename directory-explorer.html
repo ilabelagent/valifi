@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valifi Project Directory Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn.active {
+            background: #764ba2;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .tree {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .tree-item {
+            padding: 3px 0;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .tree-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tree-item.selected {
+            background: rgba(102, 126, 234, 0.2);
+            font-weight: bold;
+        }
+
+        .tree-folder {
+            color: #667eea;
+        }
+
+        .tree-file {
+            color: #495057;
+        }
+
+        .content {
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .file-list {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .file-list h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .file-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .file-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .file-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .file-icon {
+            width: 20px;
+            text-align: center;
+            margin-right: 8px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+
+        .chart-bar:hover {
+            transform: translateY(-5px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Valifi FinTech Project Explorer</h1>
+            <p>Interactive Directory Analysis & Management Tool</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn active" onclick="showView('overview')">📊 Overview</button>
+            <button class="btn" onclick="showView('bots')">🤖 Bot Modules</button>
+            <button class="btn" onclick="showView('components')">🧩 Components</button>
+            <button class="btn" onclick="showView('api')">🔌 API Endpoints</button>
+            <button class="btn" onclick="showView('tree')">🌳 Full Tree</button>
+            <div class="search-box">
+                <input type="text" placeholder="Search files..." id="searchInput" onkeyup="searchFiles()">
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="tree" id="directoryTree">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading directory structure...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content" id="mainContent">
+                <div id="overviewView">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Files</h3>
+                            <div class="value" id="totalFiles">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Directories</h3>
+                            <div class="value" id="totalDirs">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Bot Modules</h3>
+                            <div class="value" id="totalBots">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>React Components</h3>
+                            <div class="value" id="totalComponents">-</div>
+                        </div>
+                    </div>
+
+                    <div class="file-list">
+                        <h2>📁 Project Structure Overview</h2>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Directory</th>
+                                    <th>Files</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="directoryOverview">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2>📈 File Type Distribution</h2>
+                        <div class="chart" id="fileTypeChart">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="botsView" style="display: none;">
+                    <div class="file-list">
+                        <h2>🤖 Bot Modules Analysis</h2>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Bot Name</th>
+                                    <th>Main File</th>
+                                    <th>Features</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="botsTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="componentsView" style="display: none;">
+                    <div class="file-list">
+                        <h2>🧩 React Components</h2>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Lines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="componentsTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="apiView" style="display: none;">
+                    <div class="file-list">
+                        <h2>🔌 API Endpoints</h2>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Endpoint</th>
+                                    <th>Method</th>
+                                    <th>Path</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="apiTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="treeView" style="display: none;">
+                    <div class="file-list">
+                        <h2>🌳 Full Directory Tree</h2>
+                        <pre id="fullTree" style="font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6;">
+                            <!-- Will be populated by JavaScript -->
+                        </pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock data for demonstration (replace with actual data from backend)
+        const projectData = {
+            stats: {
+                totalFiles: 847,
+                totalDirs: 123,
+                totalBots: 46,
+                totalComponents: 73
+            },
+            directories: [
+                { name: 'bots', files: 46, purpose: 'Bot modules and AI integrations', status: '✅ Active' },
+                { name: 'components', files: 73, purpose: 'React UI components', status: '✅ Active' },
+                { name: 'pages', files: 18, purpose: 'Next.js pages and routes', status: '✅ Active' },
+                { name: 'services', files: 2, purpose: 'API and database services', status: '⚠️ Needs Update' },
+                { name: 'lib', files: 12, purpose: 'Utility functions and core', status: '✅ Active' },
+                { name: 'public', files: 8, purpose: 'Static assets and images', status: '✅ Active' },
+                { name: 'backup', files: 234, purpose: 'Backup files and old versions', status: '📦 Archived' }
+            ],
+            fileTypes: [
+                { type: '.js', count: 312, color: '#f7df1e' },
+                { type: '.tsx', count: 73, color: '#3178c6' },
+                { type: '.json', count: 45, color: '#292929' },
+                { type: '.md', count: 38, color: '#083fa1' },
+                { type: '.ts', count: 27, color: '#3178c6' }
+            ],
+            bots: [
+                { name: 'banking-bot', file: 'BankingBot.js', features: 'Accounts, Transactions, Loans', status: '✅' },
+                { name: 'trading-bot', file: 'TradingBot.js', features: 'Buy/Sell, Portfolio, Orders', status: '✅' },
+                { name: 'wallet-bot', file: 'WalletBot.js', features: 'Crypto wallets, Transfers', status: '✅' },
+                { name: 'defi-bot', file: 'DeFiBot.js', features: 'DeFi operations, Yield', status: '✅' },
+                { name: 'nft-bot', file: 'NFTBot.js', features: 'NFT trading, Collections', status: '✅' },
+                { name: 'forex-bot', file: 'ForexBot.js', features: 'Currency exchange, FX', status: '✅' },
+                { name: 'portfolio-bot', file: 'PortfolioBot.js', features: 'Portfolio management', status: '✅' },
+                { name: 'compliance-bot', file: 'ComplianceBot.js', features: 'KYC, AML, Regulations', status: '⚠️' }
+            ],
+            components: [
+                { name: 'DashboardView.tsx', type: 'View', category: 'Main', lines: 523 },
+                { name: 'WalletView.tsx', type: 'View', category: 'Wallet', lines: 412 },
+                { name: 'InvestmentsView.tsx', type: 'View', category: 'Investment', lines: 687 },
+                { name: 'P2PExchangeView.tsx', type: 'View', category: 'Trading', lines: 892 },
+                { name: 'SignInModal.tsx', type: 'Modal', category: 'Auth', lines: 234 },
+                { name: 'ValifiCard.tsx', type: 'Component', category: 'Cards', lines: 156 },
+                { name: 'AiAssistant.tsx', type: 'Component', category: 'AI', lines: 389 },
+                { name: 'Header.tsx', type: 'Layout', category: 'Navigation', lines: 178 }
+            ],
+            apiEndpoints: [
+                { endpoint: '/auth/login', method: 'POST', path: 'pages/api/auth/login.ts', status: '✅' },
+                { endpoint: '/auth/register', method: 'POST', path: 'pages/api/auth/signup.ts', status: '✅' },
+                { endpoint: '/bot', method: 'POST', path: 'pages/api/bot.js', status: '✅' },
+                { endpoint: '/health', method: 'GET', path: 'pages/api/health.ts', status: '✅' },
+                { endpoint: '/app-data', method: 'GET', path: 'pages/api/app-data.ts', status: '⚠️' }
+            ]
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProjectData();
+            buildDirectoryTree();
+        });
+
+        function loadProjectData() {
+            // Load statistics
+            document.getElementById('totalFiles').textContent = projectData.stats.totalFiles;
+            document.getElementById('totalDirs').textContent = projectData.stats.totalDirs;
+            document.getElementById('totalBots').textContent = projectData.stats.totalBots;
+            document.getElementById('totalComponents').textContent = projectData.stats.totalComponents;
+
+            // Load directory overview
+            const dirOverview = document.getElementById('directoryOverview');
+            dirOverview.innerHTML = projectData.directories.map(dir => `
+                <tr>
+                    <td><span class="file-icon">📁</span>${dir.name}</td>
+                    <td>${dir.files}</td>
+                    <td>${dir.purpose}</td>
+                    <td>${dir.status}</td>
+                </tr>
+            `).join('');
+
+            // Load file type chart
+            const chartContainer = document.getElementById('fileTypeChart');
+            chartContainer.innerHTML = projectData.fileTypes.map(ft => `
+                <div class="chart-bar" style="background: ${ft.color};">
+                    <strong>${ft.type}</strong>
+                    <span>${ft.count} files</span>
+                </div>
+            `).join('');
+
+            // Load bots table
+            const botsTable = document.getElementById('botsTable');
+            botsTable.innerHTML = projectData.bots.map(bot => `
+                <tr>
+                    <td><span class="file-icon">🤖</span>${bot.name}</td>
+                    <td>${bot.file}</td>
+                    <td>${bot.features}</td>
+                    <td>${bot.status}</td>
+                </tr>
+            `).join('');
+
+            // Load components table
+            const componentsTable = document.getElementById('componentsTable');
+            componentsTable.innerHTML = projectData.components.map(comp => `
+                <tr>
+                    <td><span class="file-icon">🧩</span>${comp.name}</td>
+                    <td>${comp.type}</td>
+                    <td>${comp.category}</td>
+                    <td>${comp.lines}</td>
+                </tr>
+            `).join('');
+
+            // Load API table
+            const apiTable = document.getElementById('apiTable');
+            apiTable.innerHTML = projectData.apiEndpoints.map(api => `
+                <tr>
+                    <td><span class="file-icon">🔌</span>${api.endpoint}</td>
+                    <td><span style="color: ${api.method === 'GET' ? '#28a745' : '#007bff'};">${api.method}</span></td>
+                    <td style="font-size: 0.9em; color: #666;">${api.path}</td>
+                    <td>${api.status}</td>
+                </tr>
+            `).join('');
+        }
+
+        function buildDirectoryTree() {
+            const treeContainer = document.getElementById('directoryTree');
+            setTimeout(() => {
+                treeContainer.innerHTML = `
+                    <div class="tree-item tree-folder">📁 valifi/</div>
+                    <div style="padding-left: 20px;">
+                        <div class="tree-item tree-folder">📁 bots/</div>
+                        <div class="tree-item tree-folder">📁 components/</div>
+                        <div class="tree-item tree-folder">📁 pages/</div>
+                        <div class="tree-item tree-folder">📁 services/</div>
+                        <div class="tree-item tree-folder">📁 lib/</div>
+                        <div class="tree-item tree-folder">📁 public/</div>
+                        <div class="tree-item tree-file">📄 package.json</div>
+                        <div class="tree-item tree-file">📄 README.md</div>
+                        <div class="tree-item tree-file">📄 vercel.json</div>
+                        <div class="tree-item tree-file">📄 next.config.js</div>
+                    </div>
+                `;
+
+                // Add click handlers
+                document.querySelectorAll('.tree-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
+                        this.classList.add('selected');
+                    });
+                });
+            }, 1000);
+        }
+
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('.content > div').forEach(view => {
+                view.style.display = 'none';
+            });
+
+            // Show selected view
+            document.getElementById(viewName + 'View').style.display = 'block';
+
+            // Update button states
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function searchFiles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            // Implement search functionality
+            console.log('Searching for:', searchTerm);
+        }
+    </script>
+</body>
+</html>

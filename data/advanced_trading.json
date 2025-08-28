@@ -1,0 +1,10 @@
+{
+  "marginPositions": {
+    "default:AAPL": {
+      "qty": 6,
+      "leverage": 3,
+      "entryPrice": 100,
+      "side": "buy"
+    }
+  }
+}

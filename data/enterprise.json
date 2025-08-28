@@ -1,0 +1,13 @@
+{
+  "clients": {},
+  "reports": [
+    {
+      "id": "report_1756088255174",
+      "clientId": "client1",
+      "trades": 18,
+      "assetsUnderManagement": 1902501.97,
+      "liquidity": 355446.74,
+      "generatedAt": "2025-08-25T02:17:35.174Z"
+    }
+  ]
+}

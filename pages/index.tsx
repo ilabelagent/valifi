@@ -2,6 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 
 // Dynamically import the App component with no SSR
 const App = dynamic(() => import('../App'), {
@@ -17,5 +18,12 @@ const App = dynamic(() => import('../App'), {
 });
 
 export default function Home() {
-  return <App />;
+  return (
+    <>
+      <Head>
+        <title>Valifi - Dashboard</title>
+      </Head>
+      <App />
+    </>
+  );
 }

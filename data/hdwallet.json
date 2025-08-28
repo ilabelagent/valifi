@@ -1,0 +1,26 @@
+{
+  "seeds": {
+    "u1": [
+      {
+        "id": "seed_1756087865549",
+        "mnemonic": "pearl car lemon mountain ice night apple banana plane river dog ice"
+      }
+    ]
+  },
+  "accounts": {
+    "u1": [
+      {
+        "id": "acct_1756087865550",
+        "mnemonic": "pearl car lemon mountain ice night apple banana plane river dog ice",
+        "index": 0,
+        "address": "0x3a8c12d90",
+        "children": [
+          {
+            "index": 1,
+            "address": "0x6d3d423c1"
+          }
+        ]
+      }
+    ]
+  }
+}

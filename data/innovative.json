@@ -1,0 +1,13 @@
+{
+  "predictions": [
+    {
+      "id": "pred_1756088255178",
+      "userId": "u",
+      "question": "Will BTC rise?",
+      "outcome": "Yes",
+      "amount": 10,
+      "placedAt": "2025-08-25T02:17:35.178Z"
+    }
+  ],
+  "investments": []
+}

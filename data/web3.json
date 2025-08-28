@@ -1,0 +1,15 @@
+{
+  "txs": [
+    {
+      "txHash": "0x43bd53c0198defe50d7",
+      "userId": "u1",
+      "chain": "ETH",
+      "from": "addr1",
+      "to": "addr2",
+      "value": 1,
+      "data": null,
+      "timestamp": "2025-08-25T02:11:05.559Z"
+    }
+  ],
+  "contracts": {}
+}

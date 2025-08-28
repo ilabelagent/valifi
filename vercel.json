@@ -1,37 +1,162 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install --force --legacy-peer-deps",
   "framework": "nextjs",
-  "installCommand": "npm install",
+  "outputDirectory": ".next",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "@node-env",
+    "NEXT_PUBLIC_APP_URL": "@next-public-app-url",
+    "NEXT_PUBLIC_API_URL": "@next-public-api-url",
+    "JWT_SECRET": "@jwt-secret",
+    "JWT_REFRESH_SECRET": "@jwt-refresh-secret",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "ENCRYPTION_KEY": "@encryption-key",
+    "SESSION_SECRET": "@session-secret",
+    "POSTGRES_URL": "@postgres-url",
+    "POSTGRES_PRISMA_URL": "@postgres-prisma-url",
+    "POSTGRES_URL_NON_POOLING": "@postgres-url-non-pooling",
+    "POSTGRES_USER": "@postgres-user",
+    "POSTGRES_HOST": "@postgres-host",
+    "POSTGRES_PASSWORD": "@postgres-password",
+    "POSTGRES_DATABASE": "@postgres-database",
+    "TURSO_DATABASE_URL": "@turso-database-url",
+    "TURSO_AUTH_TOKEN": "@turso-auth-token",
+    "KV_URL": "@kv-url",
+    "KV_REST_API_URL": "@kv-rest-api-url",
+    "KV_REST_API_TOKEN": "@kv-rest-api-token",
+    "KV_REST_API_READ_ONLY_TOKEN": "@kv-rest-api-read-only-token",
+    "BCRYPT_ROUNDS": "@bcrypt-rounds",
+    "SESSION_TIMEOUT": "@session-timeout",
+    "MAX_LOGIN_ATTEMPTS": "@max-login-attempts",
+    "LOCKOUT_DURATION": "@lockout-duration",
+    "RATE_LIMIT_WINDOW": "@rate-limit-window",
+    "RATE_LIMIT_MAX_REQUESTS": "@rate-limit-max-requests",
+    "BOT_RATE_LIMIT": "@bot-rate-limit",
+    "ENABLE_DEMO_MODE": "@enable-demo-mode",
+    "ENABLE_TRADING_BOTS": "@enable-trading-bots",
+    "ENABLE_DEFI": "@enable-defi",
+    "ENABLE_P2P": "@enable-p2p",
+    "ENABLE_STAKING": "@enable-staking",
+    "ENABLE_NFT": "@enable-nft",
+    "ENABLE_AI_ASSISTANT": "@enable-ai-assistant",
+    "ENABLE_2FA": "@enable-2fa",
+    "ENABLE_KYC": "@enable-kyc",
+    "REQUIRE_EMAIL_VERIFICATION": "@require-email-verification",
+    "BOT_EVOLUTION_ENABLED": "@bot-evolution-enabled",
+    "BOT_MAX_CONCURRENT": "@bot-max-concurrent",
+    "BOT_DEFAULT_TIMEOUT": "@bot-default-timeout",
+    "NEXT_PUBLIC_LIVE_PATCH": "@next-public-live-patch",
+    "NEXT_PUBLIC_BOT_EVOLUTION": "@next-public-bot-evolution",
+    "OPENAI_API_KEY": "@openai-api-key",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key",
+    "SMTP_HOST": "@smtp-host",
+    "SMTP_PORT": "@smtp-port",
+    "SMTP_USER": "@smtp-user",
+    "SMTP_PASS": "@smtp-pass",
+    "EMAIL_FROM": "@email-from",
+    "STRIPE_PUBLIC_KEY": "@stripe-public-key",
+    "STRIPE_SECRET_KEY": "@stripe-secret-key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe-webhook-secret",
+    "ALPHA_VANTAGE_API_KEY": "@alpha-vantage-api-key",
+    "COINMARKETCAP_API_KEY": "@coinmarketcap-api-key",
+    "SENTRY_DSN": "@sentry-dsn",
+    "SENTRY_ENVIRONMENT": "@sentry-environment",
+    "LOG_LEVEL": "@log-level",
+    "ENABLE_LOGGING": "@enable-logging",
+    "ENABLE_METRICS": "@enable-metrics",
+    "REQUIRE_KYC": "@require-kyc",
+    "KYC_LEVEL_1_LIMIT": "@kyc-level-1-limit",
+    "KYC_LEVEL_2_LIMIT": "@kyc-level-2-limit",
+    "AML_CHECK_ENABLED": "@aml-check-enabled",
+    "SANCTIONS_CHECK_ENABLED": "@sanctions-check-enabled"
   },
-  "functions": {
-    "pages/api/auth/*.ts": {
-      "maxDuration": 10
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NEXT_TELEMETRY_DISABLED": "1"
     }
   },
+  "functions": {
+    "pages/api/bot.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "pages/api/live-patch.ts": {
+      "maxDuration": 10,
+      "memory": 512
+    },
+    "pages/api/ai-stream.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "pages/api/auth/[...nextauth].ts": {
+      "maxDuration": 10,
+      "memory": 512
+    },
+    "pages/api/transactions/*.ts": {
+      "maxDuration": 15,
+      "memory": 512
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/bot-evolution",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/health-check",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/market-update",
+      "schedule": "*/15 * * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.valifi.com"
+        }
+      ],
+      "destination": "https://valifi.com",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         },
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "key": "X-Frame-Options",
+          "value": "DENY"
         },
         {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
         },
         {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/bot/:path*",
+      "destination": "/api/bot"
     }
   ]
 }

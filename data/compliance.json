@@ -1,0 +1,50 @@
+{
+  "kyc": {
+    "u2": {
+      "status": "approved",
+      "checkedAt": "2025-08-25T02:11:05.562Z"
+    }
+  },
+  "aml": [
+    {
+      "userId": "u2",
+      "tx": {
+        "amount": 100
+      },
+      "flagged": false,
+      "timestamp": "2025-08-25T02:11:05.562Z"
+    }
+  ],
+  "tax": {
+    "u1": [
+      {
+        "year": "2025",
+        "totalSpend": 0,
+        "notes": "This is a simulated tax summary."
+      }
+    ]
+  },
+  "audit": [
+    {
+      "userId": "u2",
+      "action": "test",
+      "details": "demo",
+      "timestamp": "2025-08-25T02:11:05.563Z"
+    }
+  ],
+  "sanctions": {
+    "u2": {
+      "flagged": false,
+      "checkedAt": "2025-08-25T02:11:05.563Z"
+    }
+  },
+  "legal": [
+    {
+      "id": "doc_1756087865564",
+      "type": "contract",
+      "content": "Sample contract",
+      "userId": "u2",
+      "createdAt": "2025-08-25T02:11:05.564Z"
+    }
+  ]
+}

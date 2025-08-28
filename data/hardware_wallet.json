@@ -1,0 +1,12 @@
+{
+  "devices": {
+    "u1": {
+      "dev1": {
+        "id": "dev1",
+        "name": "Ledger",
+        "model": "Generic",
+        "connectedAt": "2025-08-25T02:11:05.557Z"
+      }
+    }
+  }
+}

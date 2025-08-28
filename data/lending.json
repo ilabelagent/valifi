@@ -1,0 +1,26 @@
+{
+  "deposits": {
+    "u": {
+      "USDT": 100
+    }
+  },
+  "debts": {
+    "u": {
+      "USDT": 30
+    }
+  },
+  "rates": {
+    "USDT": {
+      "depositAPY": 0.05,
+      "borrowAPR": 0.1
+    },
+    "USDC": {
+      "depositAPY": 0.05,
+      "borrowAPR": 0.1
+    },
+    "DAI": {
+      "depositAPY": 0.04,
+      "borrowAPR": 0.09
+    }
+  }
+}

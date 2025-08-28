@@ -1,0 +1,28 @@
+{
+  "wallets": {
+    "msw_1756087865552": {
+      "id": "msw_1756087865552",
+      "owners": [
+        "alice",
+        "bob",
+        "carol"
+      ],
+      "threshold": 2,
+      "transactions": {
+        "mtx_1756087865553": {
+          "id": "mtx_1756087865553",
+          "payload": {
+            "to": "addr",
+            "value": 10
+          },
+          "signatures": [
+            "alice",
+            "bob"
+          ],
+          "executed": true
+        }
+      }
+    }
+  },
+  "transactions": {}
+}

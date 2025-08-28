@@ -1,0 +1,75 @@
+{
+  "portfolios": {
+    "u": {
+      "AAPL": 12
+    }
+  },
+  "orders": {
+    "u": [
+      {
+        "id": "order_1756077704998",
+        "symbol": "AAPL",
+        "side": "buy",
+        "qty": 5,
+        "price": 146.36,
+        "timestamp": "2025-08-24T23:21:44.998Z"
+      },
+      {
+        "id": "order_1756077705000",
+        "symbol": "AAPL",
+        "side": "sell",
+        "qty": 2,
+        "price": 148.86,
+        "timestamp": "2025-08-24T23:21:45.000Z"
+      },
+      {
+        "id": "order_1756077724264",
+        "symbol": "AAPL",
+        "side": "buy",
+        "qty": 5,
+        "price": 153.06,
+        "timestamp": "2025-08-24T23:22:04.264Z"
+      },
+      {
+        "id": "order_1756077724266",
+        "symbol": "AAPL",
+        "side": "sell",
+        "qty": 2,
+        "price": 155.87,
+        "timestamp": "2025-08-24T23:22:04.266Z"
+      },
+      {
+        "id": "order_1756077743045",
+        "symbol": "AAPL",
+        "side": "buy",
+        "qty": 5,
+        "price": 151.38,
+        "timestamp": "2025-08-24T23:22:23.045Z"
+      },
+      {
+        "id": "order_1756077743047",
+        "symbol": "AAPL",
+        "side": "sell",
+        "qty": 2,
+        "price": 148.88,
+        "timestamp": "2025-08-24T23:22:23.047Z"
+      },
+      {
+        "id": "order_1756077759448",
+        "symbol": "AAPL",
+        "side": "buy",
+        "qty": 5,
+        "price": 153.32,
+        "timestamp": "2025-08-24T23:22:39.448Z"
+      },
+      {
+        "id": "order_1756077759450",
+        "symbol": "AAPL",
+        "side": "sell",
+        "qty": 2,
+        "price": 155.16,
+        "timestamp": "2025-08-24T23:22:39.450Z"
+      }
+    ]
+  }
+}

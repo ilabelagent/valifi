@@ -1,0 +1,29 @@
+{
+  "courses": {
+    "u1": {
+      "intro_markets": {
+        "progress": 0,
+        "enrolledAt": "2025-08-25T02:11:05.564Z"
+      }
+    }
+  },
+  "simulations": [
+    {
+      "userId": "u1",
+      "trades": [
+        {
+          "side": "buy",
+          "qty": 1,
+          "price": 100
+        },
+        {
+          "side": "sell",
+          "qty": 1,
+          "price": 110
+        }
+      ],
+      "pnl": 10,
+      "timestamp": "2025-08-25T02:11:05.565Z"
+    }
+  ]
+}

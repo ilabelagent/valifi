@@ -1,0 +1,60 @@
+{
+  "validators": {
+    "validator_1756083518735": {
+      "id": "validator_1756083518735",
+      "userId": "u",
+      "chain": "ETH",
+      "stake": 32,
+      "status": "active",
+      "createdAt": "2025-08-25T00:58:38.735Z"
+    }
+  },
+  "rentals": [
+    {
+      "id": "rental_1756083518737",
+      "userId": "u",
+      "hashRate": 100,
+      "price": 10,
+      "durationDays": 30,
+      "start": "2025-08-25T00:58:38.737Z"
+    }
+  ],
+  "hardwareLinks": {
+    "u": {
+      "rig1": {
+        "specs": {
+          "model": "Antminer",
+          "hashRate": "100 TH/s"
+        },
+        "linkedAt": "2025-08-25T00:58:38.737Z",
+        "miningCoin": "BTC"
+      }
+    }
+  },
+  "pools": {
+    "minepool": {
+      "members": [
+        "v"
+      ]
+    }
+  },
+  "contracts": [
+    {
+      "id": "contract_1756083518741",
+      "userId": "u",
+      "hashRate": 50,
+      "durationDays": 60,
+      "ratePerDay": 0.1,
+      "createdAt": "2025-08-25T00:58:38.741Z"
+    }
+  ],
+  "maintenance": [
+    {
+      "userId": "u",
+      "deviceId": "rig1",
+      "description": "dust cleaning",
+      "scheduledAt": "2025-02-01",
+      "id": "maint_1756083518742"
+    }
+  ]
+}

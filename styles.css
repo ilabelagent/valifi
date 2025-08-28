@@ -173,3 +173,71 @@
     will-change: transform;
   }
 }
+
+/* CSS COMPATIBILITY FIXES */
+@layer base {
+  /* Fix text-size-adjust compatibility */
+  html, :host {
+    text-size-adjust: 100%; /* Standard property */
+    -webkit-text-size-adjust: 100%; /* Webkit prefix */
+  }
+
+  /* Fix appearance property order */
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    -webkit-appearance: none; /* Webkit prefix first */
+    -moz-appearance: none; /* Firefox prefix */
+    appearance: none; /* Standard property last */
+    border-radius: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: none;
+  }
+}
+
+@layer components {
+  /* Fix backdrop-filter compatibility */
+  .sidebar-glass,
+  .backdrop-filter {
+    -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia); /* Safari support */
+    backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia); /* Standard property */
+  }
+
+  /* Fix mask-image compatibility for Edge */
+  [data-nextjs-container-errors-pseudo-html-collapse='true'] .nextjs__container_errors__component-stack code {
+    -webkit-mask-image: linear-gradient(to bottom,rgba(0,0,0,0) 0%,black 10%); /* Edge support */
+    mask-image: linear-gradient(to bottom,rgba(0,0,0,0) 0%,black 10%); /* Standard property */
+  }
+
+  /* Fix user-select compatibility */
+  .dev-tools-indicator-item,
+  .user-select-none {
+    -webkit-user-select: none; /* Safari support */
+    -moz-user-select: none; /* Firefox support */
+    -ms-user-select: none; /* IE/Edge support */
+    user-select: none; /* Standard property */
+  }
+
+  /* Fix background-clip property order */
+  .nextjs-container-build-error-version-status > .turbopack-text,
+  .text-gradient {
+    -webkit-background-clip: text; /* Webkit prefix first */
+    background-clip: text; /* Standard property last */
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Fix user-select property order for call stack frames */
+  [data-nextjs-call-stack-frame] {
+    display: block;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border-radius: var(--rounded-lg);
+    -webkit-user-select: text; /* Webkit first */
+    -moz-user-select: text; /* Firefox */
+    -ms-user-select: text; /* IE/Edge */
+    user-select: text; /* Standard last */
+  }
+}

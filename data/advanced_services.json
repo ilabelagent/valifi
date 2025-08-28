@@ -1,0 +1,34 @@
+{
+  "businessAccounts": [
+    {
+      "id": "biz_1756083529204",
+      "userId": "default",
+      "businessName": "Acme Inc",
+      "accountType": "checking",
+      "openedAt": "2025-08-25T00:58:49.204Z"
+    }
+  ],
+  "merchantAccounts": [
+    {
+      "id": "merchant_1756083529205",
+      "userId": "default",
+      "merchantName": "ShopCo",
+      "createdAt": "2025-08-25T00:58:49.205Z"
+    }
+  ],
+  "insurance": [],
+  "wills": [
+    {
+      "id": "will_1756083529203",
+      "userId": "default",
+      "beneficiaries": [
+        "alice"
+      ],
+      "assets": [
+        "house"
+      ],
+      "createdAt": "2025-08-25T00:58:49.203Z"
+    }
+  ],
+  "roboPlans": {}
+}

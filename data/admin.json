@@ -1,0 +1,20 @@
+{
+  "flags": {},
+  "incidents": [
+    {
+      "id": "incident_1756088255181",
+      "title": "Test incident",
+      "description": "something happened",
+      "severity": "HIGH",
+      "reportedAt": "2025-08-25T02:17:35.181Z"
+    }
+  ],
+  "integrations": [
+    {
+      "id": "int_1756088255180",
+      "partner": "Acme",
+      "description": "Demo",
+      "createdAt": "2025-08-25T02:17:35.180Z"
+    }
+  ]
+}

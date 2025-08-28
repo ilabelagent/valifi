@@ -1,0 +1,48 @@
+{
+  "pools": {
+    "ETH_USD": {
+      "assetA": "ETH",
+      "assetB": "USD",
+      "reserveA": 9.88819660112501,
+      "reserveB": 19776.39320225002
+    }
+  },
+  "liquidity": {
+    "u": {
+      "ETH_USD": 442.21359549995793
+    }
+  },
+  "stakes": {
+    "u": {
+      "ETH": 5
+    }
+  },
+  "farms": {
+    "u": {
+      "Farm1": 100
+    }
+  },
+  "roles": {
+    "u": "maker"
+  },
+  "referrals": [
+    {
+      "referrer": "u",
+      "referee": "v",
+      "timestamp": "2025-08-25T00:58:31.434Z"
+    }
+  ],
+  "revenues": {
+    "ETH_USD": {
+      "u": 1000
+    }
+  },
+  "hardwareSales": [
+    {
+      "userId": "u",
+      "hardware": "ASIC",
+      "price": 5000,
+      "timestamp": "2025-08-25T00:58:31.436Z"
+    }
+  ]
+}

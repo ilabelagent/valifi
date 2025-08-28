@@ -1,0 +1,25 @@
+{
+  "pools": {
+    "pool1": {
+      "token": "ETH",
+      "apr": 0.1
+    },
+    "pool2": {
+      "token": "DAI",
+      "apr": 0.05
+    },
+    "pool3": {
+      "token": "USDT",
+      "apr": 0.06
+    }
+  },
+  "stakes": {
+    "u": [
+      {
+        "poolId": "pool1",
+        "amount": 5,
+        "depositTs": 1756077760474
+      }
+    ]
+  }
+}
