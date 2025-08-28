@@ -1,0 +1,209 @@
+services:
+  # Main Web Service for the Next.js Application
+  - type: web
+    name: valifi-bot
+    runtime: node
+    region: oregon # You can change to: ohio, frankfurt, singapore
+    plan: free # Options: free, starter, standard, pro
+    buildCommand: npm install --force --legacy-peer-deps && npm run build
+    startCommand: npm start
+    envVars:
+      # Core Environment
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      
+      # Next.js Configuration
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false # Set in Render dashboard
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # Set in Render dashboard
+      
+      # Authentication & Security
+      - key: JWT_SECRET
+        generateValue: true # Render will generate a random value
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      
+      # Database Configuration (You'll need to add a database in Render)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: valifi-db
+          property: connectionString
+      
+      # Alternative: Use external database
+      - key: POSTGRES_URL
+        sync: false # Set in dashboard if using external DB
+      - key: POSTGRES_PRISMA_URL
+        sync: false
+      - key: POSTGRES_URL_NON_POOLING
+        sync: false
+      
+      # Turso Database (if using)
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      
+      # Redis/KV Store (if using)
+      - key: KV_URL
+        sync: false
+      - key: KV_REST_API_URL
+        sync: false
+      - key: KV_REST_API_TOKEN
+        sync: false
+      
+      # Security Settings
+      - key: BCRYPT_ROUNDS
+        value: "10"
+      - key: SESSION_TIMEOUT
+        value: "3600000"
+      - key: MAX_LOGIN_ATTEMPTS
+        value: "5"
+      - key: LOCKOUT_DURATION
+        value: "900000"
+      - key: RATE_LIMIT_WINDOW
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+      
+      # Feature Flags
+      - key: ENABLE_DEMO_MODE
+        value: "false"
+      - key: ENABLE_TRADING_BOTS
+        value: "true"
+      - key: ENABLE_DEFI
+        value: "true"
+      - key: ENABLE_P2P
+        value: "true"
+      - key: ENABLE_STAKING
+        value: "true"
+      - key: ENABLE_NFT
+        value: "true"
+      - key: ENABLE_AI_ASSISTANT
+        value: "true"
+      - key: ENABLE_2FA
+        value: "true"
+      - key: ENABLE_KYC
+        value: "true"
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "true"
+      
+      # Bot Configuration
+      - key: BOT_EVOLUTION_ENABLED
+        value: "true"
+      - key: BOT_MAX_CONCURRENT
+        value: "10"
+      - key: BOT_DEFAULT_TIMEOUT
+        value: "30000"
+      - key: BOT_RATE_LIMIT
+        value: "100"
+      
+      # AI API Keys (set in dashboard)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      
+      # Email Configuration (set in dashboard)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      
+      # Payment Gateway (set in dashboard)
+      - key: STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      
+      # External APIs (set in dashboard)
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: COINMARKETCAP_API_KEY
+        sync: false
+      
+      # Monitoring (optional)
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: ENABLE_LOGGING
+        value: "true"
+      - key: ENABLE_METRICS
+        value: "true"
+      
+      # KYC/AML Settings
+      - key: REQUIRE_KYC
+        value: "false"
+      - key: KYC_LEVEL_1_LIMIT
+        value: "1000"
+      - key: KYC_LEVEL_2_LIMIT
+        value: "10000"
+      - key: AML_CHECK_ENABLED
+        value: "false"
+      - key: SANCTIONS_CHECK_ENABLED
+        value: "false"
+
+    # Health check configuration
+    healthCheckPath: /api/health-check
+    
+    # Auto-deploy from GitHub
+    autoDeploy: true # Auto-deploy on git push
+
+# Optional: PostgreSQL Database
+databases:
+  - name: valifi-db
+    plan: free # free tier expires after 90 days
+    databaseName: valifi
+    user: valifi_admin
+
+# Optional: Background Worker for Bot Tasks
+# Uncomment if you need a separate worker process
+# services:
+#   - type: worker
+#     name: valifi-bot-worker
+#     runtime: node
+#     buildCommand: npm install --force --legacy-peer-deps
+#     startCommand: node scripts/bot-worker.js
+#     envVars:
+#       - key: NODE_ENV
+#         value: production
+#       - key: DATABASE_URL
+#         fromDatabase:
+#           name: valifi-db
+#           property: connectionString
+
+# Optional: Cron Jobs
+# Uncomment and configure as needed
+# services:
+#   - type: cron
+#     name: valifi-bot-evolution
+#     runtime: node
+#     schedule: "0 */6 * * *" # Every 6 hours
+#     buildCommand: npm install --force --legacy-peer-deps
+#     startCommand: node scripts/bot-evolution.js
+#     envVars:
+#       - key: NODE_ENV
+#         value: production
+#       - key: DATABASE_URL
+#         fromDatabase:
+#           name: valifi-db
+#           property: connectionString
