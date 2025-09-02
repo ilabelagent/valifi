@@ -14,7 +14,7 @@ function Get-GitHubRepoUrl {
 
 param(
     [string]$RenderApiKey = $env:RENDER_API_KEY,
-    [string]$GitHubRepo = "",
+[string]$GitHubRepo = ""
     [switch]$SkipCleanup = $false,
     [switch]$SkipBuild = $false,
     [switch]$ForceRebuild = $false,
@@ -507,4 +507,5 @@ if ($launch -eq "y") {
 Write-Host ""
 Write-Success "Automation complete! Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
 
