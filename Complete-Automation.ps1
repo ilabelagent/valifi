@@ -1,3 +1,12 @@
+function Get-GitHubRepoUrl {
+    param([string]$OriginUrl)
+    if ($env:GH_REPO_URL) { return $env:GH_REPO_URL }
+    if ($OriginUrl -match "github\.com[:/](?<owner>[^/]+)/(?<repo>[^/\.]+)(?:\.git)?$") {
+        return "https://github.com/$($Matches['owner'])/$($Matches['repo']).git"
+    }
+    if ($OriginUrl) { return $OriginUrl }
+    return $null
+}
 # =====================================================
 # VALIFI KINGDOM COMPLETE AUTOMATION POWERSHELL
 # Advanced A-Z Implementation with Render API
@@ -498,3 +507,4 @@ if ($launch -eq "y") {
 Write-Host ""
 Write-Success "Automation complete! Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
