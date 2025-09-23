@@ -7,19 +7,24 @@ build:
       - echo "Node.js version:" && node --version
       - echo "NPM version:" && npm --version
       - echo "Build timestamp:" && date
+      - echo "Current directory:" && pwd
+      - echo "Directory contents:" && ls -la
     install:
-      - echo "📦 Installing dependencies..."
-      - npm install --production=false
+      - echo "📦 Installing all dependencies (including devDependencies)..."
+      - npm ci
       - echo "✅ Dependencies installed successfully"
+      - echo "Installed packages:" && npm list --depth=0
     build:
       - echo "🏗️ Building Valifi application..."
-      - npm run build
+      - NODE_ENV=development npm run build
       - echo "📊 Build artifacts:"
       - ls -la dist/ || echo "No dist directory found"
       - echo "✅ Build completed successfully"
     post_build:
       - echo "🔍 Post-build validation..."
       - test -f "full-stack-server.js" && echo "✅ Server file found" || echo "❌ Server file missing"
+      - test -d "dist" && echo "✅ Frontend build directory found" || echo "❌ Frontend build directory missing"
+      - echo "📁 Final directory structure:" && ls -la
       - echo "🎉 Auto-build pipeline completed!"
 env:
   - name: NODE_ENV
