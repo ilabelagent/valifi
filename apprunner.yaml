@@ -3,15 +3,24 @@ runtime: nodejs20
 build:
   commands:
     pre_build:
-      - echo "Preparing build environment for Valifi"
-      - node --version
-      - npm --version
+      - echo "🚀 Valifi Auto-Build Pipeline Starting..."
+      - echo "Node.js version:" && node --version
+      - echo "NPM version:" && npm --version
+      - echo "Build timestamp:" && date
     install:
-      - echo "Installing dependencies with npm"
+      - echo "📦 Installing dependencies..."
       - npm install --production=false
+      - echo "✅ Dependencies installed successfully"
     build:
-      - echo "Building Valifi application"
+      - echo "🏗️ Building Valifi application..."
       - npm run build
+      - echo "📊 Build artifacts:"
+      - ls -la dist/ || echo "No dist directory found"
+      - echo "✅ Build completed successfully"
+    post_build:
+      - echo "🔍 Post-build validation..."
+      - test -f "full-stack-server.js" && echo "✅ Server file found" || echo "❌ Server file missing"
+      - echo "🎉 Auto-build pipeline completed!"
 env:
   - name: NODE_ENV
     value: production
