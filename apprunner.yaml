@@ -56,4 +56,3 @@ run:
   network:
     port: 8080
     env: PORT
-  runtime-version: 20
