@@ -1,0 +1,51 @@
+{
+  "name": "valifi-kingdom-mcp",
+  "version": "2.0.0",
+  "description": "Valifi Kingdom MCP Orchestrator - Living Bot Ecosystem Controller",
+  "main": "./kingdom-mcp-server.js",
+  "author": "Valifi Kingdom",
+  "license": "MIT",
+  "capabilities": {
+    "tools": [
+      "awaken_bot",
+      "execute_bot_action",
+      "orchestrate_workflow",
+      "analyze_system_health",
+      "deploy_production",
+      "auto_patch",
+      "evolve_bot",
+      "kingdom_status"
+    ],
+    "resources": [
+      "bot_registry",
+      "system_metrics",
+      "audit_logs",
+      "evolution_history"
+    ]
+  },
+  "bots": {
+    "total": 51,
+    "categories": {
+      "financial": ["banking-bot", "trading-bot", "wallet-bot", "portfolio-bot"],
+      "investment": ["stocks-bot", "bonds-bot", "reit-bot", "nft-bot", "options-bot"],
+      "defi": ["defi-bot", "amm-bot", "liquidity-bot", "bridge-bot", "gas-optimizer-bot"],
+      "security": ["privacy-bot", "coin-mixer-bot", "multisig-bot", "hardware-wallet-bot"],
+      "retirement": ["401k-bot", "ira-bot", "pension-bot", "mutualfunds-bot"],
+      "analytics": ["portfolio-analytics-bot", "transaction-history-bot"],
+      "communication": ["mail-bot", "translation-bot", "education-bot", "communication-bot"],
+      "enterprise": ["admin-control-bot", "compliance-bot", "vip-desk-bot", "enterprise-bot"],
+      "innovation": ["web3-bot", "advanced-trading-bot", "crypto-derivatives-bot", "innovative-bot"],
+      "utility": ["address-book-bot", "seed-management-bot", "hd-wallet-bot", "multichain-bot", "onboarding-bot"]
+    }
+  },
+  "deployment": {
+    "render": {
+      "enabled": true,
+      "url": "https://valifi-fintech-platform.onrender.com"
+    },
+    "vercel": {
+      "enabled": false,
+      "url": "https://valifi.vercel.app"
+    }
+  }
+}
