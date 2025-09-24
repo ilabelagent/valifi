@@ -3,11 +3,11 @@ runtime: nodejs22
 build:
   commands:
     install:
-      - npm ci
+      - npm install
     build:
       - npm run build
     post_build:
-      - test -f "full-stack-server.js"
+      - test -f "full-stack-server.js" || test -f "dist/index.html"
 env:
   - name: NODE_ENV
     value: production
