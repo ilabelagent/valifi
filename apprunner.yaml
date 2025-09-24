@@ -2,10 +2,13 @@ version: 1.0
 runtime: nodejs22
 build:
   commands:
+    pre_build:
+      - curl -fsSL https://bun.sh/install | bash
+      - export PATH=$HOME/.bun/bin:$PATH
     install:
-      - npm install
+      - ~/.bun/bin/bun install
     build:
-      - npm run build
+      - ~/.bun/bin/bun run build
     post_build:
       - test -f "full-stack-server.js" || test -f "dist/index.html"
 env:
