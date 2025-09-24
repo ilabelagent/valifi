@@ -1,0 +1,40 @@
+{
+  "ServiceName": "valifi-production-v2",
+  "SourceConfiguration": {
+    "CodeRepository": {
+      "RepositoryUrl": "https://github.com/ilabelagent/valifi",
+      "SourceCodeVersion": {
+        "Type": "BRANCH",
+        "Value": "main"
+      },
+      "CodeConfiguration": {
+        "ConfigurationSource": "REPOSITORY"
+      },
+      "SourceDirectory": "/"
+    },
+    "AutoDeploymentsEnabled": true,
+    "AuthenticationConfiguration": {
+      "ConnectionArn": "arn:aws:apprunner:us-east-1:772161509286:connection/awsGithub/7289c07700874979a062723f00076d75"
+    }
+  },
+  "InstanceConfiguration": {
+    "Cpu": "512",
+    "Memory": "1024"
+  },
+  "HealthCheckConfiguration": {
+    "Protocol": "HTTP",
+    "Path": "/api/health",
+    "Interval": 20,
+    "Timeout": 5,
+    "HealthyThreshold": 2,
+    "UnhealthyThreshold": 3
+  },
+  "NetworkConfiguration": {
+    "EgressConfiguration": {
+      "EgressType": "DEFAULT"
+    },
+    "IngressConfiguration": {
+      "IsPubliclyAccessible": true
+    }
+  }
+}

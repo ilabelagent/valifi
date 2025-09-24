@@ -1,43 +1,78 @@
 version: 1.0
-runtime: nodejs22
+runtime: nodejs20
 build:
   commands:
-    pre_build:
+    pre-build:
+      - echo "🚀 VALIFI FINTECH DEPLOYMENT - BULLETPROOF CONFIG"
+      - echo "Current directory:" && pwd
+      - echo "Available files:" && ls -la
+      - echo "Node version:" && node --version
+      - echo "NPM version:" && npm --version
+      - echo "Memory:" && free -h
+
+      # Install Bun for 10x faster performance
+      - echo "📦 Installing Bun runtime for maximum performance..."
       - curl -fsSL https://bun.sh/install | bash
-      - export PATH=$HOME/.bun/bin:$PATH
+      - export PATH="$HOME/.bun/bin:$PATH"
+      - echo "Bun installed, version:" && $HOME/.bun/bin/bun --version
+
+      # Verify critical files
+      - echo "🔍 Verifying critical files exist..."
+      - test -f "package.json" && echo "✅ package.json found"
+      - test -f "bun-server.ts" && echo "✅ bun-server.ts found"
+      - test -d "migrations" && echo "✅ migrations directory found"
+      - ls -la migrations/
+
     install:
-      - ~/.bun/bin/bun install
+      - echo "📦 Installing dependencies with Bun (ultra-fast)..."
+      - export PATH="$HOME/.bun/bin:$PATH"
+      - $HOME/.bun/bin/bun install --production=false
+      - echo "✅ Dependencies installed successfully"
+
     build:
-      - ~/.bun/bin/bun run build
-    post_build:
-      - test -f "full-stack-server.js" || test -f "dist/index.html"
+      - echo "🔧 Building Valifi frontend with Webpack..."
+      - export PATH="$HOME/.bun/bin:$PATH"
+      - $HOME/.bun/bin/bun run build
+      - echo "✅ Frontend build completed"
+
+      - echo "⚡ Building optimized Bun server..."
+      - $HOME/.bun/bin/bun run bun:build
+      - echo "✅ Server build completed"
+
+    post-build:
+      - echo "🎯 Final build verification..."
+      - test -d "dist" && echo "✅ dist/ directory created"
+      - test -f "dist/index.html" && echo "✅ Frontend built successfully"
+      - ls -la dist/ | head -10
+      - echo "✅ VALIFI BUILD COMPLETED - READY FOR DEPLOYMENT"
+
 env:
   - name: NODE_ENV
     value: production
   - name: PORT
-    value: 8080
-  - name: DB_HOST
-    value: valifi-production-db.c8y4mxfhjklm.us-east-1.rds.amazonaws.com
-  - name: DB_PORT
-    value: 5432
-  - name: DB_NAME
-    value: valifi_production
-  - name: DB_USER
-    value: valifi_admin
-  - name: DB_PASSWORD
-    value: 8514Direction!
+    value: 3001
+  - name: BUN_ENV
+    value: production
   - name: DATABASE_URL
     value: postgresql://valifi_admin:8514Direction!@valifi-production-db.c8y4mxfhjklm.us-east-1.rds.amazonaws.com:5432/valifi_production
   - name: JWT_SECRET
-    value: valifi_jwt_production_secret_2025_secure_key_app_runner_rds
+    value: valifi_jwt_production_secret_2025_secure_key_app_runner_rds_fintech_ai_powered_platform
+  - name: AWS_REGION
+    value: us-east-1
   - name: CORS_ORIGIN
     value: "*"
-  - name: DB_POOL_MAX
-    value: 20
-  - name: DB_POOL_MIN
-    value: 5
+  - name: ENABLE_TRADING_BOTS
+    value: "true"
+  - name: ENABLE_REAL_MONEY
+    value: "false"
+  - name: MAX_POOL_CONNECTIONS
+    value: "20"
+  - name: CONNECTION_TIMEOUT
+    value: "30000"
+
 run:
-  command: node full-stack-server.js
+  runtime-version: 20
+  command: npm run production:start
   network:
-    port: 8080
+    port: 3001
     env: PORT

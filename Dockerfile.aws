@@ -1,1 +1,119 @@
+# VALIFI FINTECH PLATFORM - AWS ECS FARGATE OPTIMIZED
+# Bulletproof container for production deployment with fallback support
 
+# Multi-stage build for optimal performance and security
+FROM node:20-alpine AS base
+WORKDIR /app
+RUN apk add --no-cache curl postgresql-client
+
+# Install Bun for 10x performance boost
+FROM base AS bun-setup
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+
+# Dependencies stage
+FROM bun-setup AS deps
+COPY package.json bun.lockb* ./
+RUN bun install --frozen-lockfile --production=false
+
+# Build stage
+FROM bun-setup AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build with comprehensive error handling
+RUN echo "🚀 VALIFI FINTECH - BUILDING PRODUCTION SYSTEM"
+RUN echo "Memory available:" && free -h
+RUN echo "Disk space:" && df -h
+RUN echo "Node version:" && node --version
+RUN echo "Bun version:" && bun --version
+
+# Build frontend
+RUN echo "🔧 Building frontend with Webpack..." && \
+    bun run build && \
+    echo "✅ Frontend built successfully"
+
+# Build server
+RUN echo "⚡ Building optimized Bun server..." && \
+    bun run bun:build && \
+    echo "✅ Server built successfully"
+
+# Verify builds
+RUN test -d "dist" && echo "✅ Frontend dist/ created"
+RUN test -f "dist/index.html" && echo "✅ Frontend HTML found"
+RUN ls -la dist/ | head -5
+
+# Production runtime
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Security: Create non-root user
+RUN addgroup --system --gid 1001 valifi
+RUN adduser --system --uid 1001 valifi
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    curl \
+    postgresql-client \
+    ca-certificates \
+    tzdata
+
+# Install Bun for production runtime
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+
+# Copy built application with correct permissions
+COPY --from=builder --chown=valifi:valifi /app/dist ./dist
+COPY --from=builder --chown=valifi:valifi /app/bun-server.ts ./
+COPY --from=builder --chown=valifi:valifi /app/package.json ./
+COPY --from=builder --chown=valifi:valifi /app/migrations ./migrations
+COPY --from=deps --chown=valifi:valifi /app/node_modules ./node_modules
+
+# Set up logging directory
+RUN mkdir -p /app/logs && chown valifi:valifi /app/logs
+
+# Switch to non-root user
+USER valifi
+
+# Expose port
+EXPOSE 3001
+
+# Production environment variables
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV BUN_ENV=production
+ENV LOG_LEVEL=info
+
+# Comprehensive health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
+  CMD curl -f http://localhost:3001/api/health || exit 1
+
+# Startup script with database connection verification
+COPY --chown=valifi:valifi <<EOF /app/start.sh
+#!/bin/sh
+echo "🚀 VALIFI FINTECH PLATFORM STARTING..."
+echo "Environment: \$NODE_ENV"
+echo "Port: \$PORT"
+echo "Database: \${DATABASE_URL:0:20}..."
+
+# Verify database connection
+echo "🗄️  Testing database connection..."
+if timeout 30 psql "\$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
+    echo "✅ Database connection successful"
+else
+    echo "❌ Database connection failed - retrying in 10s..."
+    sleep 10
+    psql "\$DATABASE_URL" -c "SELECT 1;" || {
+        echo "❌ Database still unavailable - starting anyway"
+    }
+fi
+
+# Start the application
+echo "🚀 Starting Bun server..."
+exec bun run production:start
+EOF
+
+RUN chmod +x /app/start.sh
+
+# Start command
+CMD ["/app/start.sh"]
