@@ -1,0 +1,167 @@
+# Docker Compose for Local AWS Testing
+# Simulates AWS services locally on Windows
+
+version: '3.8'
+
+services:
+  # LocalStack - AWS Services Emulator
+  localstack:
+    image: localstack/localstack:latest
+    container_name: valifi-localstack
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=s3,dynamodb,ses,sqs,secretsmanager,cognito,lambda,rds
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - valifi-network
+
+  # PostgreSQL (simulating AWS RDS)
+  postgres:
+    image: postgres:14-alpine
+    container_name: valifi-postgres
+    environment:
+      POSTGRES_DB: valifi_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - valifi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (simulating AWS ElastiCache)
+  redis:
+    image: redis:7-alpine
+    container_name: valifi-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - valifi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch (for logging/monitoring like AWS CloudWatch)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: valifi-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - valifi-network
+
+  # Kibana (for log visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    container_name: valifi-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - valifi-network
+
+  # MinIO (S3-compatible storage for local testing)
+  minio:
+    image: minio/minio:latest
+    container_name: valifi-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - valifi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Application Container (Next.js)
+  valifi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: valifi-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/valifi_dev
+      - REDIS_URL=redis://redis:6379
+      - AWS_ENDPOINT=http://localstack:4566
+      - S3_ENDPOINT=http://minio:9000
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - JWT_SECRET=local-jwt-secret-for-testing
+      - NEXTAUTH_SECRET=local-nextauth-secret-for-testing
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - postgres
+      - redis
+      - localstack
+      - minio
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - valifi-network
+    command: npm run dev
+
+  # AWS CLI Container (for testing AWS commands)
+  awscli:
+    image: amazon/aws-cli:latest
+    container_name: valifi-awscli
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+    entrypoint: /bin/sh -c "while true; do sleep 3600; done"
+    networks:
+      - valifi-network
+
+networks:
+  valifi-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  elastic_data:
+  minio_data:

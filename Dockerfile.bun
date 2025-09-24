@@ -1,0 +1,47 @@
+# Bun Production Dockerfile - Ultra-lightweight and fast
+FROM oven/bun:1-alpine AS base
+
+# Install dependencies only
+FROM base AS deps
+WORKDIR /app
+COPY package*.json bun.lockb* ./
+RUN bun install --frozen-lockfile --production
+
+# Build stage
+FROM base AS builder
+WORKDIR /app
+COPY . .
+COPY --from=deps /app/node_modules ./node_modules
+
+# Create standalone binary
+RUN bun build ./bun-elysia-server.ts \
+    --compile \
+    --minify \
+    --sourcemap \
+    --target=bun-linux-x64 \
+    --outfile server
+
+# Production stage - Ultra minimal
+FROM alpine:latest AS production
+RUN apk add --no-cache libgcc libstdc++
+
+WORKDIR /app
+
+# Copy only the binary and essential files
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/valifi-production.db* ./
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["./server", "--health"]
+
+EXPOSE 3000
+
+# Run the binary directly
+CMD ["./server"]

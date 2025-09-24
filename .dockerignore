@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+valiifi
+.env
+.env.local
+*.log
+.DS_Store
+coverage
+.aws

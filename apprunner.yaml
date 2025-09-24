@@ -25,9 +25,9 @@ env:
   - name: DB_USER
     value: valifi_admin
   - name: DB_PASSWORD
-    value: YOUR_RDS_PASSWORD_HERE
+    value: 8514Direction!
   - name: DATABASE_URL
-    value: postgresql://valifi_admin:YOUR_RDS_PASSWORD_HERE@valifi-production-db.c8y4mxfhjklm.us-east-1.rds.amazonaws.com:5432/valifi_production
+    value: postgresql://valifi_admin:8514Direction!@valifi-production-db.c8y4mxfhjklm.us-east-1.rds.amazonaws.com:5432/valifi_production
   - name: JWT_SECRET
     value: valifi_jwt_production_secret_2025_secure_key_app_runner_rds
   - name: CORS_ORIGIN
