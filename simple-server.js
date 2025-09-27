@@ -3,6 +3,9 @@
  * Guaranteed working deployment for AWS environments
  */
 
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -79,24 +82,27 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, firstName, lastName } = req.body;
 
-        if (!email || !password || !firstName || !lastName) {
+        if (!email || !password || !firstName) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
+
+        // Generate username from email
+        const username = email.split('@')[0];
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
         // Insert user
         const result = await db.query(`
-            INSERT INTO users (email, password_hash, first_name, last_name)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (email, username, password_hash, first_name, last_name)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id
-        `, [email, hashedPassword, firstName, lastName]);
+        `, [email, username, hashedPassword, firstName, lastName || '']);
 
         const userId = result.rows[0].id;
 
         // Create wallet
-        await db.query('INSERT INTO wallets (user_id, currency) VALUES ($1, $2)', [userId, 'USD']);
+        await db.query('INSERT INTO wallets (user_id, wallet_type, currency) VALUES ($1, $2, $3)', [userId, 'main', 'USD']);
 
         // Generate JWT
         const token = jwt.sign(

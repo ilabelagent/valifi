@@ -247,11 +247,8 @@ const serverConfig = {
 
 // Only start server if running directly, not as module
 if (import.meta.main) {
-    const server = serve(serverConfig);
     console.log(`Server started at http://localhost:${PORT}`);
-}
-
-console.log(`
+    console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║     VALIFI FINTECH PLATFORM - POWERED BY BUN 🚀          ║
@@ -270,5 +267,7 @@ console.log(`
 ║                                                            ║
 ╚══════════════════════════════════════════════════════════╝
 `);
+    const server = serve(serverConfig);
+}
 
 export default serverConfig;
