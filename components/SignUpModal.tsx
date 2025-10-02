@@ -7,7 +7,7 @@ interface SignUpModalProps {
     onClose: () => void;
     onSignUp: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignIn: () => void;
-    dbStatus: 'checking' | 'ok' | 'error' | 'demo';
+    dbStatus: 'checking' | 'ok' | 'error';
     dbErrorMessage: string;
 }
 
@@ -50,9 +50,8 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
     
     const inputClass = "w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
     
-    // Only disable if truly checking or has a critical error (not demo mode)
-    const isDisabled = isLoading || dbStatus === 'checking';
-    const isDemoMode = dbStatus === 'demo' || dbStatus === 'error';
+    // Only disable if truly checking or has a critical error
+    const isDisabled = isLoading || dbStatus === 'checking' || dbStatus === 'error';
 
     return (
         <div 
@@ -75,23 +74,6 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                     <p className="text-muted-foreground text-sm">Join the future of finance.</p>
                 </div>
 
-                {isDemoMode && (
-                    <div className="mt-6 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                        <div className="flex items-start gap-2">
-                            <InfoIcon className="w-5 h-5 text-primary mt-0.5" />
-                            <div className="text-sm">
-                                <p className="font-semibold text-primary">Demo Mode Active</p>
-                                <p className="text-muted-foreground mt-1">Sign up is disabled in demo mode.</p>
-                                <p className="text-muted-foreground mt-1">Please sign in with test accounts:</p>
-                                <div className="mt-2 space-y-1 text-xs font-mono">
-                                    <p className="text-foreground">demo@valifi.com / demo123</p>
-                                    <p className="text-foreground">admin@valifi.com / admin123</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <form onSubmit={handleFormSubmit} className="space-y-4 mt-6">
                     <div>
                         <label htmlFor="fullName" className="sr-only">Full Name</label>
@@ -101,9 +83,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                             type="text" 
                             autoComplete="name" 
                             required 
-                            value={fullName} 
-                            onChange={(e) => setFullName(e.target.value)} 
-                            disabled={isDemoMode} 
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            disabled={isDisabled}
                             className={inputClass} 
                             placeholder="Full Name"
                         />
@@ -116,9 +98,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                             type="text" 
                             autoComplete="username" 
                             required 
-                            value={username} 
-                            onChange={(e) => setUsername(e.target.value)} 
-                            disabled={isDemoMode} 
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            disabled={isDisabled}
                             className={inputClass} 
                             placeholder="Username"
                         />
@@ -131,9 +113,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                             type="email" 
                             autoComplete="email" 
                             required 
-                            value={email} 
-                            onChange={(e) => setEmail(e.target.value)} 
-                            disabled={isDemoMode} 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isDisabled}
                             className={inputClass} 
                             placeholder="Email Address"
                         />
@@ -146,9 +128,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                             type="password" 
                             autoComplete="new-password" 
                             required 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)} 
-                            disabled={isDemoMode} 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isDisabled}
                             className={inputClass} 
                             placeholder="Password (min. 8 characters)"
                         />
@@ -161,9 +143,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                             type="password" 
                             autoComplete="new-password" 
                             required 
-                            value={confirmPassword} 
-                            onChange={(e) => setConfirmPassword(e.target.value)} 
-                            disabled={isDemoMode} 
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            disabled={isDisabled}
                             className={inputClass} 
                             placeholder="Confirm Password"
                         />
@@ -176,9 +158,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                     )}
 
                     <div className="pt-2">
-                        <button 
-                            type="submit" 
-                            disabled={isDisabled || isDemoMode} 
+                        <button
+                            type="submit"
+                            disabled={isDisabled}
                             className="w-full flex justify-center py-3 px-4 rounded-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-all"
                         >
                             {isLoading ? (
@@ -189,8 +171,6 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                                     </svg>
                                     Creating Account...
                                 </span>
-                            ) : isDemoMode ? (
-                                'Sign-up Disabled (Demo Mode)'
                             ) : (
                                 'Create Account'
                             )}
@@ -201,7 +181,6 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
                 <div className="mt-4 text-center text-xs">
                     {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
                     {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
-                    {dbStatus === 'demo' && <p className="text-primary flex items-center justify-center gap-1.5"><InfoIcon className="w-4 h-4" /> Demo mode - Use test accounts to sign in</p>}
                 </div>
 
                 <p className="mt-6 text-center text-sm text-muted-foreground">

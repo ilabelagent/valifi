@@ -8,7 +8,7 @@ interface SignInModalProps {
     onLogin: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
     onOpenSignUp: () => void;
     onOpenForgotPassword: () => void;
-    dbStatus: 'checking' | 'ok' | 'error' | 'demo';
+    dbStatus: 'checking' | 'ok' | 'error';
     dbErrorMessage: string;
 }
 
@@ -32,9 +32,8 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
         }
     };
     
-    // Only disable if truly checking or has a critical error (not demo mode)
+    // Only disable while loading or checking
     const isDisabled = isLoading || dbStatus === 'checking';
-    const isDemoMode = dbStatus === 'demo' || dbStatus === 'error';
 
     return (
         <div 
@@ -56,22 +55,6 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
                     <h2 id="signin-modal-title" className="text-2xl font-bold">Welcome Back</h2>
                     <p className="text-muted-foreground text-sm">Sign in to access your financial dashboard.</p>
                 </div>
-
-                {isDemoMode && (
-                    <div className="mt-6 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                        <div className="flex items-start gap-2">
-                            <InfoIcon className="w-5 h-5 text-primary mt-0.5" />
-                            <div className="text-sm">
-                                <p className="font-semibold text-primary">Demo Mode Active</p>
-                                <p className="text-muted-foreground mt-1">Use these test accounts:</p>
-                                <div className="mt-2 space-y-1 text-xs font-mono">
-                                    <p className="text-foreground">demo@valifi.com / demo123</p>
-                                    <p className="text-foreground">admin@valifi.com / admin123</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <form onSubmit={handleFormSubmit} className="space-y-4 mt-6">
                     <div>
@@ -155,7 +138,6 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
                 <div className="mt-4 text-center text-xs">
                     {dbStatus === 'checking' && <p className="text-muted-foreground">Checking system status...</p>}
                     {dbStatus === 'ok' && <p className="text-success flex items-center justify-center gap-1.5"><CheckCircleIcon className="w-4 h-4" /> All systems operational.</p>}
-                    {dbStatus === 'demo' && <p className="text-primary flex items-center justify-center gap-1.5"><InfoIcon className="w-4 h-4" /> Demo mode - No database configured</p>}
                 </div>
 
                 <p className="mt-6 text-center text-sm text-muted-foreground">

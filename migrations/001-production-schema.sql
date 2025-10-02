@@ -47,12 +47,7 @@ CREATE TABLE users (
     -- Metadata
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,
-    
-    -- Indexes for performance
-    INDEX idx_users_email (email),
-    INDEX idx_users_status (account_status),
-    INDEX idx_users_created (created_at)
+    deleted_at TIMESTAMP
 );
 
 -- ============================================
@@ -77,10 +72,8 @@ CREATE TABLE wallets (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    UNIQUE(user_id, currency),
-    INDEX idx_wallets_user (user_id),
-    INDEX idx_wallets_currency (currency)
+
+    UNIQUE(user_id, currency)
 );
 
 -- ============================================
@@ -111,14 +104,9 @@ CREATE TABLE transactions (
     metadata JSONB,
     ip_address INET,
     user_agent TEXT,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-    
-    INDEX idx_transactions_user (user_id),
-    INDEX idx_transactions_status (status),
-    INDEX idx_transactions_type (type),
-    INDEX idx_transactions_created (created_at)
+    completed_at TIMESTAMP
 );
 
 -- ============================================
@@ -148,12 +136,9 @@ CREATE TABLE trading_bots (
     last_run_at TIMESTAMP,
     next_run_at TIMESTAMP,
     error_message TEXT,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_bots_user (user_id),
-    INDEX idx_bots_status (status)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -173,13 +158,9 @@ CREATE TABLE user_sessions (
     -- Expiry
     expires_at TIMESTAMP NOT NULL,
     refresh_expires_at TIMESTAMP,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_sessions_user (user_id),
-    INDEX idx_sessions_token (session_token),
-    INDEX idx_sessions_expires (expires_at)
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -192,10 +173,7 @@ CREATE TABLE email_verifications (
     email VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     verified_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_verifications_token (token),
-    INDEX idx_verifications_user (user_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -216,12 +194,9 @@ CREATE TABLE referrals (
     signup_completed BOOLEAN DEFAULT FALSE,
     first_deposit_completed BOOLEAN DEFAULT FALSE,
     kyc_completed BOOLEAN DEFAULT FALSE,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    rewarded_at TIMESTAMP,
-    
-    INDEX idx_referrals_referrer (referrer_id),
-    INDEX idx_referrals_referred (referred_id)
+    rewarded_at TIMESTAMP
 );
 
 -- ============================================
@@ -243,12 +218,8 @@ CREATE TABLE audit_logs (
     ip_address INET,
     user_agent TEXT,
     request_id VARCHAR(100),
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_audit_user (user_id),
-    INDEX idx_audit_action (action),
-    INDEX idx_audit_created (created_at)
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -293,3 +264,30 @@ VALUES (
 -- ============================================
 -- PRODUCTION READY!
 -- ============================================
+-- Create indexes separately
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(account_status);
+CREATE INDEX IF NOT EXISTS idx_users_created ON users(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_wallets_user ON wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_wallets_currency ON wallets(currency);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_bots_user ON trading_bots(user_id);
+CREATE INDEX IF NOT EXISTS idx_bots_status ON trading_bots(status);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(session_token);
+
+CREATE INDEX IF NOT EXISTS idx_verifications_token ON email_verifications(token);
+CREATE INDEX IF NOT EXISTS idx_verifications_user ON email_verifications(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_id);
+
+CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_date ON audit_logs(created_at);

@@ -1,13 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
-import { createClient } from '@libsql/client';
+import { Pool } from 'pg';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'valifi-secret-key-change-in-production';
 
-// Initialize Turso client
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || '',
-  authToken: process.env.TURSO_AUTH_TOKEN || ''
+// Initialize PostgreSQL connection
+const dbUrl = process.env.DATABASE_URL || 'postgresql://valifip:Valifi2025SecurePass@localhost:5432/valifi_production';
+const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+
+const pool = new Pool({
+  connectionString: dbUrl,
+  ssl: isLocalDb ? false : { rejectUnauthorized: false },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
 // Verify JWT token
@@ -41,10 +47,10 @@ export default async function handler(
 
   try {
     // Get user data from database
-    const userResult = await db.execute({
-      sql: 'SELECT id, email, name, is_verified, is_active, role FROM users WHERE id = ?',
-      args: [decoded.userId]
-    });
+    const userResult = await pool.query(
+      'SELECT id, email, first_name, last_name, email_verified, account_status FROM users WHERE id = $1',
+      [decoded.userId]
+    );
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -52,41 +58,36 @@ export default async function handler(
 
     const user = userResult.rows[0];
 
-    // Get user's portfolio
-    const portfolioResult = await db.execute({
-      sql: 'SELECT * FROM portfolios WHERE user_id = ?',
-      args: [decoded.userId]
-    });
+    // Get user's wallets (our equivalent of portfolio)
+    const walletsResult = await pool.query(
+      'SELECT * FROM wallets WHERE user_id = $1',
+      [decoded.userId]
+    );
 
-    const portfolio = portfolioResult.rows[0] || {
-      total_value_usd: 0,
-      cash_balance: 0
-    };
-
-    // Get user's assets
-    const assetsResult = await db.execute({
-      sql: 'SELECT * FROM assets WHERE portfolio_id = ?',
-      args: [portfolio?.id || '']
-    });
+    // Calculate total portfolio value from wallets
+    const totalValue = walletsResult.rows.reduce((sum, wallet) =>
+      sum + parseFloat(wallet.balance || '0'), 0
+    );
 
     // Get user's transactions
-    const transactionsResult = await db.execute({
-      sql: 'SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
-      args: [decoded.userId]
-    });
+    const transactionsResult = await pool.query(
+      'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+      [decoded.userId]
+    );
 
     // Build app data response with REAL user data
+    const fullName = `${user.first_name} ${user.last_name}`.trim();
     const appData = {
       profile: {
         id: user.id,
-        fullName: user.name,
+        fullName: fullName,
         username: user.email?.split('@')[0] || 'user',
         email: user.email,
-        profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name as string)}&background=4F46E5&color=fff`,
+        profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=4F46E5&color=fff`,
         kycStatus: 'Not Started' as const,
-        isVerified: Boolean(user.is_verified),
-        isActive: Boolean(user.is_active),
-        role: user.role
+        isVerified: Boolean(user.email_verified),
+        isActive: user.account_status === 'active',
+        role: 'user'
       },
       settings: {
         twoFactorAuth: { enabled: false, method: 'none' as const },
@@ -114,31 +115,31 @@ export default async function handler(
       },
       sessions: [],
       portfolio: {
-        totalValue: Number(portfolio?.total_value_usd) || 0,
+        totalValue: totalValue,
         totalProfit: 0,
         dailyChange: 0,
         weeklyChange: 0,
         change24hValue: 0,
         change24hPercent: 0,
-        cashBalance: Number(portfolio?.cash_balance) || 0,
-        assets: assetsResult.rows.map((asset: any) => ({
-          id: asset.id,
-          type: asset.type,
-          ticker: asset.ticker,
-          name: asset.name,
-          balance: Number(asset.quantity) || 0,
-          valueUSD: Number(asset.value_usd) || 0,
-          change24h: Number(asset.change_24h) || 0,
-          allocation: 0,
-          Icon: 'GenericIcon'
+        cashBalance: walletsResult.rows.find(w => w.currency === 'USD')?.balance || 0,
+        assets: walletsResult.rows.map((wallet: any) => ({
+          id: wallet.id,
+          type: 'CASH',
+          ticker: wallet.currency,
+          name: wallet.currency,
+          balance: parseFloat(wallet.balance || '0'),
+          valueUSD: parseFloat(wallet.balance || '0'),
+          change24h: 0,
+          allocation: totalValue > 0 ? (parseFloat(wallet.balance || '0') / totalValue) * 100 : 0,
+          Icon: wallet.currency === 'USD' ? 'UsdIcon' : 'GenericIcon'
         })),
         transactions: transactionsResult.rows.map((tx: any) => ({
           id: tx.id,
           date: tx.created_at,
           description: tx.description || 'Transaction',
-          amountUSD: Number(tx.amount_usd) || 0,
-          status: tx.status || 'Completed',
-          type: tx.type || 'Trade'
+          amountUSD: parseFloat(tx.amount || '0'),
+          status: tx.status || 'completed',
+          type: tx.transaction_type || 'transfer'
         })),
         tradeAssets: []
       },

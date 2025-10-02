@@ -1,8 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@libsql/client';
+import { Pool } from 'pg';
 
-// Check if database is properly configured
-const isDatabaseConfigured = !!(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+// Initialize PostgreSQL connection
+const dbUrl = process.env.DATABASE_URL || 'postgresql://valifip:Valifi2025SecurePass@localhost:5432/valifi_production';
+const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+
+const pool = new Pool({
+  connectionString: dbUrl,
+  ssl: isLocalDb ? false : { rejectUnauthorized: false },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,68 +22,40 @@ export default async function handler(
   }
 
   try {
-    // Check if database is configured
-    if (!isDatabaseConfigured) {
-      // Return success in demo mode
-      return res.status(200).json({
-        success: true,
-        status: 'demo',
-        message: 'Running in demo mode - no database configured',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        service: 'valifi-api',
-        database: {
-          configured: false,
-          status: 'demo-mode'
-        },
-        demoAccounts: [
-          { email: 'demo@valifi.com', password: 'demo123' },
-          { email: 'admin@valifi.com', password: 'admin123' }
-        ]
-      });
-    }
-
-    // Try to connect to database if configured
-    const db = createClient({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN!
-    });
-
-    // Simple query to test connection
-    await db.execute('SELECT 1');
+    // Test PostgreSQL connection
+    const result = await pool.query('SELECT NOW() as current_time, version() as pg_version');
+    const dbInfo = result.rows[0];
 
     return res.status(200).json({
       success: true,
       status: 'healthy',
       message: 'All systems operational',
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env.NODE_ENV || 'production',
       service: 'valifi-api',
       database: {
         configured: true,
-        status: 'connected'
+        status: 'connected',
+        type: 'PostgreSQL',
+        serverTime: dbInfo.current_time
       }
     });
-    
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('Health check error:', error);
-    
-    // Return error status if database connection fails
-    return res.status(200).json({
+
+    return res.status(503).json({
       success: false,
       status: 'error',
-      message: 'Database connection failed, but demo mode is available',
+      message: 'Database connection failed',
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env.NODE_ENV || 'production',
       service: 'valifi-api',
       database: {
-        configured: isDatabaseConfigured,
-        status: 'connection-failed'
-      },
-      demoAccounts: [
-        { email: 'demo@valifi.com', password: 'demo123' },
-        { email: 'admin@valifi.com', password: 'admin123' }
-      ]
+        configured: true,
+        status: 'connection-failed',
+        error: error.message
+      }
     });
   }
 }

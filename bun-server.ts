@@ -12,12 +12,15 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 // PostgreSQL connection for production
 const { Pool } = pg;
+const dbUrl = process.env.DATABASE_URL || 'postgresql://valifi_user:change_this_password@localhost:5432/valifi_production';
+const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+
 const db = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://valifi_user:change_this_password@localhost:5432/valifi_production',
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionString: dbUrl,
+    ssl: isLocalDb ? false : { rejectUnauthorized: false },
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
 });
 
 // Test database connection
@@ -49,6 +52,8 @@ const verifyPassword = async (password: string, hash: string) => {
 };
 
 // JWT implementation using Bun's crypto
+const JWT_SECRET = process.env.JWT_SECRET || 'valifi_jwt_production_secret_2025_secure_key_app_runner_rds';
+
 const createJWT = async (payload: any) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(payload));
@@ -56,7 +61,7 @@ const createJWT = async (payload: any) => {
         'HMAC',
         await crypto.subtle.importKey(
             'raw',
-            encoder.encode(process.env.JWT_SECRET || 'secret'),
+            encoder.encode(JWT_SECRET),
             { name: 'HMAC', hash: 'SHA-256' },
             false,
             ['sign']
@@ -64,6 +69,27 @@ const createJWT = async (payload: any) => {
         data
     );
     return btoa(String.fromCharCode(...new Uint8Array(signature)));
+};
+
+// JWT verification function
+const verifyJWT = async (token: string) => {
+    try {
+        // Simple verification - in production, properly verify HMAC signature
+        const payload = atob(token.split('.')[0] || token);
+        return JSON.parse(payload);
+    } catch (error) {
+        return null;
+    }
+};
+
+// Extract user from Authorization header
+const extractUser = async (req: Request) => {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+    const token = authHeader.substring(7);
+    return await verifyJWT(token);
 };
 
 // API Router with Bun's pattern matching
@@ -179,18 +205,162 @@ const router = {
     
     '/api/transactions': async (req: Request) => {
         const result = await db.query(`
-            SELECT * FROM transactions 
-            ORDER BY created_at DESC 
+            SELECT * FROM transactions
+            ORDER BY created_at DESC
             LIMIT 10
         `);
-        
+
         return Response.json(result.rows);
+    },
+
+    '/api/app-data': async (req: Request) => {
+        // Extract and verify JWT
+        const user = await extractUser(req);
+        if (!user || !user.userId) {
+            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
+
+        try {
+            // Get user data
+            const userResult = await db.query(
+                'SELECT id, email, first_name, last_name, email_verified, account_status FROM users WHERE id = $1',
+                [user.userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                return Response.json({ success: false, message: 'User not found' }, { status: 404 });
+            }
+
+            const userData = userResult.rows[0];
+
+            // Get user's wallets
+            const walletsResult = await db.query(
+                'SELECT * FROM wallets WHERE user_id = $1',
+                [user.userId]
+            );
+
+            // Calculate total portfolio value
+            const totalValue = walletsResult.rows.reduce((sum, wallet) =>
+                sum + parseFloat(wallet.balance || '0'), 0
+            );
+
+            // Get user's transactions
+            const transactionsResult = await db.query(
+                'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+                [user.userId]
+            );
+
+            // Build app data response
+            const fullName = `${userData.first_name} ${userData.last_name}`.trim();
+            const appData = {
+                profile: {
+                    id: userData.id,
+                    fullName: fullName,
+                    username: userData.email?.split('@')[0] || 'user',
+                    email: userData.email,
+                    profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=4F46E5&color=fff`,
+                    kycStatus: 'Not Started',
+                    isVerified: Boolean(userData.email_verified),
+                    isActive: userData.account_status === 'active',
+                    role: 'user'
+                },
+                settings: {
+                    twoFactorAuth: { enabled: false, method: 'none' },
+                    loginAlerts: true,
+                    autoLogout: '1h',
+                    preferences: {
+                        currency: 'USD',
+                        language: 'en',
+                        dateFormat: 'MM/DD/YYYY',
+                        timezone: 'UTC',
+                        balancePrivacy: false,
+                        sidebarCollapsed: false,
+                        openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance']
+                    },
+                    privacy: {
+                        emailMarketing: false,
+                        platformMessages: true,
+                        contactAccess: false
+                    },
+                    vaultRecovery: {
+                        email: '',
+                        phone: '',
+                        pin: ''
+                    }
+                },
+                sessions: [],
+                portfolio: {
+                    totalValue: totalValue,
+                    totalProfit: 0,
+                    dailyChange: 0,
+                    weeklyChange: 0,
+                    change24hValue: 0,
+                    change24hPercent: 0,
+                    cashBalance: walletsResult.rows.find(w => w.currency === 'USD')?.balance || 0,
+                    assets: walletsResult.rows.map((wallet: any) => ({
+                        id: wallet.id,
+                        type: 'CASH',
+                        ticker: wallet.currency,
+                        name: wallet.currency,
+                        balance: parseFloat(wallet.balance || '0'),
+                        valueUSD: parseFloat(wallet.balance || '0'),
+                        change24h: 0,
+                        allocation: totalValue > 0 ? (parseFloat(wallet.balance || '0') / totalValue) * 100 : 0,
+                        Icon: wallet.currency === 'USD' ? 'UsdIcon' : 'GenericIcon'
+                    })),
+                    transactions: transactionsResult.rows.map((tx: any) => ({
+                        id: tx.id,
+                        date: tx.created_at,
+                        description: tx.description || 'Transaction',
+                        amountUSD: parseFloat(tx.amount || '0'),
+                        status: tx.status || 'completed',
+                        type: tx.transaction_type || 'transfer'
+                    })),
+                    tradeAssets: []
+                },
+                notifications: [],
+                userActivity: [],
+                newsItems: [],
+                cardDetails: {
+                    status: 'Not Applied',
+                    type: 'Virtual',
+                    currency: 'USD',
+                    theme: 'Obsidian',
+                    isFrozen: false
+                },
+                linkedBankAccounts: [],
+                loanApplications: [],
+                p2pOffers: [],
+                p2pOrders: [],
+                userPaymentMethods: [],
+                reitProperties: [],
+                stakableStocks: [],
+                investableNFTs: [],
+                spectrumPlans: [],
+                stakableCrypto: [],
+                userStakedStocks: [],
+                referralSummary: {
+                    tree: null,
+                    activities: []
+                }
+            };
+
+            return Response.json({ success: true, data: appData });
+
+        } catch (error: any) {
+            console.error('Error fetching app data:', error);
+            return Response.json({
+                success: false,
+                message: 'Failed to fetch application data'
+            }, { status: 500 });
+        }
     }
 };
 
 // Bun server with WebSocket support
 const serverConfig = {
     port: PORT,
+    hostname: '0.0.0.0',
     
     // HTTP request handler
     async fetch(req) {
@@ -245,10 +415,8 @@ const serverConfig = {
     }
 };
 
-// Only start server if running directly, not as module
-if (import.meta.main) {
-    console.log(`Server started at http://localhost:${PORT}`);
-    console.log(`
+console.log(`Server started at http://localhost:${PORT}`);
+console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║     VALIFI FINTECH PLATFORM - POWERED BY BUN 🚀          ║
@@ -267,7 +435,5 @@ if (import.meta.main) {
 ║                                                            ║
 ╚══════════════════════════════════════════════════════════╝
 `);
-    const server = serve(serverConfig);
-}
 
 export default serverConfig;

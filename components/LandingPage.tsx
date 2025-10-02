@@ -1025,24 +1025,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp, userSettin
     const [isSignInModalOpen, setSignInModalOpen] = useState(false);
     const [isSignUpModalOpen, setSignUpModalOpen] = useState(false);
     const [isForgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
-    const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error' | 'demo'>('checking');
+    const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
     const [dbErrorMessage, setDbErrorMessage] = useState('');
 
     useEffect(() => {
         const checkStatus = async () => {
             const result = await apiService.checkDbStatus();
             if (result.success) {
-                // Check if we're in demo mode or production mode
-                if (result.status === 'demo' || result.database?.status === 'demo-mode') {
-                    setDbStatus('demo');
-                    setDbErrorMessage('');
-                } else {
-                    setDbStatus('ok');
-                }
+                setDbStatus('ok');
+                setDbErrorMessage('');
             } else {
-                // Even in error, allow demo mode
-                setDbStatus('demo');
-                setDbErrorMessage(result.message || 'Database not configured - Demo mode active');
+                setDbStatus('error');
+                setDbErrorMessage(result.message || 'System temporarily unavailable');
             }
         };
         checkStatus();
