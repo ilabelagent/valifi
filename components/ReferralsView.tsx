@@ -17,6 +17,7 @@ interface ReferralsViewProps {
         tree: ReferralNode | null;
         activities: ReferralActivity[];
     };
+    username: string;
 }
 
 const StatCard: React.FC<{ title: string; value: string; Icon: React.FC<any> }> = ({ title, value, Icon }) => (
@@ -101,7 +102,7 @@ const TreeNode: React.FC<{ node: ReferralNode, isLast: boolean }> = ({ node, isL
 );
 
 
-const ReferralsView: React.FC<ReferralsViewProps> = ({ summary }) => {
+const ReferralsView: React.FC<ReferralsViewProps> = ({ summary, username }) => {
     const { t } = useTranslation('referrals');
     const { formatCurrency } = useCurrency();
     const tiers = [
@@ -122,7 +123,7 @@ const ReferralsView: React.FC<ReferralsViewProps> = ({ summary }) => {
                 <StatCard title={t('total_earnings')} value={formatCurrency(totalEarnings)} Icon={UsdIcon} />
             </div>
             
-            <ReferralLinkCard username="DemoUser" />
+            <ReferralLinkCard username={username} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-2">
