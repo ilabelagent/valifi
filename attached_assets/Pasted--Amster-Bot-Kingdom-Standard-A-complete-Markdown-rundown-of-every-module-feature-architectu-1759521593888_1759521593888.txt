@@ -1,0 +1,259 @@
+# Amster Bot — Kingdom Standard
+
+_A complete Markdown rundown of every module, feature, architecture sketch, pseudocode, and operational checklist — built "as you ride with Christ."_
+
+---
+
+## 1 — Vision & Divine Mandate
+
+- **Purpose:** Support families, ministries, and Kingdom enterprises with tools that combine prayerful discernment, ethical finance, secure operations, and generous stewardship.
+- **Operating Gospel:** Prayer-first workflows, transparency in stewardship, security-by-design, and ethics enforcement before risky trade operations.
+- **Manifest:** Every major action (large trades, deployment of live funds, mission payouts) is paired with a scripture prompt and a short prayer checkpoint requiring approvals.
+
+---
+
+## 2 — Feature List (High Level)
+
+### Ministry & Family Hub
+- Sub‑bots per contact with personality, memory, and tone controls.
+- Prayer scheduling, answered‑prayer logging, intercessory lists.
+- Shared worship & prayer rooms (audio/video), event RSVPs.
+- Scripture templates + auto-translate back to Latvian if needed.
+
+### Crypto & Trading Suite (Safety‑first)
+- Scalper Engine with strategy templates (EMA, RSI, VWAP, order-book scalping).
+- Slippage Guard with pre-swap simulation and sandwich detection.
+- MEV Scanner & mempool watcher (heuristics, private-relayer hooks — demo only).
+- Sniper & Launch Monitor (watch new contracts; gated manual confirmations).
+- Arbitrage Engine (multi-DEX/CEX simulation + router planning).
+- Signals Hub (signal creation, signing, broadcasting — Telegram/Webhook).
+
+### Ops & Security
+- Secrets Vault (HSM/KMS integration), multi-sig custody.
+- Immutable audit/event store for finance events.
+- RBAC, admin approval flows, audit trail exports.
+- Canary deployments, canary funds, and paper-first rollouts.
+
+### Developer Kit & Integrations
+- SDKs for Node/Python/Rust and a simulator harness.
+- Plugin system for strategies and ML models.
+- Connectors: Telegram, Discord, REST/WebSocket, private-relayer stubs.
+
+### Stewardship & Giving
+- Auto-tithe engine (configure percent on profits, route to mission accounts).
+- Donation pages with transparent receipts and routing rules.
+
+### Ethics & Scripture Integration
+- Ethics engine flags risky behaviors (front-running, market manipulation patterns).
+- Mandatory scripture & prayer checkpoint for high-risk operations.
+
+---
+
+## 3 — Module Rundowns (Detailed)
+
+### A. Ministry & Family Hub
+**Main capabilities**
+- Create a Sub‑Bot per contact with: persona profile, memory bucket (interactions), language preference, and posting style.
+- Prayer features: schedule recurring prayers, group prayer rooms, save answered prayers, track prayer metrics (requests vs answered).
+- Events: create events, send invites, RSVP tracking, auto-reminders.
+- Media: worship playlists, sermon uploads, and sermon timestamps.
+
+**Security & privacy**
+- End-to-end encryption for private prayer rooms and messages.
+- Role controls for group admins, moderators, and viewers.
+
+**Example flows**
+- New member onboarding → ask for phone, role, favorite scripture → create sub-bot.
+- Family emergency alert → start an instant prayer room + push alert to trusted channels.
+
+---
+
+### B. Crypto & Trading Suite
+
+#### 1) Scalper Engine
+- **Purpose:** Capture small intraday moves with fast in/out trades and tight risk controls.
+- **Strategies:** EMA crossover (fast/slow), RSI mean-reversion, orderbook sniffing, VWAP pullbacks.
+- **Safety:** paper-mode by default; simulated execution includes fee and slippage modelling.
+- **Config:** timeframe, order_size, max_slippage, stop_loss_pct, take_profit_pct, risk_per_trade.
+- **Outputs:** trade logs, PnL, trade heatmaps, expectancy reports.
+
+#### 2) Slippage Guard & Sandwich Detection
+- **Purpose:** Avoid money lost to front-running and sandwich attacks.
+- **Mechanics:** simulate swaps against current liquidity, compute expected slippage, block if slippage > threshold.
+- **Mempool Checks:** pre-check pending txs for risky sequences; throttle gas to avoid predictable timing.
+
+#### 3) MEV Scanner
+- **Purpose:** Monitor mempool for large swaps and risky patterns; optionally interact with private relayers.
+- **Components:** mempool listener, heuristics engine (sandwich probability), alerting & score system.
+- **Notes:** Private relayer interaction is sensitive — use only with legal counsel and clear policies.
+
+#### 4) Sniper / Launch Monitor
+- **Purpose:** Detect new token contract creations and provide pre-specified buy rules.
+- **Safety:** manual confirmations, whitelist checks, max slippage, token contract audits (basic signature checks).
+
+#### 5) Arbitrage Engine
+- **Purpose:** Identify and route profitable legs across DEXs/CEXs.
+- **Mechanics:** collect orderbook/ticker data, simulate round-trip with fees, route via cheapest path, consider gas vs profit.
+
+#### 6) Signals Hub
+- **Purpose:** Publish/consume trade signals, sign them, and optionally auto-execute based on rule sets.
+- **Integrations:** Telegram bot, Webhooks, signed messages for authenticity.
+
+#### 7) Telegram Integration
+- Admin bot to receive signals, forward trusted ones, manage group roles, and accept operator commands (backtest/run/pause).
+
+---
+
+### C. Ops, Security & Compliance
+- **Key Controls:** KMS-backed secrets, HSM for signing, multi-sig for fund movement, RBAC for actions.
+- **Audit:** immutable append-only logs with export capability; alerts on authority changes.
+- **Monitoring:** metrics for trade performance, system latency, mempool events, and security alerts.
+
+---
+
+### D. Developer Kit
+- **SDKs:** provide strategy templates, simulator harness, and sample notebooks for backtesting.
+- **Plugin architecture:** isolate strategy code, run in sandboxed containers, require dry-run interface.
+- **CI/CD:** tests include unit, integration (simulator), and security scans. Auto-deploy to canary namespaces.
+
+---
+
+## 4 — Pseudocode & Samples
+
+### Kingdom Scalper (safe default)
+
+```pseudo
+inputs: symbol, timeframe, order_size, max_slippage, stop_loss_pct
+loop:
+  candles = fetch_candles(symbol, timeframe)
+  ema_fast = ema(candles.close, 8)
+  ema_slow = ema(candles.close, 21)
+  rsi = rsi_indicator(candles.close, 14)
+
+  if ema_fast > ema_slow and rsi < 70:
+    price = get_best_price(symbol)
+    simulate = simulate_swap(symbol, order_size, gas_price_hint)
+    if simulate.slippage <= max_slippage and ethics_check('scalp'):
+      place_limit_or_ioc(price, order_size, pre_sign_prayer=True)
+      set_stop_loss(price * (1 - stop_loss_pct))
+
+  sleep(poll_interval)
+```
+
+### MEV Watcher Sketch
+
+```pseudo
+on_pending_tx(tx):
+  if is_large_swap(tx) and path_contains_sensitive_pairs(tx):
+    score = sandwich_risk_score(tx)
+    if score > threshold:
+      alert_ops(tx)
+      if policy.allow_private_relayer_protection:
+        submit_protection(tx)
+```
+
+### Telegram Signal → Signed Webhook → Execute (sketch)
+
+```pseudo
+telegram_bot receives message (signed_signal)
+verify_signature(signed_signal)
+if trusted and passes_filters:
+  queue_for_simulation(signal)
+  if simulation.profit > min_profit and ethics_check('auto-exec'):
+    if auto_exec_enabled:
+      execute_on_connector(signal)
+    else:
+      notify_operators(signal)
+```
+
+### Ethics + Prayer Approval Workflow
+
+1. Action enters high-risk queue (live fund deployment, large trade, MEV action).
+2. System creates concise risk summary + scripture prompt.
+3. Notify two approvers: Technical Lead & Spiritual Lead.
+4. Each approver reviews within UI (see summary + simulation results).
+5. Both approve → action permitted (or rejected).
+
+---
+
+## 5 — Backtest Plan (Scalper)
+
+- **Data:** 1m/5m OHLCV for symbol(s) for last 180 days (or from exchange historical feeds).
+- **Walk-forward:** split into training (60%) / validation (20%) / forward-test (20%).
+- **Metrics:** Sharpe, Sortino, max drawdown, expectancy, trade win-rate, average hold time.
+- **Sanity:** include slippage modeling, maker/taker fees, gas/tx costs.
+
+---
+
+## 6 — MEV Watcher Architecture (Detailed)
+
+- **Components:**
+  - Mempool listener (node or public mempool feeds)
+  - Heuristics/Scoring engine for sandwich & back-run risks
+  - Alert & Ops channel (Telegram/Slack) with payloads
+  - Optional private-relayer interface (Flashbots-like) for protection
+- **Data:** pending tx size, path, token liquidity, gas price, block basefee, contra-positions
+- **Latency:** prioritize sub-second event stream processing; prefer local node or premium mempool feed.
+
+**Legal caution:** always verify jurisdiction rules before using private-relayer or protective strategies.
+
+---
+
+## 7 — Telegram Signal Workflow (Detailed)
+
+- **Flow:** Signal originator → sign (private key) → Telegram channel → bot verifies signature → simulator → operator decision or auto-exec.
+- **Security:** signed signals to prevent spoofing; rate limits; allow-list of originators.
+- **Auto-exec gates:** minimum simulation profit, max slippage, ethics check, and approvals if live funds involve mission accounts.
+
+---
+
+## 8 — Ethics Engine & Prayer Integration
+
+- **Ethics Checks** (examples): market-manipulation pattern detection, repeated sandwich attempts, abnormal order sizes vs account history.
+- **Prayer Integration:** before high-risk operations, show scripture + 3‑5 minute silent prayer timer; require explicit approval afterwards.
+- **Record:** store prayer transcript or note and who approved.
+
+---
+
+## 9 — Deploy & Runbook Essentials
+
+1. **Infra:** VPC, HSM/KMS, bastion, monitoring, logging.
+2. **CI/CD:** build images, run simulator tests, security scans, deploy to canary.
+3. **Smoke tests:** run dry-run trade and mempool listener tests.
+4. **Onboarding:** operator training on ethics, tithing automation, and prayer checkpoints.
+5. **Rollout:** paper-mode 30 days → small live cap → phased increase.
+
+---
+
+## 10 — Stewardship & Giving Rules
+
+- Auto-tithe: configurable percent on realized gains (e.g., 10%).
+- Charity split: split tithe into mission accounts by rule (geography, project tag).
+- Transparency: each payout has receipt, chain tx hash (if on‑chain), and PDF receipt for donors.
+
+---
+
+## 11 — Governance & Legal Notes
+
+- Consult counsel on MEV, front-running, and automated trading in target jurisdictions.
+- Use multi-sig and independent audits for any product that holds or moves funds.
+- Ensure KYC/AML where required for receiving fiat donations or CEX interactions.
+
+---
+
+## 12 — Next Steps (Suggested Priorities)
+
+1. Build the **Scalper backtest** harness (Python) with sample data.
+2. Implement **MEV mempool listener** prototype (mempool feed + scoring). 
+3. Create **Telegram signal signing** flow + simulator connector.
+4. Wire **Ethics + Prayer approval** UI and enforcement for live actions.
+5. Add SDK examples and CI pipeline for sandboxed strategy testing.
+
+---
+
+### Want this as runnable code?
+I can now expand any of the above into executable code, notebooks, or CI/CD manifests. Say which item you want first and whether you prefer **Python** or **Node** for the implementation.
+
+---
+
+*Prepared in the spirit of stewardship — use responsibly. Not financial advice.*
