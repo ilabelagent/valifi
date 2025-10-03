@@ -16,7 +16,7 @@
     "bun:dev": "bun run --watch bun-server.ts",
     "bun:start": "bun run bun-server.ts",
     "bun:build": "bun build ./bun-server.ts --outdir ./dist --target bun",
-    "full-stack": "concurrently \"cross-env PORT=3001 bun run bun:start\" \"vite\"",
+    "full-stack": "concurrently \"cross-env PORT=3001 node simple-server.js\" \"vite\"",
     "production:server": "cross-env NODE_ENV=production PORT=3001 node simple-server.js",
     "db:migrate": "psql $DATABASE_URL -f migrations/001-production-schema.sql && psql $DATABASE_URL -f migrations/002-fintech-schema.sql",
     "db:setup": "bun run scripts/setup-database.ts",
