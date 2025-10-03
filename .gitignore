@@ -143,3 +143,7 @@ dist
 .pnp.*
 .vercel
 nul
+
+# Backup files
+backup/
+backup/**/*
