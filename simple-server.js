@@ -15,6 +15,7 @@ const path = require('path');
 
 // Kingdom Standard Orchestrator
 const KingdomStandardOrchestrator = require('./lib/orchestrator/KingdomStandardOrchestrator');
+const PhpExchangeBridge = require('./lib/integrations/php-exchange-bridge');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +47,7 @@ const db = new Pool({
 
 // Initialize Kingdom Standard Orchestrator
 const orchestrator = new KingdomStandardOrchestrator();
+const phpBridge = new PhpExchangeBridge();
 
 // Test database connection
 const testConnection = async () => {
@@ -61,11 +63,17 @@ const testConnection = async () => {
 
 testConnection();
 
-// Initialize orchestrator
+// Initialize orchestrator and PHP bridge
 orchestrator.initialize().then(() => {
     console.log('✅ Kingdom Standard Orchestrator initialized');
 }).catch(error => {
     console.error('❌ Orchestrator initialization failed:', error);
+});
+
+phpBridge.initialize().then(() => {
+    console.log('✅ PHP Exchange Bridge initialized');
+}).catch(error => {
+    console.log('⚠️ PHP Exchange Bridge using fallback mode');
 });
 
 // Routes
@@ -236,6 +244,123 @@ app.get('/api/kingdom/metrics', (req, res) => {
     });
 });
 
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+/**
+ * PHP EXCHANGE BRIDGE API
+ */
+
+// Get metals prices
+app.get('/api/exchange/metals/prices', async (req, res) => {
+    try {
+        const result = await phpBridge.getMetalsPrices();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Buy metal
+app.post('/api/exchange/metals/buy', authenticateToken, async (req, res) => {
+    try {
+        const { metal, amount, price } = req.body;
+        const result = await phpBridge.buyMetal(req.user.userId, metal, amount, price);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Sell metal
+app.post('/api/exchange/metals/sell', authenticateToken, async (req, res) => {
+    try {
+        const { metal, amount, price } = req.body;
+        const result = await phpBridge.sellMetal(req.user.userId, metal, amount, price);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get staking plans
+app.get('/api/exchange/staking/plans', async (req, res) => {
+    try {
+        const result = await phpBridge.getStakingPlans();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Stake asset
+app.post('/api/exchange/staking/stake', authenticateToken, async (req, res) => {
+    try {
+        const { planId, amount } = req.body;
+        const result = await phpBridge.stakeAsset(req.user.userId, planId, amount);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get staking positions
+app.get('/api/exchange/staking/positions', authenticateToken, async (req, res) => {
+    try {
+        const result = await phpBridge.getStakingPositions(req.user.userId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Unstake asset
+app.post('/api/exchange/staking/unstake', authenticateToken, async (req, res) => {
+    try {
+        const { stakingId } = req.body;
+        const result = await phpBridge.unstakeAsset(req.user.userId, stakingId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 /** ... (Rest of authentication and app-data endpoints remain the same) ... **/
 
 // Authentication
@@ -357,24 +482,6 @@ app.post('/api/auth/login', async (req, res) => {
         });
     }
 });
-
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'No token provided' });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ success: false, message: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
-};
 
 // App data endpoint
 app.get('/api/app-data', authenticateToken, async (req, res) => {
