@@ -1,0 +1,131 @@
+ Valifi System - Authentication, Onboarding & Database Architecture
+
+  Authentication System
+
+  Two implementations (Bun server vs Node.js server):
+
+  1. Bun Server (bun-server.ts):
+    - Password Hashing: Argon2id (50% faster, more secure)
+    - JWT: Native Web Crypto API (HS256)
+    - Runtime: Bun native (10x faster startup)
+  2. Node.js Server (simple-server.js):
+    - Password Hashing: bcrypt (cost factor 12)
+    - JWT: jsonwebtoken library
+    - Runtime: Express + Node.js (AWS compatible)
+
+  Auth Flow (identical for both):
+  POST /api/auth/register → validate → hash password → insert user + wallet → generate JWT → return token
+  POST /api/auth/login → validate → verify password → generate JWT → return token
+  GET /api/app-data → verify JWT → return user profile + wallets + transactions
+
+  Key Endpoints:
+  - /api/auth/register - Creates user with default USD wallet ($0 balance)
+  - /api/auth/login - Returns JWT valid for 7 days
+  - /api/auth/me - Gets current user from token (legacy Elysia route at src/routes/auth.ts)
+
+  New User Onboarding
+
+  Registration Process (from bun-server.ts:140-201 and simple-server.js:77-115):
+
+  1. Input Validation: email, password, firstName, lastName (firstName required, lastName optional)
+  2. Username Generation: Extracts from email (user@example.com → user)
+  3. Password Hashing:
+    - Bun: Argon2id (memoryCost=4096, timeCost=3)
+    - Node: bcrypt (rounds=12)
+  4. Database Transaction:
+  -- Insert user
+  INSERT INTO users (email, username, password_hash, first_name, last_name)
+  VALUES ($1, $2, $3, $4, $5) RETURNING id;
+
+  -- Create default USD wallet
+  INSERT INTO wallets (user_id, wallet_type, currency, balance)
+  VALUES (user_id, 'checking', 'USD', 0.00);
+  5. JWT Generation: Payload { userId, email, iat, exp }, expires in 7 days
+  6. Response: Returns { success, token, userId, user: { email, firstName } }
+
+  Default User Setup:
+  - 1 checking wallet (USD, $0 balance)
+  - User record with email, username, hashed password, name
+  - No KYC, no email verification (to be implemented)
+
+  Database Architecture
+
+  Connection:
+  - Pool: PostgreSQL with pg library
+  - Max Connections: 20
+  - Idle Timeout: 30 seconds
+  - Connection Timeout: 5 seconds
+  - SSL:
+    - false for localhost
+    - { rejectUnauthorized: false } for AWS RDS
+
+  Core Tables (from migrations/001-production-schema.sql):
+
+  -- Users table
+  users (
+    id UUID PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  )
+
+  -- Wallets table
+  wallets (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    wallet_type VARCHAR(50), -- 'checking', 'savings', 'crypto'
+    currency VARCHAR(10),    -- 'USD', 'BTC', 'ETH'
+    balance DECIMAL(20,8) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )
+
+  -- Transactions table
+  transactions (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    wallet_id UUID REFERENCES wallets(id),
+    transaction_type VARCHAR(50),
+    amount DECIMAL(20,8),
+    currency VARCHAR(10),
+    status VARCHAR(50),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )
+
+  -- Sessions (for token revocation)
+  user_sessions (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    token_hash TEXT,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )
+
+  Database Interaction Patterns:
+
+  1. Query Execution: await db.query('SELECT ...', [params])
+  2. Transactions: Use db.connect() → BEGIN → COMMIT/ROLLBACK → release()
+  3. Health Check: await db.query('SELECT 1') to test connectivity
+
+  Replit HTTP 500 Error - Likely Causes
+
+  Based on the architecture:
+
+  1. Missing DATABASE_URL: Replit may not have PostgreSQL configured
+  2. Database Connection Timeout: 5-second timeout may be too short for Replit
+  3. Password Hashing Failure: Argon2id not available in Replit environment
+  4. Missing Dependencies: bcryptjs, jsonwebtoken, pg not installed
+  5. Port Conflicts: Server running on wrong port (expects 3001)
+  6. SSL Configuration: Replit database may require different SSL settings
+
+  Recommended Fix for Replit:
+  - Use simple-server.js (Node.js) instead of bun-server.ts
+  - Configure Replit PostgreSQL or use external database
+  - Set environment variables in Replit Secrets
+  - Increase connection timeout to 10-15 seconds
+  - Check logs: error is likely in /api/auth/register or /api/auth/login endpoint
+
+✻ Wandering… (esc to interrupt · 48s · ↓ 1.4k tokens)

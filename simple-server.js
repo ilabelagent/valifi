@@ -102,23 +102,20 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Generate username from email
-        const username = email.split('@')[0];
-
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
         // Insert user
         const result = await db.query(`
-            INSERT INTO users (email, username, password_hash, first_name, last_name)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO users (email, password_hash, first_name, last_name)
+            VALUES ($1, $2, $3, $4)
             RETURNING id
-        `, [email, username, hashedPassword, firstName, lastName || '']);
+        `, [email, hashedPassword, firstName, lastName || '']);
 
         const userId = result.rows[0].id;
 
         // Create wallet
-        await db.query('INSERT INTO wallets (user_id, wallet_type, currency) VALUES ($1, $2, $3)', [userId, 'main', 'USD']);
+        await db.query('INSERT INTO wallets (user_id, currency, balance) VALUES ($1, $2, $3)', [userId, 'USD', 0.00]);
 
         // Generate JWT
         const token = jwt.sign(
