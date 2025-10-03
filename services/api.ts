@@ -102,7 +102,7 @@ export const onInitiateTrade = async (offerId: string, amount: number, paymentMe
         amount,
         status: 'Pending',
         createdAt: new Date().toISOString()
-    } as P2POrder;
+    } as unknown as P2POrder;
 };
 
 export const updateOrderStatus = async (orderId: string, status: string) => {
@@ -123,8 +123,9 @@ export const applyForCard = async (data: CardApplicationData) => {
     return {
         cardDetails: {
             ...data,
-            status: 'Pending'
-        } as CardDetails
+            status: 'Pending',
+            isFrozen: false
+        } as unknown as CardDetails
     };
 };
 
