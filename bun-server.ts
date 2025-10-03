@@ -10,10 +10,23 @@ import pg from 'pg';
 const PORT = parseInt(process.env.PORT || '3001');
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Validate required environment variables
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL environment variable is required');
+    console.error('Please set DATABASE_URL in your environment or .env file');
+    process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+    console.error('❌ ERROR: JWT_SECRET environment variable is required');
+    console.error('Please set JWT_SECRET in your environment or .env file');
+    process.exit(1);
+}
+
 // PostgreSQL connection for production
 const { Pool } = pg;
-const dbUrl = process.env.DATABASE_URL || 'postgresql://valifi_user:change_this_password@localhost:5432/valifi_production';
-const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+const dbUrl = process.env.DATABASE_URL;
+const isLocalDb = dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1');
 
 const db = new Pool({
     connectionString: dbUrl,
@@ -52,7 +65,7 @@ const verifyPassword = async (password: string, hash: string) => {
 };
 
 // JWT implementation using Bun's crypto
-const JWT_SECRET = process.env.JWT_SECRET || 'valifi_jwt_production_secret_2025_secure_key_app_runner_rds';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const createJWT = async (payload: any) => {
     const encoder = new TextEncoder();
