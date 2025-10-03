@@ -26,13 +26,13 @@ args = "Valifi Full-Stack Kingdom"
 name = "Valifi Full-Stack Kingdom"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run full-stack"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[ports]]
 localPort = 3001
@@ -41,3 +41,7 @@ externalPort = 80
 [[ports]]
 localPort = 32881
 externalPort = 3000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
