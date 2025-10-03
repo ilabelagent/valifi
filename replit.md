@@ -1,0 +1,140 @@
+# Valifi Fintech Platform
+
+## Overview
+
+Valifi is a comprehensive fintech platform that combines multiple financial services into a unified "Living Bot System." The platform is built as a network of 50+ autonomous, intelligent bots that work together to provide banking, trading, investment, and cryptocurrency services. Each bot operates independently with AI-powered decision-making capabilities while communicating with other bots to create an emergent, self-healing financial ecosystem.
+
+The platform features multi-asset trading (crypto, stocks, NFTs, REITs), P2P exchange, investment plans, staking systems, loan services, banking integration, and full KYC/AML compliance.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Framework**: React 18+ with TypeScript, built using Vite for development and Next.js for production deployment
+
+**Key Design Patterns**:
+- **Lazy Loading**: Components are code-split using React.lazy() for optimal performance
+- **Context-based State Management**: Uses React Context API (CurrencyProvider, AuthProvider) for global state
+- **Component Composition**: Modular UI components organized by feature (Dashboard, Investments, Trading, etc.)
+- **Internationalization**: Built-in i18n support with translation system
+
+**UI Architecture**:
+- Tailwind CSS for styling with custom design system using CSS variables
+- Dark theme as default with consistent color palette
+- Responsive design with mobile-first approach
+- Custom SVG icon components mapped through iconMap
+
+**Routing Strategy**:
+- Next.js Pages Router for production
+- Vite dev server with proxy configuration for local development
+- Protected routes using AuthGuard component
+
+### Backend Architecture
+
+**Runtime Options** (Dual-mode support):
+1. **Bun Runtime** (Recommended for production):
+   - Native TypeScript execution without compilation
+   - 10x faster than Node.js
+   - Built-in SQLite, WebSocket, and password hashing (Argon2)
+   - Elysia framework for API routing
+
+2. **Node.js Runtime** (Legacy support):
+   - Express.js for API routing
+   - Compatible with standard Node.js tooling
+
+**API Design**:
+- RESTful endpoints under `/api` directory
+- Next.js API routes for serverless deployment
+- Unified bot API at `/api/bot` for routing requests to specialized bots
+- Health check and monitoring endpoints
+
+**Bot Architecture**:
+- Base class hierarchy: `DivineBot → KingdomBot → Specialized Domain Bots`
+- Each bot has unique identifier, AI integration, database access, and inter-bot communication
+- 50+ specialized bots organized by domain (Financial, Investment, Security, DeFi, etc.)
+- Kingdom MCP (Master Control Program) orchestrator for bot coordination
+- Auto-patch system for self-healing capabilities
+
+**Authentication & Security**:
+- Email/password authentication (social login removed by design)
+- JWT tokens with refresh token mechanism
+- bcrypt/Argon2 password hashing
+- Session management with secure token storage
+
+### Data Storage Solutions
+
+**Primary Database Options**:
+
+1. **PostgreSQL** (Production recommended):
+   - Full production schema with 30+ tables
+   - Connection pooling for performance
+   - Advanced features: DeFi, P2P trading, staking, trading bots
+   - Indexes and triggers for optimization
+   - Migration scripts in `/migrations` directory
+
+2. **Turso** (LibSQL - Alternative):
+   - Distributed SQLite-compatible database
+   - Configuration in `lib/db.ts`
+   - Suitable for edge deployments
+
+3. **SQLite** (Development):
+   - Bun native SQLite support
+   - In-memory or file-based storage
+
+**Database Abstraction**:
+- `lib/db-adapter.ts` provides unified interface across database types
+- `lib/postgres-db.ts` for PostgreSQL-specific operations
+- Bot data persistence in `/data` directory
+
+**Caching Strategy**:
+- Redis support for caching layer
+- Multi-tier caching (L1: in-memory, L2: Redis, L3: CDN headers)
+- Rate limiting and session storage
+
+### External Dependencies
+
+**Core Services**:
+- **AI Integration**: OpenAI and Anthropic APIs for bot intelligence
+- **LangGraph**: Agent orchestration framework with LangSmith monitoring
+- **Database Drivers**: `pg` (PostgreSQL), `@libsql/client` (Turso), Bun SQLite
+- **Authentication**: JWT tokens, bcrypt/Argon2 password hashing
+
+**Financial Data Providers**:
+- Polygon.io and Alpha Vantage for real-time market data
+- CoinGecko and CoinMarketCap for crypto prices
+- Finnhub for stock data
+- WebSocket streams for live price updates
+
+**Payment & Banking**:
+- Stripe for card payments
+- PayPal integration
+- Plaid for bank account linking
+- ACH/Bank transfer processing
+- Cryptocurrency payment processing
+
+**Third-party APIs**:
+- Trading/Broker APIs: Alpaca, Interactive Brokers
+- Email: SMTP configuration required
+- Monitoring: Sentry for error tracking, Winston for logging
+- Real-time: WebSocket support for live updates
+
+**Deployment Platforms**:
+- **Primary**: Vercel (serverless deployment, optimized for Next.js)
+- **Alternative**: AWS (ECS/Fargate, App Runner, Elastic Beanstalk)
+- **Alternative**: Render (container-based deployment)
+- Docker support with multi-stage builds
+
+**Development Tools**:
+- Vite for fast development server
+- TypeScript for type safety
+- ESLint and Biome for code quality
+- Bun for faster package installation and testing
+
+**Environment Configuration**:
+- `.env.template` provides complete configuration reference
+- Separate configs for development, production, and AWS deployment
+- Automated setup scripts for database initialization and environment configuration
