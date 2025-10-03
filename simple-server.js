@@ -16,6 +16,19 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Validate required environment variables
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL environment variable is required');
+    console.error('Please set DATABASE_URL in your environment or .env file');
+    process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+    console.error('❌ ERROR: JWT_SECRET environment variable is required');
+    console.error('Please set JWT_SECRET in your environment or .env file');
+    process.exit(1);
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -23,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Database connection
 const db = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://valifi_admin:8514Direction!@valifi-production-db.c8y4mxfhjklm.us-east-1.rds.amazonaws.com:5432/valifi_production',
+    connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     max: 20,
     idleTimeoutMillis: 30000,
@@ -107,7 +120,7 @@ app.post('/api/auth/register', async (req, res) => {
         // Generate JWT
         const token = jwt.sign(
             { userId: userId, email },
-            process.env.JWT_SECRET || 'valifi_jwt_production_secret_2025',
+            process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -140,7 +153,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         const token = jwt.sign(
             { userId: user.id, email },
-            process.env.JWT_SECRET || 'valifi_jwt_production_secret_2025',
+            process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
