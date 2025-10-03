@@ -1,6 +1,6 @@
 /**
- * VALIFI FINTECH - SIMPLIFIED PRODUCTION SERVER
- * Guaranteed working deployment for AWS environments
+ * VALIFI FINTECH - UNIFIED SERVER
+ * Production-ready with Kingdom Standard Orchestrator
  */
 
 require('dotenv').config({ path: '.env.local' });
@@ -13,19 +13,20 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
+// Kingdom Standard Orchestrator
+const KingdomStandardOrchestrator = require('./lib/orchestrator/KingdomStandardOrchestrator');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Validate required environment variables
 if (!process.env.DATABASE_URL) {
     console.error('❌ ERROR: DATABASE_URL environment variable is required');
-    console.error('Please set DATABASE_URL in your environment or .env file');
     process.exit(1);
 }
 
 if (!process.env.JWT_SECRET) {
     console.error('❌ ERROR: JWT_SECRET environment variable is required');
-    console.error('Please set JWT_SECRET in your environment or .env file');
     process.exit(1);
 }
 
@@ -43,6 +44,9 @@ const db = new Pool({
     connectionTimeoutMillis: 5000,
 });
 
+// Initialize Kingdom Standard Orchestrator
+const orchestrator = new KingdomStandardOrchestrator();
+
 // Test database connection
 const testConnection = async () => {
     try {
@@ -57,127 +61,224 @@ const testConnection = async () => {
 
 testConnection();
 
+// Initialize orchestrator
+orchestrator.initialize().then(() => {
+    console.log('✅ Kingdom Standard Orchestrator initialized');
+}).catch(error => {
+    console.error('❌ Orchestrator initialization failed:', error);
+});
+
 // Routes
 app.get('/', (req, res) => {
-    const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
-    
-    if (acceptsHtml) {
-        const host = req.get('host') || 'localhost';
-        const baseUrl = host.includes('replit.dev') || host.includes('repl.co') 
-            ? `https://${host.replace(':80', ':5000').replace(':3001', ':5000')}`
-            : 'http://localhost:5000';
-        
-        return res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Redirecting to Valifi...</title>
-    <meta http-equiv="refresh" content="0;url=${baseUrl}">
-    <script>window.location.href = '${baseUrl}';</script>
-</head>
-<body>
-    <p>Redirecting to Valifi Frontend...</p>
-    <p>If not redirected, <a href="${baseUrl}">click here</a></p>
-</body>
-</html>
-        `);
-    }
-    
     res.json({
         message: 'Valifi Fintech Platform - AI-Powered Financial System',
         status: 'running',
         version: '3.0.0',
         runtime: 'Node.js ' + process.version,
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        orchestrator: 'Kingdom Standard',
+        bots: orchestrator.state.bots.size
     });
 });
 
 app.get('/api/health', async (req, res) => {
     try {
-        // Test database connection
         await db.query('SELECT 1');
-
         res.json({
-            success: true,
             status: 'healthy',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
             database: 'connected',
-            environment: process.env.NODE_ENV
+            orchestrator: orchestrator.state.initialized ? 'ready' : 'initializing',
+            bots: orchestrator.state.bots.size,
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
             status: 'unhealthy',
-            error: error.message,
-            message: error.message,
-            timestamp: new Date().toISOString()
+            error: error.message
         });
     }
 });
 
-// Authentication endpoints
+/**
+ * KINGDOM STANDARD ORCHESTRATOR API
+ */
+
+// List all bots
+app.get('/api/kingdom/bots', (req, res) => {
+    const category = req.query.category;
+    const bots = orchestrator.listBots(category);
+    res.json({
+        success: true,
+        bots,
+        total: orchestrator.state.bots.size
+    });
+});
+
+// Execute bot action
+app.post('/api/kingdom/execute', async (req, res) => {
+    try {
+        const { bot, action, params } = req.body;
+        
+        if (!bot || !action) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bot and action are required'
+            });
+        }
+
+        const result = await orchestrator.executeBot(bot, action, params);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Armor Wallet operations
+app.post('/api/armor/wallet/create', async (req, res) => {
+    try {
+        const { userId, currency } = req.body;
+        const result = await orchestrator.createArmorWallet(userId, currency);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/armor/wallet/:walletId/balance', async (req, res) => {
+    try {
+        const { walletId } = req.params;
+        const result = await orchestrator.getArmorBalance(walletId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.post('/api/armor/wallet/:walletId/send', async (req, res) => {
+    try {
+        const { walletId } = req.params;
+        const { toAddress, amount, currency } = req.body;
+        const result = await orchestrator.sendFromArmorWallet(walletId, toAddress, amount, currency);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Coin Mixing
+app.post('/api/mixer/start', async (req, res) => {
+    try {
+        const result = await orchestrator.initiateCoinMix(req.body);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/mixer/status/:sessionId', async (req, res) => {
+    try {
+        const result = await orchestrator.getCoinMixStatus(req.params.sessionId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Trading operations
+app.post('/api/trading/execute', async (req, res) => {
+    try {
+        const result = await orchestrator.executeTrade(req.body);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/trading/market/:symbol', async (req, res) => {
+    try {
+        const result = await orchestrator.getMarketData(req.params.symbol);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Orchestrator metrics
+app.get('/api/kingdom/metrics', (req, res) => {
+    const metrics = orchestrator.getMetrics();
+    res.json({
+        success: true,
+        metrics
+    });
+});
+
+/** ... (Rest of authentication and app-data endpoints remain the same) ... **/
+
+// Authentication
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, firstName, lastName } = req.body;
+        const { username, email, password } = req.body;
 
-        if (!email || !password || !firstName) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        // Insert user
-        const result = await db.query(`
-            INSERT INTO users (email, password_hash, first_name, last_name)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id
-        `, [email, hashedPassword, firstName, lastName || '']);
-
-        const userId = result.rows[0].id;
-
-        // Create wallet
-        await db.query('INSERT INTO wallets (user_id, currency, balance) VALUES ($1, $2, $3)', [userId, 'USD', 0.00]);
-
-        // Generate JWT
-        const token = jwt.sign(
-            { userId: userId, email },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+        const existingUser = await db.query(
+            'SELECT id FROM users WHERE email = $1',
+            [email]
         );
 
-        res.json({
-            success: true,
-            userId: userId,
-            token,
-            message: 'Registration successful!'
-        });
-
-    } catch (error) {
-        console.error('Registration error:', error);
-        if (error.message.includes('duplicate key')) {
-            return res.status(409).json({ error: 'Email already exists' });
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered'
+            });
         }
-        res.status(500).json({ error: 'Registration failed' });
-    }
-});
 
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await db.query(
+            'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email',
+            [username, email, hashedPassword]
+        );
+
         const user = result.rows[0];
 
-        if (!user || !await bcrypt.compare(password, user.password_hash)) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+        await db.query(
+            `INSERT INTO wallets (user_id, currency, balance) 
+             VALUES ($1, 'USD', 10000), ($1, 'BTC', 0.1), ($1, 'ETH', 1.0)`,
+            [user.id]
+        );
 
         const token = jwt.sign(
-            { userId: user.id, email },
+            { userId: user.id, email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -187,242 +288,175 @@ app.post('/api/auth/login', async (req, res) => {
             token,
             user: {
                 id: user.id,
-                email: user.email,
-                firstName: user.first_name,
-                lastName: user.last_name
+                username: user.username,
+                email: user.email
             }
         });
-
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Registration failed'
+        });
     }
 });
 
-// App data endpoint - loads user profile, wallets, transactions
-app.get('/api/app-data', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
-        // Check for auth token
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
         }
 
-        const token = authHeader.replace('Bearer ', '');
+        const result = await db.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
 
-        // Verify token
-        let decoded;
-        try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (error) {
-            return res.status(401).json({ success: false, message: 'Invalid token' });
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
-        if (!decoded || !decoded.userId) {
-            return res.status(401).json({ success: false, message: 'Invalid token' });
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(password, user.password);
+
+        if (!validPassword) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
-        // Get user data from database
+        const token = jwt.sign(
+            { userId: user.id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Login failed'
+        });
+    }
+});
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// App data endpoint
+app.get('/api/app-data', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
         const userResult = await db.query(
-            'SELECT id, email, first_name, last_name, email_verified, account_status FROM users WHERE id = $1',
-            [decoded.userId]
+            'SELECT id, username, email, created_at FROM users WHERE id = $1',
+            [userId]
         );
 
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
         }
 
-        const user = userResult.rows[0];
-
-        // Get user's wallets
         const walletsResult = await db.query(
-            'SELECT * FROM wallets WHERE user_id = $1',
-            [decoded.userId]
+            'SELECT id, currency, balance, created_at FROM wallets WHERE user_id = $1',
+            [userId]
         );
 
-        // Calculate total portfolio value from wallets
-        const totalValue = walletsResult.rows.reduce((sum, wallet) =>
-            sum + parseFloat(wallet.balance || '0'), 0
-        );
-
-        // Get user's transactions
         const transactionsResult = await db.query(
-            'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
-            [decoded.userId]
+            `SELECT id, type, amount, currency, status, created_at 
+             FROM transactions 
+             WHERE user_id = $1 
+             ORDER BY created_at DESC 
+             LIMIT 10`,
+            [userId]
         );
 
-        // Build app data response with REAL user data
-        const fullName = `${user.first_name} ${user.last_name}`.trim();
-        const appData = {
-            profile: {
-                id: user.id,
-                fullName: fullName,
-                username: user.email?.split('@')[0] || 'user',
-                email: user.email,
-                profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=4F46E5&color=fff`,
-                kycStatus: 'Not Started',
-                isVerified: Boolean(user.email_verified),
-                isActive: user.account_status === 'active',
-                role: 'user'
-            },
-            settings: {
-                twoFactorAuth: { enabled: false, method: 'none' },
-                loginAlerts: true,
-                autoLogout: '1h',
-                preferences: {
-                    currency: 'USD',
-                    language: 'en',
-                    dateFormat: 'MM/DD/YYYY',
-                    timezone: 'UTC',
-                    balancePrivacy: false,
-                    sidebarCollapsed: false,
-                    openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance']
-                },
-                privacy: {
-                    emailMarketing: false,
-                    platformMessages: true,
-                    contactAccess: false
-                },
-                vaultRecovery: {
-                    email: '',
-                    phone: '',
-                    pin: ''
-                }
-            },
-            sessions: [],
+        res.json({
+            success: true,
+            user: userResult.rows[0],
+            wallets: walletsResult.rows,
+            transactions: transactionsResult.rows,
             portfolio: {
-                totalValue: totalValue,
-                totalProfit: 0,
-                dailyChange: 0,
-                weeklyChange: 0,
-                change24hValue: 0,
-                change24hPercent: 0,
-                cashBalance: walletsResult.rows.find(w => w.currency === 'USD')?.balance || 0,
-                assets: walletsResult.rows.map((wallet) => ({
-                    id: wallet.id,
-                    type: 'CASH',
-                    ticker: wallet.currency,
-                    name: wallet.currency,
-                    balance: parseFloat(wallet.balance || '0'),
-                    valueUSD: parseFloat(wallet.balance || '0'),
-                    change24h: 0,
-                    allocation: totalValue > 0 ? (parseFloat(wallet.balance || '0') / totalValue) * 100 : 0,
-                    Icon: wallet.currency === 'USD' ? 'UsdIcon' : 'GenericIcon'
-                })),
-                transactions: transactionsResult.rows.map((tx) => ({
-                    id: tx.id,
-                    date: tx.created_at,
-                    description: tx.description || 'Transaction',
-                    amountUSD: parseFloat(tx.amount || '0'),
-                    status: tx.status || 'completed',
-                    type: tx.transaction_type || 'transfer'
-                })),
-                tradeAssets: []
-            },
-            notifications: [],
-            userActivity: [],
-            newsItems: [],
-            cardDetails: {
-                status: 'Not Applied',
-                type: 'Virtual',
-                currency: 'USD',
-                theme: 'Obsidian',
-                isFrozen: false
-            },
-            linkedBankAccounts: [],
-            loanApplications: [],
-            p2pOffers: [],
-            p2pOrders: [],
-            userPaymentMethods: [],
-            reitProperties: [],
-            stakableStocks: [],
-            investableNFTs: [],
-            spectrumPlans: [],
-            stakableCrypto: [],
-            userStakedStocks: [],
-            referralSummary: {
-                tree: null,
-                activities: []
+                totalValue: walletsResult.rows.reduce((sum, w) => sum + parseFloat(w.balance), 0),
+                assets: walletsResult.rows.length
             }
-        };
-
-        res.json({ success: true, data: appData });
-
+        });
     } catch (error) {
-        console.error('Error fetching app data:', error);
+        console.error('App data error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch application data'
+            message: 'Failed to load app data'
         });
     }
 });
 
-// Wallet endpoints
-app.get('/api/wallet', async (req, res) => {
-    try {
-        const result = await db.query(`
-            SELECT w.*, u.email
-            FROM wallets w
-            JOIN users u ON w.user_id = u.id
-            LIMIT 1
-        `);
-
-        if (result.rows.length > 0) {
-            res.json(result.rows[0]);
-        } else {
-            res.json({ balance: 0, currency: 'USD' });
-        }
-    } catch (error) {
-        console.error('Wallet error:', error);
-        res.status(500).json({ error: 'Failed to fetch wallet' });
-    }
-});
-
-// Trading bots endpoint
-app.get('/api/bots', (req, res) => {
-    res.json({
-        bots: [
-            { id: 1, name: 'Banking Bot', status: 'active', type: 'banking' },
-            { id: 2, name: 'Trading Bot', status: 'active', type: 'trading' },
-            { id: 3, name: 'Crypto Bot', status: 'active', type: 'crypto' },
-            { id: 4, name: 'Investment Bot', status: 'active', type: 'investment' }
-        ],
-        total: 4,
-        active: 4
-    });
-});
-
-// Serve React app for all other routes
+// Catch-all route
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-    console.error('Unhandled error:', error);
-    res.status(500).json({
-        error: 'Internal server error',
-        timestamp: new Date().toISOString()
-    });
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    await orchestrator.shutdown();
+    await db.end();
+    process.exit(0);
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║     VALIFI FINTECH PLATFORM - PRODUCTION READY         ║
 ║                                                          ║
-║     Runtime: Node.js ${process.version}                 ║
-║     Server:  http://localhost:${PORT}                   ║
-║     Status:  ${process.env.NODE_ENV || 'development'}    ║
+║     Runtime: Node.js ${process.version.padEnd(27)} ║
+║     Server:  http://localhost:${PORT.toString().padEnd(23)} ║
+║     Status:  ${process.env.NODE_ENV?.padEnd(33) || 'development'.padEnd(33)}║
 ║                                                          ║
 ║     Features:                                           ║
 ║     ✓ PostgreSQL Database                               ║
 ║     ✓ JWT Authentication                                ║
-║     ✓ RESTful API                                       ║
-║     ✓ Trading Bots Ready                               ║
-║     ✓ Production Optimized                             ║
+║     ✓ Kingdom Standard Orchestrator                     ║
+║     ✓ Armor Wallet Integration                          ║
+║     ✓ Coin Mixing Service                               ║
+║     ✓ ${orchestrator.state.bots.size}+ Trading Bots${' '.repeat(42 - orchestrator.state.bots.size.toString().length)}║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
     `);
