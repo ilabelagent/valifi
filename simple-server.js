@@ -59,6 +59,31 @@ testConnection();
 
 // Routes
 app.get('/', (req, res) => {
+    const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
+    
+    if (acceptsHtml) {
+        const host = req.get('host') || 'localhost';
+        const baseUrl = host.includes('replit.dev') || host.includes('repl.co') 
+            ? `https://${host.replace(':80', ':5000').replace(':3001', ':5000')}`
+            : 'http://localhost:5000';
+        
+        return res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Redirecting to Valifi...</title>
+    <meta http-equiv="refresh" content="0;url=${baseUrl}">
+    <script>window.location.href = '${baseUrl}';</script>
+</head>
+<body>
+    <p>Redirecting to Valifi Frontend...</p>
+    <p>If not redirected, <a href="${baseUrl}">click here</a></p>
+</body>
+</html>
+        `);
+    }
+    
     res.json({
         message: 'Valifi Fintech Platform - AI-Powered Financial System',
         status: 'running',
