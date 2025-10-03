@@ -174,6 +174,164 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// App data endpoint - loads user profile, wallets, transactions
+app.get('/api/app-data', async (req, res) => {
+    try {
+        // Check for auth token
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+
+        // Verify token
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+
+        // Get user data from database
+        const userResult = await db.query(
+            'SELECT id, email, first_name, last_name, email_verified, account_status FROM users WHERE id = $1',
+            [decoded.userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Get user's wallets
+        const walletsResult = await db.query(
+            'SELECT * FROM wallets WHERE user_id = $1',
+            [decoded.userId]
+        );
+
+        // Calculate total portfolio value from wallets
+        const totalValue = walletsResult.rows.reduce((sum, wallet) =>
+            sum + parseFloat(wallet.balance || '0'), 0
+        );
+
+        // Get user's transactions
+        const transactionsResult = await db.query(
+            'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+            [decoded.userId]
+        );
+
+        // Build app data response with REAL user data
+        const fullName = `${user.first_name} ${user.last_name}`.trim();
+        const appData = {
+            profile: {
+                id: user.id,
+                fullName: fullName,
+                username: user.email?.split('@')[0] || 'user',
+                email: user.email,
+                profilePhotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=4F46E5&color=fff`,
+                kycStatus: 'Not Started',
+                isVerified: Boolean(user.email_verified),
+                isActive: user.account_status === 'active',
+                role: 'user'
+            },
+            settings: {
+                twoFactorAuth: { enabled: false, method: 'none' },
+                loginAlerts: true,
+                autoLogout: '1h',
+                preferences: {
+                    currency: 'USD',
+                    language: 'en',
+                    dateFormat: 'MM/DD/YYYY',
+                    timezone: 'UTC',
+                    balancePrivacy: false,
+                    sidebarCollapsed: false,
+                    openNavGroups: ['overview', 'trading', 'money', 'growth', 'compliance']
+                },
+                privacy: {
+                    emailMarketing: false,
+                    platformMessages: true,
+                    contactAccess: false
+                },
+                vaultRecovery: {
+                    email: '',
+                    phone: '',
+                    pin: ''
+                }
+            },
+            sessions: [],
+            portfolio: {
+                totalValue: totalValue,
+                totalProfit: 0,
+                dailyChange: 0,
+                weeklyChange: 0,
+                change24hValue: 0,
+                change24hPercent: 0,
+                cashBalance: walletsResult.rows.find(w => w.currency === 'USD')?.balance || 0,
+                assets: walletsResult.rows.map((wallet) => ({
+                    id: wallet.id,
+                    type: 'CASH',
+                    ticker: wallet.currency,
+                    name: wallet.currency,
+                    balance: parseFloat(wallet.balance || '0'),
+                    valueUSD: parseFloat(wallet.balance || '0'),
+                    change24h: 0,
+                    allocation: totalValue > 0 ? (parseFloat(wallet.balance || '0') / totalValue) * 100 : 0,
+                    Icon: wallet.currency === 'USD' ? 'UsdIcon' : 'GenericIcon'
+                })),
+                transactions: transactionsResult.rows.map((tx) => ({
+                    id: tx.id,
+                    date: tx.created_at,
+                    description: tx.description || 'Transaction',
+                    amountUSD: parseFloat(tx.amount || '0'),
+                    status: tx.status || 'completed',
+                    type: tx.transaction_type || 'transfer'
+                })),
+                tradeAssets: []
+            },
+            notifications: [],
+            userActivity: [],
+            newsItems: [],
+            cardDetails: {
+                status: 'Not Applied',
+                type: 'Virtual',
+                currency: 'USD',
+                theme: 'Obsidian',
+                isFrozen: false
+            },
+            linkedBankAccounts: [],
+            loanApplications: [],
+            p2pOffers: [],
+            p2pOrders: [],
+            userPaymentMethods: [],
+            reitProperties: [],
+            stakableStocks: [],
+            investableNFTs: [],
+            spectrumPlans: [],
+            stakableCrypto: [],
+            userStakedStocks: [],
+            referralSummary: {
+                tree: null,
+                activities: []
+            }
+        };
+
+        res.json({ success: true, data: appData });
+
+    } catch (error) {
+        console.error('Error fetching app data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch application data'
+        });
+    }
+});
+
 // Wallet endpoints
 app.get('/api/wallet', async (req, res) => {
     try {

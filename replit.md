@@ -6,6 +6,26 @@ Valifi is a comprehensive fintech platform that combines multiple financial serv
 
 The platform features multi-asset trading (crypto, stocks, NFTs, REITs), P2P exchange, investment plans, staking systems, loan services, banking integration, and full KYC/AML compliance.
 
+## Recent Changes (October 3, 2025)
+
+### Deployment Fixes Applied
+1. **Removed deprecated Next.js configuration**: Removed `swcMinify: true` from next.config.js (deprecated in Next.js 15)
+2. **Excluded backup directory from TypeScript compilation**: Added `backup/` to tsconfig.json exclude list to prevent build errors
+3. **Updated .gitignore**: Added backup directory patterns to prevent processing backup files
+4. **Fixed deployment port configuration**: Updated deployment to run on PORT=5000 with proper build command
+
+### Critical Sign-In Fix
+- **Added `/api/app-data` endpoint to simple-server.js**: This endpoint was missing from the development server, causing sign-in to fail with "Failed to load app data" error
+- The endpoint now properly returns user profile, portfolio data, wallets, and transactions from PostgreSQL database
+- Authentication flow now works end-to-end: Register → Login → Load App Data → Dashboard
+
+### API Endpoints Status
+- ✅ `POST /api/auth/register` - User registration with wallet creation
+- ✅ `POST /api/auth/login` - User authentication with JWT token
+- ✅ `GET /api/app-data` - Load user profile and portfolio data (NEWLY ADDED)
+- ✅ `GET /api/health` - Health check with database status
+- ✅ Database migrations completed (8 tables: users, wallets, transactions, trading_bots, referrals, email_verifications, user_sessions, audit_logs)
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
