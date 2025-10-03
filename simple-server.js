@@ -74,6 +74,7 @@ app.get('/api/health', async (req, res) => {
         await db.query('SELECT 1');
 
         res.json({
+            success: true,
             status: 'healthy',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
@@ -83,8 +84,10 @@ app.get('/api/health', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
             status: 'unhealthy',
             error: error.message,
+            message: error.message,
             timestamp: new Date().toISOString()
         });
     }
