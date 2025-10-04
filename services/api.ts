@@ -50,11 +50,10 @@ export const login = async (email: string, password: string) => {
 
 export const register = async (fullName: string, username: string, email: string, password: string) => {
     try {
-        const [firstName = '', lastName = ''] = fullName.trim().split(' ');
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ firstName: firstName || fullName, lastName: lastName || '', email, password }),
+            body: JSON.stringify({ username, email, password }),
         });
         return await handleResponse(response);
     } catch (e: any) {
