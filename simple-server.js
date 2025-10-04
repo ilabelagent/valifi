@@ -12,12 +12,22 @@ const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Kingdom Standard Orchestrator
 const KingdomStandardOrchestrator = require('./lib/orchestrator/KingdomStandardOrchestrator');
 const PhpExchangeBridge = require('./lib/integrations/php-exchange-bridge');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 const PORT = process.env.PORT || 3001;
 
 // Validate required environment variables
@@ -533,6 +543,75 @@ app.get('/api/app-data', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * REAL-TIME KINGDOM DASHBOARD - WebSocket Gateway
+ */
+io.on('connection', (socket) => {
+    console.log('🔌 Kingdom Dashboard client connected:', socket.id);
+    
+    socket.emit('welcome', {
+        message: 'Connected to Kingdom Standard',
+        bots: orchestrator.state.bots.size,
+        timestamp: new Date().toISOString()
+    });
+
+    socket.on('subscribe_updates', () => {
+        socket.join('kingdom_updates');
+        console.log('📡 Client subscribed to kingdom updates');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('🔌 Client disconnected:', socket.id);
+    });
+});
+
+// Broadcast bot events to connected clients
+const broadcastUpdate = (event, data) => {
+    io.to('kingdom_updates').emit(event, {
+        ...data,
+        timestamp: new Date().toISOString()
+    });
+};
+
+// Set up orchestrator event listeners
+setInterval(() => {
+    broadcastUpdate('system_metrics', {
+        bots: orchestrator.state.bots.size,
+        uptime: process.uptime(),
+        memory: process.memoryUsage()
+    });
+}, 5000);
+
+// Kingdom Dashboard API
+app.get('/api/kingdom/dashboard', async (req, res) => {
+    try {
+        const metrics = {
+            bots: {
+                total: orchestrator.state.bots.size,
+                active: Array.from(orchestrator.state.bots.values()).filter(b => b.status === 'loaded').length,
+                categories: orchestrator.botCategories
+            },
+            system: {
+                uptime: process.uptime(),
+                memory: process.memoryUsage(),
+                nodeVersion: process.version
+            },
+            security: {
+                threatsDetected: 0,
+                status: 'normal'
+            },
+            predictions: {
+                count: 0,
+                lastUpdate: new Date().toISOString()
+            }
+        };
+
+        res.json({ success: true, metrics });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Catch-all route
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
@@ -541,13 +620,14 @@ app.get('*', (req, res) => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully...');
+    io.close();
     await orchestrator.shutdown();
     await db.end();
     process.exit(0);
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
+// Start server with WebSocket support
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
@@ -569,4 +649,4 @@ app.listen(PORT, '0.0.0.0', () => {
     `);
 });
 
-module.exports = app;
+module.exports = { app, server, io, broadcastUpdate };
