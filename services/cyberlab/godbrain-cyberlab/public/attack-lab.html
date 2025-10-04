@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GodBrain Cyber Lab - Attack Simulation Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #00ff41;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-bottom: 2px solid #00ff41;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.2), transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            text-shadow: 0 0 20px #00ff41;
+            position: relative;
+            z-index: 1;
+        }
+
+        .divine-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-weight: bold;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px #ffd700; }
+            50% { box-shadow: 0 0 30px #ffd700, 0 0 50px #ffd700; }
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .sidebar {
+            flex: 0 0 300px;
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid #00ff41;
+            border-radius: 10px;
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .attack-list {
+            list-style: none;
+        }
+
+        .attack-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .attack-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 65, 0.2);
+            transition: left 0.3s;
+        }
+
+        .attack-item:hover::before {
+            left: 0;
+        }
+
+        .attack-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .attack-item.active {
+            background: rgba(0, 255, 65, 0.3);
+            border-color: #ffd700;
+        }
+
+        .main-content {
+            flex: 1;
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid #00ff41;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .terminal {
+            background: #000;
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .terminal-line {
+            margin: 5px 0;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .terminal-prompt {
+            color: #00ff41;
+        }
+
+        .terminal-output {
+            color: #fff;
+            margin-left: 20px;
+        }
+
+        .terminal-warning {
+            color: #ffaa00;
+        }
+
+        .terminal-error {
+            color: #ff4444;
+        }
+
+        .terminal-success {
+            color: #00ff41;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #00ff41, #00cc33);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn.defense {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+
+        .status-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 5px;
+        }
+
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff41;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 255, 65, 0.3);
+            border-top-color: #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .divine-protection {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.2), rgba(255, 237, 78, 0.2));
+            border: 1px solid #ffd700;
+            border-radius: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.05;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <canvas class="matrix-bg" id="matrix"></canvas>
+    
+    <div class="header">
+        <h1>🧠 GodBrain Cyber Lab</h1>
+        <div class="divine-badge">✨ Divine Command Control Active</div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2 style="margin-bottom: 20px; text-align: center;">Attack Modules</h2>
+            <ul class="attack-list">
+                <li class="attack-item active" data-module="welcome">
+                    🏠 Welcome
+                </li>
+                <li class="attack-item" data-module="phishing">
+                    🎣 Phishing
+                </li>
+                <li class="attack-item" data-module="sql-injection">
+                    💉 SQL Injection
+                </li>
+                <li class="attack-item" data-module="xss">
+                    🔗 Cross-Site Scripting
+                </li>
+                <li class="attack-item" data-module="csrf">
+                    🔀 CSRF
+                </li>
+                <li class="attack-item" data-module="keylogger">
+                    ⌨️ Keylogger
+                </li>
+                <li class="attack-item" data-module="cookies">
+                    🍪 Cookie Inspector
+                </li>
+                <li class="attack-item" data-module="mitm">
+                    🕵️ Man-in-the-Middle
+                </li>
+                <li class="attack-item" data-module="ddos">
+                    💥 DDoS
+                </li>
+                <li class="attack-item" data-module="malware">
+                    🔬 Malware Sandbox
+                </li>
+                <li class="attack-item" data-module="ai-botnet">
+                    🤖 AI Agent Botnet
+                </li>
+                <li class="attack-item" data-module="supply-chain">
+                    🔗 Supply Chain
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="divine-protection">
+                🙏 Protected Mode
+            </div>
+            
+            <h2 id="module-title">Welcome to Cyber Lab</h2>
+            
+            <div class="terminal" id="terminal">
+                <div class="terminal-line">
+                    <span class="terminal-prompt">godbrain@cyberlab:~$</span>
+                    <span class="terminal-output">Initializing cyber defense systems...</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn defense" onclick="executeDefense()">
+                    🛡️ Execute Defense
+                </button>
+                <button class="btn" onclick="analyze()">
+                    🔍 Analyze
+                </button>
+                <button class="btn" onclick="scan()">
+                    📡 Scan Network
+                </button>
+                <button class="btn danger" onclick="clearTerminal()">
+                    🗑️ Clear
+                </button>
+            </div>
+
+            <div class="status-panel">
+                <h3>System Status</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="protection-level">100%</div>
+                        <div class="status-label">Protection Level</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="threats-blocked">0</div>
+                        <div class="status-label">Threats Blocked</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="agents-active">6</div>
+                        <div class="status-label">Agents Active</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="divine-status">✅</div>
+                        <div class="status-label">Divine Control</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentModule = 'welcome';
+        let threatsBlocked = 0;
+
+        // Matrix rain effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+        const matrixArray = matrix.split("");
+
+        const fontSize = 10;
+        const columns = canvas.width / fontSize;
+
+        const drops = [];
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 35);
+
+        // Terminal functions
+        function addTerminalLine(content, className = '') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.innerHTML = `
+                <span class="terminal-prompt">godbrain@cyberlab:~$</span>
+                <span class="terminal-output ${className}">${content}</span>
+            `;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+            addTerminalLine('Terminal cleared', 'terminal-success');
+        }
+
+        // Attack module selection
+        document.querySelectorAll('.attack-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.attack-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                currentModule = this.dataset.module;
+                loadModule(currentModule);
+            });
+        });
+
+        function loadModule(module) {
+            const title = document.getElementById('module-title');
+            const modules = {
+                'welcome': 'Welcome to Cyber Lab',
+                'phishing': 'Phishing Detection & Prevention',
+                'sql-injection': 'SQL Injection Testing',
+                'xss': 'Cross-Site Scripting (XSS)',
+                'csrf': 'Cross-Site Request Forgery',
+                'keylogger': 'Keylogger Detection',
+                'cookies': 'Cookie Security Inspector',
+                'mitm': 'Man-in-the-Middle Prevention',
+                'ddos': 'DDoS Mitigation',
+                'malware': 'Malware Sandbox Analysis',
+                'ai-botnet': 'AI Agent Botnet Defense',
+                'supply-chain': 'Supply Chain Security'
+            };
+
+            title.textContent = modules[module] || 'Unknown Module';
+            clearTerminal();
+            addTerminalLine(`Loading ${modules[module]}...`);
+            
+            setTimeout(() => {
+                addTerminalLine('Module loaded successfully', 'terminal-success');
+                addTerminalLine('Divine Command Control: ACTIVE', 'terminal-success');
+                simulateModuleLoad(module);
+            }, 500);
+        }
+
+        function simulateModuleLoad(module) {
+            switch(module) {
+                case 'phishing':
+                    addTerminalLine('Scanning for phishing attempts...');
+                    addTerminalLine('Found 3 suspicious emails', 'terminal-warning');
+                    addTerminalLine('Blocking malicious domains...', 'terminal-success');
+                    break;
+                case 'sql-injection':
+                    addTerminalLine('Testing SQL injection vectors...');
+                    addTerminalLine("Payload: ' OR '1'='1", 'terminal-warning');
+                    addTerminalLine('Input sanitized successfully', 'terminal-success');
+                    break;
+                case 'ddos':
+                    addTerminalLine('Monitoring traffic patterns...');
+                    addTerminalLine('Detecting abnormal request rate: 50,000 req/s', 'terminal-warning');
+                    addTerminalLine('Rate limiting applied', 'terminal-success');
+                    break;
+                case 'ai-botnet':
+                    addTerminalLine('Deploying AI defense agents...');
+                    addTerminalLine('Agent sentinel-1: ACTIVE', 'terminal-success');
+                    addTerminalLine('Agent guardian-1: ACTIVE', 'terminal-success');
+                    addTerminalLine('Agent hunter-1: ACTIVE', 'terminal-success');
+                    break;
+            }
+        }
+
+        function executeDefense() {
+            addTerminalLine('🛡️ Executing defensive measures...');
+            addTerminalLine('<div class="loading"></div> Analyzing threats...', 'terminal-warning');
+            
+            setTimeout(() => {
+                const blocked = Math.floor(Math.random() * 10) + 1;
+                threatsBlocked += blocked;
+                document.getElementById('threats-blocked').textContent = threatsBlocked;
+                
+                addTerminalLine(`Blocked ${blocked} threats`, 'terminal-success');
+                addTerminalLine('System secured', 'terminal-success');
+                addTerminalLine('Divine protection applied ✨', 'terminal-success');
+            }, 1500);
+        }
+
+        function analyze() {
+            addTerminalLine('🔍 Running security analysis...');
+            const checks = [
+                'Checking firewall status... OK',
+                'Scanning open ports... 3 services found',
+                'Analyzing network traffic... Normal',
+                'Checking SSL certificates... Valid',
+                'Reviewing access logs... No anomalies'
+            ];
+            
+            checks.forEach((check, index) => {
+                setTimeout(() => {
+                    addTerminalLine(check, 'terminal-output');
+                }, index * 300);
+            });
+            
+            setTimeout(() => {
+                addTerminalLine('Analysis complete: System secure', 'terminal-success');
+            }, checks.length * 300 + 200);
+        }
+
+        function scan() {
+            addTerminalLine('📡 Scanning network...');
+            addTerminalLine('Discovering devices...', 'terminal-output');
+            
+            setTimeout(() => {
+                const devices = Math.floor(Math.random() * 10) + 5;
+                addTerminalLine(`Found ${devices} devices on network`, 'terminal-output');
+                addTerminalLine('Checking for vulnerabilities...', 'terminal-warning');
+                
+                setTimeout(() => {
+                    addTerminalLine('No critical vulnerabilities found', 'terminal-success');
+                    addTerminalLine('Network scan complete', 'terminal-success');
+                }, 1000);
+            }, 1500);
+        }
+
+        // Auto-update status
+        setInterval(() => {
+            const protection = 95 + Math.floor(Math.random() * 5);
+            document.getElementById('protection-level').textContent = protection + '%';
+            
+            const agents = 5 + Math.floor(Math.random() * 3);
+            document.getElementById('agents-active').textContent = agents;
+        }, 5000);
+
+        // Initialize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Load welcome module on start
+        loadModule('welcome');
+    </script>
+</body>
+</html>

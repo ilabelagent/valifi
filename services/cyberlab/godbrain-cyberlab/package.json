@@ -1,0 +1,93 @@
+{
+  "name": "godbrain-cyberlab-professional",
+  "version": "2.0.0",
+  "description": "GodBrain CyberLab Professional - CEH v10 Training Environment with GUI",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "gui": "cd gui && npm start",
+    "gui-dev": "cd gui && npm run dev",
+    "gui-build": "cd gui && npm run build",
+    "install-all": "npm install && cd gui && npm install",
+    "setup": "npm run install-all",
+    "lab:load": "node modules/loadgen-local.js",
+    "lab:ddos": "node modules/ddos-simulation.js",
+    "lab:mitm": "node modules/mitm-simulation.js",
+    "lab:phishing": "node modules/phishing-demo.js",
+    "test": "echo \"Professional training environment - no tests needed\" && exit 0",
+    "build": "npm run gui-build",
+    "package": "cd gui && npm run build-win",
+    "package-linux": "cd gui && npm run build-linux",
+    "clean": "rm -rf node_modules gui/node_modules logs/* && npm cache clean --force"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "ws": "^8.16.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "compression": "^1.7.4",
+    "rate-limiter-flexible": "^4.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "cybersecurity",
+    "ethical-hacking",
+    "penetration-testing",
+    "security-training",
+    "ceh",
+    "ceh-v10",
+    "phishing",
+    "training",
+    "education",
+    "professional",
+    "gui",
+    "electron",
+    "security-awareness"
+  ],
+  "author": {
+    "name": "GodBrain AI",
+    "email": "contact@godbrain.ai",
+    "url": "https://github.com/godbrain-ai"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/godbrain-ai/cyberlab-professional"
+  },
+  "bugs": {
+    "url": "https://github.com/godbrain-ai/cyberlab-professional/issues"
+  },
+  "homepage": "https://github.com/godbrain-ai/cyberlab-professional#readme",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/godbrain-ai"
+  },
+  "config": {
+    "defaultPort": 5000,
+    "httpsPort": 5443,
+    "maxLogEntries": 1000,
+    "sessionTimeout": 3600000
+  }
+}
