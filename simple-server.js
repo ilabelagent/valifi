@@ -380,12 +380,12 @@ app.post('/api/exchange/staking/unstake', authenticateToken, async (req, res) =>
 // Authentication
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, firstName, lastName } = req.body;
 
         if (!username || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: 'Username, email and password are required'
             });
         }
 
@@ -403,9 +403,13 @@ app.post('/api/auth/register', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Use provided names or default to username
+        const userFirstName = firstName || username;
+        const userLastName = lastName || 'User';
+
         const result = await db.query(
-            'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email',
-            [username, email, hashedPassword]
+            'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email',
+            [username, email, hashedPassword, userFirstName, userLastName]
         );
 
         const user = result.rows[0];
