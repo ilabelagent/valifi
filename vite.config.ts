@@ -13,18 +13,25 @@ export default defineConfig({
   },
 
   server: {
-    host: '0.0.0.0',
-    port: 5000,
+    // DEVELOPMENT PORT CONFIGURATION
+    host: '0.0.0.0', // Listen on all interfaces (required for Replit)
+    port: 5000,      // Frontend dev server (required for Replit webview)
+    strictPort: true, // Fail if port 5000 is already in use
+    
+    // Allow Replit domains
     allowedHosts: [
       '.replit.dev',
       '.replit.app',
       '.repl.co',
       'localhost'
     ],
+    
+    // Proxy API requests to backend
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true
+        target: 'http://localhost:3001', // Backend server
+        changeOrigin: true,
+        secure: false
       }
     }
   },
