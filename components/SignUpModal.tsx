@@ -50,8 +50,8 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ isOpen, onClose, onSignUp, on
     
     const inputClass = "w-full bg-secondary border border-border rounded-lg py-2.5 px-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
     
-    // Only disable if truly checking or has a critical error
-    const isDisabled = isLoading || dbStatus === 'checking' || dbStatus === 'error';
+    // Only disable while form is submitting
+    const isDisabled = isLoading;
 
     return (
         <div 
