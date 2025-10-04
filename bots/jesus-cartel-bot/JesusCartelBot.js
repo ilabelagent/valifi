@@ -117,8 +117,36 @@ class JesusCartelBot extends EventEmitter {
     return result;
   }
 
+  async createMusicToken(songData) {
+    const tokenBot = this.core?.getBotById?.('token-creation-bot');
+    
+    if (!tokenBot) {
+      console.log('⚠️ Token Creation Bot not available');
+      return { success: false, message: 'Token Creation Bot not initialized' };
+    }
+
+    console.log('💎 Creating Music Token for:', songData.title);
+
+    const result = await tokenBot.execute({
+      action: 'create_music_token',
+      songTitle: songData.title,
+      artist: songData.artist,
+      network: process.env.MUSIC_TOKEN_NETWORK || 'polygon',
+      autoNFT: true
+    });
+
+    if (result.success) {
+      console.log('✅ Music Token Created:', result.token?.symbol);
+      songData.tokenSymbol = result.token?.symbol;
+      songData.tokenNetwork = result.token?.network;
+      songData.tokenCreated = true;
+    }
+
+    return result;
+  }
+
   async releaseSong(params) {
-    const { title, artist, autoMintNFT = true } = params;
+    const { title, artist, autoMintNFT = true, createToken = false } = params;
     
     if (!title || !artist) {
       return { success: false, message: 'Title and artist required' };
@@ -130,7 +158,8 @@ class JesusCartelBot extends EventEmitter {
       artist,
       releaseDate: new Date().toISOString(),
       status: 'released',
-      nftMinted: false
+      nftMinted: false,
+      tokenCreated: false
     };
 
     console.log('🎵 Releasing Song:', title, 'by', artist);
@@ -140,6 +169,11 @@ class JesusCartelBot extends EventEmitter {
       nftResult = await this.mintSongNFT(songData);
     }
 
+    let tokenResult = null;
+    if (createToken) {
+      tokenResult = await this.createMusicToken(songData);
+    }
+
     this.dashboardState.songs.push(songData);
     this.dashboardState.stats.totalSongs++;
 
@@ -147,7 +181,8 @@ class JesusCartelBot extends EventEmitter {
       success: true,
       song: songData,
       nft: nftResult,
-      message: `Song '${title}' released${nftResult?.success ? ' with NFT minted' : ''}`
+      token: tokenResult,
+      message: `Song '${title}' released${nftResult?.success ? ' with NFT' : ''}${tokenResult?.success ? ' and Token' : ''}`
     };
   }
 
