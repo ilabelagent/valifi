@@ -37,6 +37,7 @@ const LoansView = React.lazy(() => import('./components/LoansView'));
 const SettingsView = React.lazy(() => import('./components/SettingsView'));
 const NFTView = React.lazy(() => import('./components/NFTView'));
 const APIGuideView = React.lazy(() => import('./components/APIGuideView'));
+const KingdomDashboard = React.lazy(() => import('./features/dashboard/KingdomDashboard.tsx'));
 
 
 const iconMap: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
@@ -351,6 +352,7 @@ const AppContent: React.FC = () => {
             case 'settings': return <SettingsView settings={userSettings} setSettings={setUserSettings} />;
             case 'nft': return <NFTView nfts={portfolio.assets.filter(a => a.type === AssetType.NFT)} onManageClick={handlers.onViewInvestment} />;
             case 'api_guide': return <APIGuideView />;
+            case 'kingdom': return <KingdomDashboard />;
             default: return <div>View not found</div>;
         }
     };
