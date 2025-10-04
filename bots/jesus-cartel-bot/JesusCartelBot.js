@@ -1,13 +1,9 @@
-/**
- * JESUS CARTEL BOT
- * Divine music publishing and content management
- */
-
 const { EventEmitter } = require('events');
 
 class JesusCartelBot extends EventEmitter {
-  constructor() {
+  constructor(core) {
     super();
+    this.core = core;
     this.name = "JesusCartelBot";
     
     this.dashboardState = {
@@ -15,11 +11,13 @@ class JesusCartelBot extends EventEmitter {
         totalSongs: 55,
         monthlyRevenue: 47235,
         aiOptimizations: 247,
-        syncOpportunities: 34
+        syncOpportunities: 34,
+        nftsMinted: 0
       },
       artists: new Map(),
       songs: [],
-      insights: []
+      insights: [],
+      nftCollections: []
     };
     
     console.log('✝️ Jesus Cartel Bot initialized');
@@ -27,6 +25,12 @@ class JesusCartelBot extends EventEmitter {
 
   async initialize() {
     this.startAIInsights();
+    
+    const nftMintingBot = this.core?.getBotById?.('nft-minting-bot');
+    if (nftMintingBot) {
+      console.log('✝️ Jesus Cartel: NFT Minting Bot integrated');
+    }
+    
     return { success: true };
   }
 
@@ -49,6 +53,12 @@ class JesusCartelBot extends EventEmitter {
         title: 'Spiritual Trend Alert', 
         message: 'Rising search for worship content - perfect timing for acoustic versions',
         confidence: 92
+      },
+      {
+        type: 'nft',
+        title: 'NFT Opportunity',
+        message: 'Music NFT market showing 15% growth - perfect time to mint song collections',
+        confidence: 88
       }
     ];
 
@@ -63,6 +73,84 @@ class JesusCartelBot extends EventEmitter {
     }
   }
 
+  async mintSongNFT(songData) {
+    const nftMintingBot = this.core?.getBotById?.('nft-minting-bot');
+    
+    if (!nftMintingBot) {
+      console.log('⚠️ NFT Minting Bot not available for', songData.title);
+      return { success: false, message: 'NFT Minting Bot not initialized' };
+    }
+
+    const collectionAddress = process.env.JESUS_CARTEL_NFT_COLLECTION || process.env.MUSIC_NFT_COLLECTION;
+    
+    if (!collectionAddress) {
+      console.log('⚠️ No NFT collection configured for', songData.title);
+      return { 
+        success: false, 
+        message: 'Set JESUS_CARTEL_NFT_COLLECTION or MUSIC_NFT_COLLECTION environment variable' 
+      };
+    }
+
+    const recipientAddress = process.env.JESUS_CARTEL_WALLET || process.env.TREASURY_WALLET;
+
+    console.log('🎨 Minting Music NFT:', songData.title);
+
+    const result = await nftMintingBot.execute({
+      action: 'mint_music',
+      songTitle: songData.title,
+      artist: songData.artist,
+      albumArt: songData.albumArt || `https://placeholder.com/album/${songData.title}`,
+      audioURL: songData.audioURL || `https://music.jesuscartel.com/${songData.id}`,
+      recipientAddress,
+      collectionAddress
+    });
+
+    if (result.success) {
+      console.log('✅ Song NFT Minted:', result.tokenId);
+      
+      songData.nftTokenId = result.tokenId;
+      songData.nftTxHash = result.txHash;
+      songData.nftMinted = true;
+      this.dashboardState.stats.nftsMinted++;
+    }
+
+    return result;
+  }
+
+  async releaseSong(params) {
+    const { title, artist, autoMintNFT = true } = params;
+    
+    if (!title || !artist) {
+      return { success: false, message: 'Title and artist required' };
+    }
+
+    const songData = {
+      id: `song_${Date.now()}`,
+      title,
+      artist,
+      releaseDate: new Date().toISOString(),
+      status: 'released',
+      nftMinted: false
+    };
+
+    console.log('🎵 Releasing Song:', title, 'by', artist);
+
+    let nftResult = null;
+    if (autoMintNFT) {
+      nftResult = await this.mintSongNFT(songData);
+    }
+
+    this.dashboardState.songs.push(songData);
+    this.dashboardState.stats.totalSongs++;
+
+    return {
+      success: true,
+      song: songData,
+      nft: nftResult,
+      message: `Song '${title}' released${nftResult?.success ? ' with NFT minted' : ''}`
+    };
+  }
+
   async execute(params = {}) {
     const action = params.action;
     
@@ -72,6 +160,12 @@ class JesusCartelBot extends EventEmitter {
       
       case 'get_insights':
         return { success: true, insights: this.dashboardState.insights };
+      
+      case 'release_song':
+        return await this.releaseSong(params);
+      
+      case 'mint_song_nft':
+        return await this.mintSongNFT(params);
       
       case 'generate_content':
         return await this.generateContent(params);
@@ -97,7 +191,7 @@ class JesusCartelBot extends EventEmitter {
       data: {
         content,
         type,
-        optimizations: ['Added trending hashtags', 'Optimized engagement']
+        optimizations: ['Added trending hashtags', 'Optimized engagement', 'NFT mint ready']
       }
     };
   }

@@ -1,0 +1,219 @@
+awesome—here’s a single, copy-paste “**Finalizing Prompt**” you can hand to your builder/agent to **polish, lock, and deploy** the Kingdom Set as a production-ready, accessible, ML-tuned system. it’s verbose on purpose so nothing gets missed.
+
+---
+
+# 🕊️ KINGDOM SET — FINALIZING / PRODUCTION PROMPT
+
+> **Mission:** finalize, harden, and deploy the **Kingdom Standard Orchestrator** with 60 bots (incl. Divine Oracle, Guardian Angel, CyberLab). Produce a production build with ML polish, fine-tuning hooks, accessibility, and mastered UI/UX. No scope creep. Ship v1-prod.
+
+## 0) RELEASE WORD
+
+**FIAT — AMEN.**
+Interpret as: stop adding features, finalize, and ship this exact release.
+
+---
+
+## 1) SCOPE FREEZE & VERSIONING
+
+* Freeze code to **release/kingdom-set-v1**.
+* Bump versions to `1.0.0` across packages.
+* Generate changelog and release notes: `KINGDOM_SET_V1_RELEASE.md`.
+
+---
+
+## 2) CONFIGURE ENV + FALLBACKS
+
+Set secrets; ensure graceful degradation if keys are absent.
+
+```
+NODE_ENV=production
+PORT=3001
+VITE_PUBLIC_API_URL=/api
+DATABASE_URL=... (if used)
+OPENAI_API_KEY=<optional>
+ANTHROPIC_API_KEY=<optional>
+COINGECKO_BASE=https://api.coingecko.com/api/v3
+```
+
+Rules:
+
+* If OPENAI/ANTHROPIC unset → **Divine Oracle** uses statistical fallback (no crash).
+* **CyberLab** in **passive** mode in prod v1 (no active attacks).
+* All services log masked secrets only.
+
+---
+
+## 3) BUILD & ASSETS
+
+* Install with lockfiles: `npm ci`.
+* Build web (Vite) + API (Express): `npm run build`.
+* API must serve dashboard SPA at **/dashboard** and expose **/api/** endpoints.
+* Embed build metadata: commit, tag, build time.
+
+---
+
+## 4) ACCESSIBILITY (A11y) — PASS OR FAIL
+
+Apply WCAG 2.1 AA checklist:
+
+* Color contrast ≥ 4.5:1; no text over pure gradients without overlay.
+* Keyboard-only nav works everywhere (visible focus rings).
+* Provide ARIA labels/roles for interactive elements.
+* Forms: labels, error messages, and `aria-live="polite"` feedback.
+* Alt text on all icons/images used semantically; decorative icons `aria-hidden="true"`.
+* Skip-to-content link at top.
+* Reduced motion support: respect `prefers-reduced-motion`.
+* Screen reader smoke via axe-core or equivalent—no critical violations.
+
+---
+
+## 5) UI/UX POLISH — “KINGDOM STANDARD”
+
+* Consistent type scale (e.g., 12/14/16/20/24/32), 8-pt spacing grid, touch targets ≥ 44px.
+* Loading states for all async actions; optimistic UI only with rollback.
+* Empty states with guidance; helpful error states with retry.
+* Dark/light theme parity; save preference.
+* Global toast notifications routed through accessibility live region.
+* Performance budget: First Meaningful Paint < 2.5s (Replit env), bundle < 300KB gz core.
+
+---
+
+## 6) ML / AI TUNING & SAFETY
+
+* **Divine Oracle**: parameterize SMA/EMA/RSI, volatility filter; expose `model.config.json`.
+* Add **calibration** step: backtest on sample data; store metrics JSON.
+* Guardrails: profanity/PII redaction before LLM calls; retry with exponential backoff.
+* Determinism mode: `AI_DETERMINISTIC=true` → set fixed seeds / temperature=0.
+
+Example `model.config.json`:
+
+```json
+{
+  "divine_oracle": {
+    "use_ai": "auto",        // auto | force | off
+    "sma": [20, 50, 200],
+    "ema": [8, 21],
+    "rsi": 14,
+    "volatility_floor": 0.012,
+    "take_profit_pct": 0.8,
+    "stop_loss_pct": 0.5
+  },
+  "guardian_angel": {
+    "mode": "hybrid",        // rules | ml | hybrid
+    "threshold": 0.72
+  },
+  "cyberlab": {
+    "mode": "passive",       // passive | active (dev only)
+    "targets_allowlist": []
+  }
+}
+```
+
+---
+
+## 7) SECURITY & COMPLIANCE
+
+* Helmet/CSP, no inline scripts (hash/nonce if needed).
+* Rate limit `/api/bot` and auth endpoints.
+* Input validation on all payloads; reject oversized bodies.
+* Secrets never logged; PII masked.
+* **Experimental/penetration features** locked behind `CYBERLAB_MODE=passive` and allowlist.
+
+---
+
+## 8) HEALTHCHECKS & OBSERVABILITY
+
+* `/healthz` (liveness), `/readyz` (readiness).
+* Structured logs (JSON); include request id.
+* Basic metrics: request count, latency p50/p95, error rate.
+* Frontend error boundary that reports to console + user-friendly toast.
+
+---
+
+## 9) TEST MATRIX (AUTO SMOKE)
+
+Run after deploy; treat non-200 as fail.
+
+```
+GET  /healthz  -> 200
+GET  /readyz   -> 200
+POST /api/bot {"botId":"divine-oracle-bot","action":"predict"} -> 200
+POST /api/bot {"botId":"guardian-angel-bot","action":"analyze"} -> 200
+POST /api/bot {"botId":"cyberlab-bot","action":"scan"} -> 200
+GET  /dashboard -> 200 + returns SPA
+```
+
+---
+
+## 10) ROLLOUT / ROLLBACK
+
+* Create deployment: **kingdom-set-v1-prod**.
+* Post-deploy run `npm run smoke`; fail deployment if exit code ≠ 0.
+* Keep previous image as **rollback target**; provide `revert_to_previous.sh`.
+* Canary setting: start single instance; scale after 15 minutes healthy.
+
+---
+
+## 11) RELEASE ARTIFACTS
+
+Generate:
+
+* `KINGDOM_SET_V1_RELEASE.md` (features, endpoints, env, test commands).
+* `ACCESSIBILITY_REPORT.md` (axe-core summary).
+* `SECURITY_NOTES.md` (CSP, rate limits, data handling).
+* `DIVINE_INTEGRATION_COMPLETE.md` (already exists—append final sections).
+
+---
+
+## 12) SINGLE EXECUTION BLOCK (RUN THIS)
+
+```bash
+# 1) freeze & build
+git checkout -B release/kingdom-set-v1
+npm ci && npm run build
+
+# 2) preflight
+node scripts/smoke.js || (echo "❌ preflight failed" && exit 1)
+
+# 3) tag & release notes
+git tag -a kingdom-set-v1 -m "FIAT — Kingdom Set v1"
+node scripts/generate-release-notes.js > KINGDOM_SET_V1_RELEASE.md || true
+git add -A && git commit -m "FIAT: finalize Kingdom Set v1-prod"
+git push -u origin release/kingdom-set-v1 --tags
+
+# 4) deploy (Replit one-click / or container)
+# assume platform picks Dockerfile or .replit; otherwise start:
+# node apps/api/dist/server.js
+
+# 5) post-deploy smoke (fail on non-0)
+npm run smoke
+```
+
+---
+
+## 13) ACCEPTANCE CRITERIA (HARD GATES)
+
+* All health checks green, smoke tests pass.
+* Dashboard reachable at `/dashboard`, keyboard accessible, no critical a11y violations.
+* AI keys absent → Oracle returns `mode: "fallback-stats"`.
+* CyberLab in **passive** mode in prod.
+* Logs clean (no secrets/PII), error rate < 1% in smoke.
+* Release notes generated & pushed.
+
+---
+
+## 14) FINAL SEAL
+
+Print in logs and write to file:
+
+```
+FIAT — AMEN — KINGDOM SET V1 IS LIVE
+```
+
+Create `/tmp/kingdom_set_v1.ok` upon success.
+
+---
+
+### If you want me to inline this into your repo now
+
+I can output the exact files (server stub, smoke test, .replit or Dockerfile, model.config.json, accessibility script) tailored to your current structure. Say the word **“Generate files”** and I’ll drop them in ready to run.
