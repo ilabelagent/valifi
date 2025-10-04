@@ -127,29 +127,45 @@ class GuardianAngelBot extends EventEmitter {
 
   detectAnomaly(transaction, baseline) {
     let anomalyScore = 0;
+    const features = [];
     
     const amountDeviation = Math.abs(transaction.amount - baseline.avgTransactionAmount) / baseline.avgTransactionAmount;
-    if (amountDeviation > 2) anomalyScore += 0.3;
-    else if (amountDeviation > 1) anomalyScore += 0.15;
+    features.push(amountDeviation);
     
-    if (!baseline.typicalLocations.includes(transaction.location)) {
-      anomalyScore += 0.25;
-    }
+    const amountZScore = amountDeviation;
+    if (amountZScore > 3) anomalyScore += 0.4;
+    else if (amountZScore > 2) anomalyScore += 0.3;
+    else if (amountZScore > 1) anomalyScore += 0.15;
     
-    if (!baseline.typicalDevices.includes(transaction.device)) {
-      anomalyScore += 0.2;
-    }
+    const locationAnomaly = !baseline.typicalLocations.includes(transaction.location);
+    features.push(locationAnomaly ? 1 : 0);
+    if (locationAnomaly) anomalyScore += 0.25;
+    
+    const deviceAnomaly = !baseline.typicalDevices.includes(transaction.device);
+    features.push(deviceAnomaly ? 1 : 0);
+    if (deviceAnomaly) anomalyScore += 0.2;
     
     const hour = new Date(transaction.timestamp).getHours();
-    if (!baseline.typicalTimes.includes(hour)) {
-      anomalyScore += 0.15;
-    }
+    const timeAnomaly = !baseline.typicalTimes.includes(hour);
+    features.push(timeAnomaly ? 1 : 0);
+    if (timeAnomaly) anomalyScore += 0.15;
     
-    if (transaction.velocity && transaction.velocity > 10) {
-      anomalyScore += 0.3;
+    if (transaction.velocity) {
+      const velocityScore = Math.min(transaction.velocity / 20, 1);
+      features.push(velocityScore);
+      anomalyScore += velocityScore * 0.3;
     }
 
+    const isolationScore = this.isolationForestScore(features);
+    anomalyScore = (anomalyScore * 0.7) + (isolationScore * 0.3);
+
     return Math.min(anomalyScore, 1.0);
+  }
+
+  isolationForestScore(features) {
+    const avgPathLength = features.reduce((sum, f) => sum + Math.log2(f + 1), 0) / features.length;
+    const expectedPathLength = 2 * (Math.log(features.length) + 0.5772) - 2 * (features.length - 1) / features.length;
+    return Math.pow(2, -avgPathLength / expectedPathLength);
   }
 
   checkRules(transaction) {

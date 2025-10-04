@@ -37,7 +37,7 @@ const LoansView = React.lazy(() => import('./components/LoansView'));
 const SettingsView = React.lazy(() => import('./components/SettingsView'));
 const NFTView = React.lazy(() => import('./components/NFTView'));
 const APIGuideView = React.lazy(() => import('./components/APIGuideView'));
-const KingdomDashboard = React.lazy(() => import('./features/dashboard/KingdomDashboard.tsx'));
+const KingdomDashboard = React.lazy(() => import('./features/dashboard/KingdomDashboard'));
 
 
 const iconMap: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {

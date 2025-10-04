@@ -163,15 +163,47 @@ class CyberLabBot extends EventEmitter {
       "1' AND '1'='1"
     ];
 
-    const results = payloads.map(payload => ({
-      test: 'sql_injection',
-      payload,
-      vulnerable: Math.random() > 0.8,
-      severity: 'high',
-      recommendation: 'Use parameterized queries and input validation'
-    }));
-
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const results = [];
+    
+    for (const payload of payloads) {
+      try {
+        const testUrl = `${target}?id=${encodeURIComponent(payload)}`;
+        const startTime = Date.now();
+        
+        const response = await fetch(testUrl, { 
+          method: 'GET',
+          headers: { 'User-Agent': 'CyberLab-Security-Scanner/1.0' }
+        }).catch(() => null);
+        
+        const responseTime = Date.now() - startTime;
+        
+        const vulnerable = response && (
+          response.status === 200 || 
+          responseTime > 3000
+        );
+        
+        results.push({
+          test: 'sql_injection',
+          payload,
+          vulnerable,
+          responseTime,
+          statusCode: response?.status || 0,
+          severity: vulnerable ? 'high' : 'low',
+          recommendation: vulnerable ? 
+            'Use parameterized queries and input validation' :
+            'Endpoint appears protected'
+        });
+      } catch (error) {
+        results.push({
+          test: 'sql_injection',
+          payload,
+          vulnerable: false,
+          error: error.message,
+          severity: 'info',
+          recommendation: 'Test inconclusive'
+        });
+      }
+    }
 
     return results;
   }

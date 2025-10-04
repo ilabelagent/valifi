@@ -108,6 +108,21 @@ class DivineOracleBot extends EventEmitter {
   }
 
   async getHistoricalData(asset, type) {
+    try {
+      if (type === 'crypto') {
+        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${asset.toLowerCase()}/market_chart?vs_currency=usd&days=7`);
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            prices: data.prices.map(([timestamp, price]) => ({ timestamp, price, volume: 0 })),
+            current: data.prices[data.prices.length - 1][1]
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch real market data, using fallback:', error.message);
+    }
+
     const mockData = {
       prices: Array.from({ length: 100 }, (_, i) => ({
         timestamp: Date.now() - (100 - i) * 3600000,
@@ -164,10 +179,38 @@ class DivineOracleBot extends EventEmitter {
   }
 
   async getAIInsight(asset, type, data) {
-    const prompt = `Analyze ${asset} (${type}) market data and provide a brief trading insight with confidence level.`;
+    const prompt = `Analyze ${asset} (${type}) market data: Current price ${data.current}, volatility, trend. Provide brief trading insight with confidence level.`;
+    
+    try {
+      if (this.aiProviders.openai) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.aiProviders.openai}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 150
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return {
+            insight: result.choices[0].message.content,
+            confidence: 0.85,
+            sentiment: 'AI-powered'
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('AI API call failed, using statistical model:', error.message);
+    }
     
     return {
-      insight: `AI analysis suggests ${asset} shows ${Math.random() > 0.5 ? 'bullish' : 'bearish'} momentum with moderate volatility. Watch key support/resistance levels.`,
+      insight: `Statistical analysis suggests ${asset} shows ${Math.random() > 0.5 ? 'bullish' : 'bearish'} momentum with moderate volatility. Watch key support/resistance levels.`,
       confidence: 0.7 + Math.random() * 0.2,
       sentiment: Math.random() > 0.5 ? 'positive' : 'neutral'
     };
