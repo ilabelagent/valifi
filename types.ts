@@ -124,7 +124,7 @@ export interface Portfolio {
     tradeAssets: TradeAsset[];
 }
 
-export type ViewType = 'dashboard' | 'investments' | 'wallet' | 'banking' | 'privacy' | 'tax' | 'referrals' | 'exchange' | 'p2p' | 'kyc' | 'internal-transfer' | 'cards' | 'loans' | 'settings' | 'nft' | 'api_guide';
+export type ViewType = 'dashboard' | 'investments' | 'wallet' | 'banking' | 'privacy' | 'tax' | 'referrals' | 'exchange' | 'p2p' | 'kyc' | 'internal-transfer' | 'cards' | 'loans' | 'settings' | 'nft' | 'api_guide' | 'kingdom';
 
 export type AssetCategory = 'All' | AssetType.STOCK | AssetType.CRYPTO | 'REITs' | 'Other' | AssetType.NFT;
 
