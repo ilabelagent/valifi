@@ -44,7 +44,11 @@ if (!process.env.JWT_SECRET) {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'dist')));
+
+// Only serve static files in production (Vite handles frontend in development)
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'dist')));
+}
 
 // Database connection
 const db = new Pool({
@@ -612,10 +616,12 @@ app.get('/api/kingdom/dashboard', async (req, res) => {
     }
 });
 
-// Catch-all route
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+// Catch-all route (only in production - Vite handles frontend in development)
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
