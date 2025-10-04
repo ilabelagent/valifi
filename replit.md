@@ -21,8 +21,12 @@ The platform features multi-asset trading (crypto, stocks, NFTs, REITs), P2P exc
    - ERC-20 tokens created with auto-generated symbols
    - Deployment artifacts saved to `temp/token-deployments/`
 4. **Multi-Chain Support**: Ethereum, Polygon, BSC, XRP Ledger, Arbitrum, Optimism
-5. **UI Fixed**: Resolved Vite import errors, system fully operational
-6. **Database Fixed**: Added username column, full PostgreSQL integration working
+5. **Authentication Fixed**: 
+   - ✅ Sign-up form fields now enabled (removed unnecessary database status checks)
+   - ✅ Login password validation fixed (corrected column name: password_hash)
+   - ✅ Sign-in form fields now enabled
+6. **UI Fixed**: Resolved Vite import errors, system fully operational
+7. **Database Fixed**: Added username column, full PostgreSQL integration working
 
 ### Previous Changes (October 3, 2025)
 

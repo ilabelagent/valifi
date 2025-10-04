@@ -32,8 +32,8 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onLogin, onO
         }
     };
     
-    // Only disable while loading or checking
-    const isDisabled = isLoading || dbStatus === 'checking';
+    // Only disable while form is submitting
+    const isDisabled = isLoading;
 
     return (
         <div 
