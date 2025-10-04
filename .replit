@@ -37,11 +37,3 @@ outputType = "webview"
 [[ports]]
 localPort = 3001
 externalPort = 80
-
-[[ports]]
-localPort = 42421
-externalPort = 3000
-
-[[ports]]
-localPort = 5000
-externalPort = 80
