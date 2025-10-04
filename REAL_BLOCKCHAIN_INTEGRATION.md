@@ -386,18 +386,34 @@ this.logDivineAction('REAL Transaction Sent', {
 
 ---
 
-## 🎵 JESUS CARTEL MUSIC NFT WORKFLOW
+## 🎵 JESUS CARTEL MUSIC NFT + TOKEN WORKFLOW
 
-### **Complete Flow:**
+### **Complete Flow with Token Creation:**
 
 1. **Artist releases song** → `release_song` action called
 2. **System automatically**:
-   - Creates song metadata
-   - Calls NFT Minting Bot
-   - Mints NFT on-chain (REAL transaction)
-   - Associates NFT token ID with song
+   - Creates song metadata in **temp directory** (`temp/token-deployments/`)
+   - Calls NFT Minting Bot → Mints NFT on-chain (REAL transaction)
+   - Creates ERC-20 Music Token (optional)
+   - Creates XRPL token (optional for XRP First Ledger)
+   - Associates NFT token ID + Token symbol with song
    - Updates dashboard stats
-3. **Result**: Song has verifiable blockchain NFT ✅
+3. **Result**: Song has verifiable blockchain NFT + Native Token ✅
+
+### **Temp Directory Structure:**
+```
+temp/
+└── token-deployments/
+    ├── BLESSED_polygon_1759549123456.json
+    ├── XRPL_BSS_1759549234567.json
+    └── WORSHIP_ethereum_1759549345678.json
+```
+
+Each file contains:
+- Contract code (for EVM chains)
+- Deployment configuration
+- Token metadata
+- Issuer credentials (for XRPL)
 
 ### **Metadata Structure:**
 ```json
