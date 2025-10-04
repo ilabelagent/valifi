@@ -1,4 +1,4 @@
-modules = ["php-8.2", "nodejs-20"]
+modules = ["php-8.2", "nodejs-20", "postgresql-16"]
 [agent]
 expertMode = true
 
@@ -20,10 +20,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Divine Kingdom System"
+args = "Kingdom System"
 
 [[workflows.workflow]]
-name = "Divine Kingdom System"
+name = "Kingdom System"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -36,4 +36,12 @@ outputType = "webview"
 
 [[ports]]
 localPort = 3001
+externalPort = 80
+
+[[ports]]
+localPort = 42421
+externalPort = 3000
+
+[[ports]]
+localPort = 5000
 externalPort = 80

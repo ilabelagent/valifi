@@ -1,9 +1,11 @@
-const KingdomBot = require('../base/KingdomBot');
+const { EventEmitter } = require('events');
 const { ethers } = require('ethers');
 
-class SmartContractBot extends KingdomBot {
+class SmartContractBot extends EventEmitter {
   constructor(core) {
-    super(core, 'smart-contract-bot', 'Smart Contract Automation', '🤖');
+    super();
+    this.core = core;
+    this.name = 'smart-contract-bot';
     this.provider = null;
     this.wallet = null;
     this.deployedContracts = new Map();
@@ -17,15 +19,15 @@ class SmartContractBot extends KingdomBot {
       this.provider = new ethers.JsonRpcProvider(rpcUrl);
       if (privateKey) {
         this.wallet = new ethers.Wallet(privateKey, this.provider);
-        this.logDivineAction('Smart Contract Bot Initialized', { 
+        console.log('Smart Contract Bot Initialized', { 
           address: this.wallet.address,
           network: rpcUrl 
         });
       } else {
-        this.logDivineAction('Smart Contract Bot - Read-Only Mode (No private key)');
+        console.log('Smart Contract Bot - Read-Only Mode (No private key)');
       }
     } else {
-      this.logDivineAction('Smart Contract Bot - Offline Mode (No RPC URL)');
+      console.log('Smart Contract Bot - Offline Mode (No RPC URL)');
     }
 
     return true;
@@ -42,7 +44,7 @@ class SmartContractBot extends KingdomBot {
     try {
       const factory = new ethers.ContractFactory(abi, bytecode, this.wallet);
       
-      this.logDivineAction('Deploying Contract', { contractName, args: constructorArgs });
+      console.log('Deploying Contract', { contractName, args: constructorArgs });
       
       const contract = await factory.deploy(...constructorArgs);
       await contract.waitForDeployment();
@@ -56,7 +58,7 @@ class SmartContractBot extends KingdomBot {
         deployer: this.wallet.address
       });
 
-      this.logDivineAction('Contract Deployed', { 
+      console.log('Contract Deployed', { 
         contractName, 
         address,
         txHash: contract.deploymentTransaction()?.hash 
@@ -70,7 +72,7 @@ class SmartContractBot extends KingdomBot {
         deployer: this.wallet.address
       };
     } catch (error) {
-      this.logDivineAction('Contract Deployment Failed', { contractName, error: error.message });
+      console.log('Contract Deployment Failed', { contractName, error: error.message });
       return { success: false, message: error.message };
     }
   }
@@ -90,7 +92,7 @@ class SmartContractBot extends KingdomBot {
         value: ethers.parseEther(value)
       });
       
-      this.logDivineAction('Executing Contract Method', { 
+      console.log('Executing Contract Method', { 
         contract: contractAddress, 
         method, 
         params,
@@ -107,7 +109,7 @@ class SmartContractBot extends KingdomBot {
         status: receipt.status === 1 ? 'success' : 'failed'
       };
     } catch (error) {
-      this.logDivineAction('Contract Execution Failed', { error: error.message });
+      console.log('Contract Execution Failed', { error: error.message });
       return { success: false, message: error.message };
     }
   }

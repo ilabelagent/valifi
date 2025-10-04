@@ -1,4 +1,4 @@
-const KingdomBot = require('../base/KingdomBot');
+const { EventEmitter } = require('events');
 const { ethers } = require('ethers');
 const { Client, Wallet: XRPLWallet, xrpl } = require('xrpl');
 const fs = require('fs');
@@ -26,9 +26,11 @@ contract DivineToken is ERC20, Ownable {
 }
 `;
 
-class TokenCreationBot extends KingdomBot {
+class TokenCreationBot extends EventEmitter {
   constructor(core) {
-    super(core, 'token-creation-bot', 'Divine Token Creation', '💎');
+    super();
+    this.core = core;
+    this.name = 'token-creation-bot';
     this.providers = new Map();
     this.wallets = new Map();
     this.xrplClient = null;
@@ -70,13 +72,13 @@ class TokenCreationBot extends KingdomBot {
       try {
         this.xrplClient = new Client(process.env.XRPL_SERVER || 'wss://s1.ripple.com');
         await this.xrplClient.connect();
-        this.logDivineAction('XRP Ledger Connected', { server: process.env.XRPL_SERVER });
+        console.log('XRP Ledger Connected', { server: process.env.XRPL_SERVER });
       } catch (error) {
         console.warn('XRP Ledger connection failed:', error.message);
       }
     }
 
-    this.logDivineAction('Token Creation Bot Initialized - REAL BLOCKCHAIN', {
+    console.log('Token Creation Bot Initialized - REAL BLOCKCHAIN', {
       evmNetworks: Array.from(this.providers.keys()),
       xrplConnected: !!this.xrplClient,
       tempDir: this.tempDir
@@ -100,7 +102,7 @@ class TokenCreationBot extends KingdomBot {
     }
 
     try {
-      this.logDivineAction('Creating ERC-20 Token', { network, name, symbol, supply: initialSupply });
+      console.log('Creating ERC-20 Token', { network, name, symbol, supply: initialSupply });
 
       const contractCode = ERC20_CONTRACT_SOURCE
         .replace('DivineToken', symbol + 'Token')
@@ -124,7 +126,7 @@ class TokenCreationBot extends KingdomBot {
 
       this.deployedTokens.set(`${network}:${symbol}`, deploymentInfo);
 
-      this.logDivineAction('Token Deployment Prepared', { 
+      console.log('Token Deployment Prepared', { 
         symbol, 
         network,
         tempFile: fileName
@@ -138,7 +140,7 @@ class TokenCreationBot extends KingdomBot {
         contractCode
       };
     } catch (error) {
-      this.logDivineAction('Token Creation Failed', { error: error.message });
+      console.log('Token Creation Failed', { error: error.message });
       return { success: false, message: error.message };
     }
   }
@@ -160,7 +162,7 @@ class TokenCreationBot extends KingdomBot {
         ? XRPLWallet.fromSeed(issuerSeed)
         : XRPLWallet.generate();
 
-      this.logDivineAction('Creating XRPL Token', { 
+      console.log('Creating XRPL Token', { 
         currencyCode, 
         issuer: wallet.address 
       });
@@ -191,7 +193,7 @@ class TokenCreationBot extends KingdomBot {
 
       this.deployedTokens.set(`xrpl:${currencyCode}`, tokenInfo);
 
-      this.logDivineAction('XRPL Token Prepared', { 
+      console.log('XRPL Token Prepared', { 
         currencyCode,
         issuer: wallet.address,
         tempFile: fileName
@@ -205,7 +207,7 @@ class TokenCreationBot extends KingdomBot {
         warning: 'SECURE THE SEED! Store in safe location.'
       };
     } catch (error) {
-      this.logDivineAction('XRPL Token Creation Failed', { error: error.message });
+      console.log('XRPL Token Creation Failed', { error: error.message });
       return { success: false, message: error.message };
     }
   }
@@ -219,7 +221,7 @@ class TokenCreationBot extends KingdomBot {
     const tokenName = `${songTitle} by ${artist}`;
     const initialSupply = 1000000;
 
-    this.logDivineAction('Creating Music Token', { 
+    console.log('Creating Music Token', { 
       song: songTitle,
       artist,
       symbol: tokenSymbol,

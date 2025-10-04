@@ -1,4 +1,4 @@
-const KingdomBot = require('../base/KingdomBot');
+const { EventEmitter } = require('events');
 const { ethers } = require('ethers');
 
 const ERC721_ABI = [
@@ -13,9 +13,11 @@ const ERC721_ABI = [
 
 const ERC721_BYTECODE = "0x608060405234801561001057600080fd5b50610a31806100206000396000f3fe";
 
-class NFTMintingBot extends KingdomBot {
+class NFTMintingBot extends EventEmitter {
   constructor(core) {
-    super(core, 'nft-minting-bot', 'NFT Minting & Management', '🎨');
+    super();
+    this.core = core;
+    this.name = 'nft-minting-bot';
     this.provider = null;
     this.wallet = null;
     this.nftCollections = new Map();
@@ -29,10 +31,7 @@ class NFTMintingBot extends KingdomBot {
       this.provider = new ethers.JsonRpcProvider(rpcUrl);
       if (privateKey) {
         this.wallet = new ethers.Wallet(privateKey, this.provider);
-        this.logDivineAction('NFT Minting Bot Initialized', { 
-          minter: this.wallet.address,
-          network: rpcUrl.includes('polygon') ? 'Polygon' : 'Ethereum'
-        });
+        console.log('🎨 NFT Minting Bot Initialized:', this.wallet.address, rpcUrl.includes('polygon') ? 'Polygon' : 'Ethereum');
       }
     }
 
@@ -68,7 +67,7 @@ class NFTMintingBot extends KingdomBot {
         }
       `;
 
-      this.logDivineAction('Deploying NFT Collection', { name, symbol });
+      console.log('Deploying NFT Collection', { name, symbol });
 
       this.nftCollections.set(name, {
         name,
@@ -104,7 +103,7 @@ class NFTMintingBot extends KingdomBot {
     try {
       const nftContract = new ethers.Contract(collectionAddress, ERC721_ABI, this.wallet);
 
-      this.logDivineAction('Minting NFT', { 
+      console.log('Minting NFT', { 
         collection: collectionAddress,
         recipient: recipientAddress,
         tokenURI 
@@ -116,7 +115,7 @@ class NFTMintingBot extends KingdomBot {
       const tokenId = receipt.logs[0]?.topics[3] ? 
         parseInt(receipt.logs[0].topics[3], 16) : 'unknown';
 
-      this.logDivineAction('NFT Minted Successfully', { 
+      console.log('NFT Minted Successfully', { 
         tokenId,
         txHash: tx.hash,
         recipient: recipientAddress 
@@ -132,7 +131,7 @@ class NFTMintingBot extends KingdomBot {
         blockNumber: receipt.blockNumber
       };
     } catch (error) {
-      this.logDivineAction('NFT Minting Failed', { error: error.message });
+      console.log('NFT Minting Failed', { error: error.message });
       return { success: false, message: error.message };
     }
   }
@@ -153,7 +152,7 @@ class NFTMintingBot extends KingdomBot {
     const ipfsHash = `Qm${Math.random().toString(36).substring(2, 15)}`;
     const tokenURI = `ipfs://${ipfsHash}`;
 
-    this.logDivineAction('Preparing Music NFT Mint', { 
+    console.log('Preparing Music NFT Mint', { 
       song: songTitle, 
       artist, 
       metadata 
