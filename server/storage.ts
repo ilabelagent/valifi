@@ -11,6 +11,11 @@ import {
   payments,
   kycRecords,
   quantumJobs,
+  cryptoPayments,
+  tradingBots,
+  botExecutions,
+  armorWallets,
+  mevEvents,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -36,6 +41,16 @@ import {
   type InsertKycRecord,
   type QuantumJob,
   type InsertQuantumJob,
+  type CryptoPayment,
+  type InsertCryptoPayment,
+  type TradingBot,
+  type InsertTradingBot,
+  type BotExecution,
+  type InsertBotExecution,
+  type ArmorWallet,
+  type InsertArmorWallet,
+  type MevEvent,
+  type InsertMevEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -114,6 +129,39 @@ export interface IStorage {
   getQuantumJobsByUserId(userId: string): Promise<QuantumJob[]>;
   createQuantumJob(job: InsertQuantumJob): Promise<QuantumJob>;
   updateQuantumJobStatus(id: string, status: string, result?: any): Promise<void>;
+
+  // Crypto Payments
+  getCryptoPayment(id: string): Promise<CryptoPayment | undefined>;
+  getCryptoPaymentsByUserId(userId: string): Promise<CryptoPayment[]>;
+  getCryptoPaymentByInvoiceId(invoiceId: string): Promise<CryptoPayment | undefined>;
+  createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment>;
+  updateCryptoPaymentStatus(id: string, status: string, txHash?: string): Promise<void>;
+
+  // Trading Bots
+  getBot(id: string): Promise<TradingBot | undefined>;
+  getUserBots(userId: string): Promise<TradingBot[]>;
+  createBot(bot: InsertTradingBot): Promise<TradingBot>;
+  updateBot(id: string, updates: Partial<TradingBot>): Promise<void>;
+  deleteBot(id: string): Promise<void>;
+
+  // Bot Executions
+  getBotExecution(id: string): Promise<BotExecution | undefined>;
+  getBotExecutions(botId: string): Promise<BotExecution[]>;
+  createBotExecution(execution: InsertBotExecution): Promise<BotExecution>;
+  updateBotExecutionStatus(id: string, status: string): Promise<void>;
+
+  // Armor Wallets
+  getArmorWallet(id: string): Promise<ArmorWallet | undefined>;
+  getArmorWalletsByUserId(userId: string): Promise<ArmorWallet[]>;
+  getArmorWalletByAddress(address: string): Promise<ArmorWallet | undefined>;
+  createArmorWallet(wallet: InsertArmorWallet): Promise<ArmorWallet>;
+  updateArmorWallet(id: string, updates: Partial<ArmorWallet>): Promise<void>;
+
+  // MEV Events
+  getMevEvent(id: string): Promise<MevEvent | undefined>;
+  getMevEventsByUserId(userId: string): Promise<MevEvent[]>;
+  getMevEventsByNetwork(network: string): Promise<MevEvent[]>;
+  createMevEvent(event: InsertMevEvent): Promise<MevEvent>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -432,6 +480,122 @@ export class DatabaseStorage implements IStorage {
     if (result) updates.result = result;
     if (status === "completed" || status === "failed") updates.completedAt = new Date();
     await db.update(quantumJobs).set(updates).where(eq(quantumJobs.id, id));
+  }
+
+  // Crypto Payments
+  async getCryptoPayment(id: string): Promise<CryptoPayment | undefined> {
+    const [payment] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.id, id));
+    return payment || undefined;
+  }
+
+  async getCryptoPaymentsByUserId(userId: string): Promise<CryptoPayment[]> {
+    return db.select().from(cryptoPayments).where(eq(cryptoPayments.userId, userId)).orderBy(desc(cryptoPayments.createdAt));
+  }
+
+  async getCryptoPaymentByInvoiceId(invoiceId: string): Promise<CryptoPayment | undefined> {
+    const [payment] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.processorInvoiceId, invoiceId));
+    return payment || undefined;
+  }
+
+  async createCryptoPayment(insertPayment: InsertCryptoPayment): Promise<CryptoPayment> {
+    const [payment] = await db.insert(cryptoPayments).values(insertPayment).returning();
+    return payment;
+  }
+
+  async updateCryptoPaymentStatus(id: string, status: string, txHash?: string): Promise<void> {
+    const updates: any = { status };
+    if (txHash) updates.txHash = txHash;
+    if (status === "confirmed" || status === "completed") updates.confirmedAt = new Date();
+    await db.update(cryptoPayments).set(updates).where(eq(cryptoPayments.id, id));
+  }
+
+  // Trading Bots
+  async getBot(id: string): Promise<TradingBot | undefined> {
+    const [bot] = await db.select().from(tradingBots).where(eq(tradingBots.id, id));
+    return bot || undefined;
+  }
+
+  async getUserBots(userId: string): Promise<TradingBot[]> {
+    return db.select().from(tradingBots).where(eq(tradingBots.userId, userId)).orderBy(desc(tradingBots.createdAt));
+  }
+
+  async createBot(insertBot: InsertTradingBot): Promise<TradingBot> {
+    const [bot] = await db.insert(tradingBots).values(insertBot).returning();
+    return bot;
+  }
+
+  async updateBot(id: string, updates: Partial<TradingBot>): Promise<void> {
+    await db.update(tradingBots).set({ ...updates, updatedAt: new Date() }).where(eq(tradingBots.id, id));
+  }
+
+  async deleteBot(id: string): Promise<void> {
+    await db.delete(tradingBots).where(eq(tradingBots.id, id));
+  }
+
+  // Bot Executions
+  async getBotExecution(id: string): Promise<BotExecution | undefined> {
+    const [execution] = await db.select().from(botExecutions).where(eq(botExecutions.id, id));
+    return execution || undefined;
+  }
+
+  async getBotExecutions(botId: string): Promise<BotExecution[]> {
+    return db.select().from(botExecutions).where(eq(botExecutions.botId, botId)).orderBy(desc(botExecutions.startedAt));
+  }
+
+  async createBotExecution(insertExecution: InsertBotExecution): Promise<BotExecution> {
+    const [execution] = await db.insert(botExecutions).values(insertExecution).returning();
+    return execution;
+  }
+
+  async updateBotExecutionStatus(id: string, status: string): Promise<void> {
+    const updates: any = { status };
+    if (status === "completed" || status === "failed" || status === "cancelled") {
+      updates.completedAt = new Date();
+    }
+    await db.update(botExecutions).set(updates).where(eq(botExecutions.id, id));
+  }
+
+  // Armor Wallets
+  async getArmorWallet(id: string): Promise<ArmorWallet | undefined> {
+    const [wallet] = await db.select().from(armorWallets).where(eq(armorWallets.id, id));
+    return wallet || undefined;
+  }
+
+  async getArmorWalletsByUserId(userId: string): Promise<ArmorWallet[]> {
+    return db.select().from(armorWallets).where(eq(armorWallets.userId, userId)).orderBy(desc(armorWallets.createdAt));
+  }
+
+  async getArmorWalletByAddress(address: string): Promise<ArmorWallet | undefined> {
+    const [wallet] = await db.select().from(armorWallets).where(eq(armorWallets.address, address));
+    return wallet || undefined;
+  }
+
+  async createArmorWallet(insertWallet: InsertArmorWallet): Promise<ArmorWallet> {
+    const [wallet] = await db.insert(armorWallets).values(insertWallet).returning();
+    return wallet;
+  }
+
+  async updateArmorWallet(id: string, updates: Partial<ArmorWallet>): Promise<void> {
+    await db.update(armorWallets).set({ ...updates, updatedAt: new Date() }).where(eq(armorWallets.id, id));
+  }
+
+  // MEV Events
+  async getMevEvent(id: string): Promise<MevEvent | undefined> {
+    const [event] = await db.select().from(mevEvents).where(eq(mevEvents.id, id));
+    return event || undefined;
+  }
+
+  async getMevEventsByUserId(userId: string): Promise<MevEvent[]> {
+    return db.select().from(mevEvents).where(eq(mevEvents.userId, userId)).orderBy(desc(mevEvents.detectedAt));
+  }
+
+  async getMevEventsByNetwork(network: string): Promise<MevEvent[]> {
+    return db.select().from(mevEvents).where(eq(mevEvents.network, network)).orderBy(desc(mevEvents.detectedAt));
+  }
+
+  async createMevEvent(insertEvent: InsertMevEvent): Promise<MevEvent> {
+    const [event] = await db.insert(mevEvents).values(insertEvent).returning();
+    return event;
   }
 }
 

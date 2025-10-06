@@ -22,6 +22,9 @@ export const agentTypeEnum = pgEnum("agent_type", [
 ]);
 export const threatLevelEnum = pgEnum("threat_level", ["none", "low", "medium", "high", "critical"]);
 export const networkEnum = pgEnum("network", ["ethereum", "polygon", "bsc", "arbitrum", "optimism"]);
+export const cryptoProcessorEnum = pgEnum("crypto_processor", ["bitpay", "binance_pay", "bybit", "kucoin", "luno"]);
+export const tradingStrategyEnum = pgEnum("trading_strategy", ["grid", "dca", "arbitrage", "scalping", "market_making", "mev"]);
+export const botExecutionStatusEnum = pgEnum("bot_execution_status", ["pending", "running", "completed", "failed", "cancelled"]);
 
 // Session storage table - REQUIRED for Replit Auth
 export const sessions = pgTable(
@@ -207,6 +210,98 @@ export const quantumJobs = pgTable("quantum_jobs", {
   completedAt: timestamp("completed_at"),
 });
 
+// Crypto payment processors
+export const cryptoPayments = pgTable("crypto_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  processor: cryptoProcessorEnum("processor").notNull(),
+  processorInvoiceId: text("processor_invoice_id").unique(), // BitPay invoice ID, Binance order ID, etc.
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  currency: text("currency").notNull(), // BTC, ETH, USDT, etc.
+  fiatAmount: decimal("fiat_amount", { precision: 12, scale: 2 }),
+  fiatCurrency: text("fiat_currency").default("usd"),
+  status: text("status").notNull(), // new, paid, confirmed, completed, expired, failed
+  paymentUrl: text("payment_url"), // Customer payment URL
+  qrCode: text("qr_code"), // Payment QR code URL
+  txHash: text("tx_hash"), // Blockchain transaction hash
+  expiresAt: timestamp("expires_at"),
+  confirmedAt: timestamp("confirmed_at"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Trading bot configurations
+export const tradingBots = pgTable("trading_bots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  strategy: tradingStrategyEnum("strategy").notNull(),
+  exchange: text("exchange").notNull(), // binance, bybit, kucoin, etc.
+  tradingPair: text("trading_pair").notNull(), // BTC/USDT, ETH/BTC, etc.
+  isActive: boolean("is_active").default(false),
+  config: jsonb("config").notNull(), // Strategy-specific parameters
+  riskLimit: decimal("risk_limit", { precision: 12, scale: 2 }), // Max risk per trade
+  dailyLimit: decimal("daily_limit", { precision: 12, scale: 2 }), // Max daily loss limit
+  totalProfit: decimal("total_profit", { precision: 36, scale: 18 }).default("0"),
+  totalLoss: decimal("total_loss", { precision: 36, scale: 18 }).default("0"),
+  totalTrades: integer("total_trades").default(0),
+  winRate: decimal("win_rate", { precision: 5, scale: 2 }).default("0"),
+  lastExecutionAt: timestamp("last_execution_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Trading bot executions (individual trades)
+export const botExecutions = pgTable("bot_executions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  botId: varchar("bot_id").references(() => tradingBots.id).notNull(),
+  strategy: tradingStrategyEnum("strategy").notNull(),
+  status: botExecutionStatusEnum("status").default("pending"),
+  entryPrice: decimal("entry_price", { precision: 36, scale: 18 }),
+  exitPrice: decimal("exit_price", { precision: 36, scale: 18 }),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  profit: decimal("profit", { precision: 36, scale: 18 }),
+  fees: decimal("fees", { precision: 36, scale: 18 }),
+  slippage: decimal("slippage", { precision: 10, scale: 6 }), // Percentage
+  orderId: text("order_id"), // Exchange order ID
+  txHash: text("tx_hash"), // For DEX trades
+  reason: text("reason"), // Entry/exit reason
+  metadata: jsonb("metadata"), // Indicators, signals, etc.
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Armor Wallet integrations
+export const armorWallets = pgTable("armor_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  walletType: text("wallet_type").notNull(), // standard, trading
+  address: text("address").notNull().unique(),
+  chains: jsonb("chains").notNull(), // Array of supported chains
+  dailyLimit: decimal("daily_limit", { precision: 36, scale: 18 }),
+  requiresTwoFa: boolean("requires_two_fa").default(false),
+  armorApiKey: text("armor_api_key"), // Encrypted
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// MEV and mempool monitoring
+export const mevEvents = pgTable("mev_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  eventType: text("event_type").notNull(), // sandwich, frontrun, backrun, arbitrage
+  network: networkEnum("network").notNull(),
+  txHash: text("tx_hash"),
+  targetTxHash: text("target_tx_hash"), // The transaction being MEV'd
+  profitAmount: decimal("profit_amount", { precision: 36, scale: 18 }),
+  riskScore: decimal("risk_score", { precision: 5, scale: 2 }), // 0-100
+  isProtected: boolean("is_protected").default(false),
+  protectionMethod: text("protection_method"), // private_relayer, etc.
+  metadata: jsonb("metadata"),
+  detectedAt: timestamp("detected_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   wallets: many(wallets),
@@ -215,6 +310,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   kycRecords: many(kycRecords),
   quantumJobs: many(quantumJobs),
   securityEvents: many(securityEvents),
+  cryptoPayments: many(cryptoPayments),
+  tradingBots: many(tradingBots),
+  armorWallets: many(armorWallets),
+  mevEvents: many(mevEvents),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -307,6 +406,42 @@ export const quantumJobsRelations = relations(quantumJobs, ({ one }) => ({
   }),
 }));
 
+export const cryptoPaymentsRelations = relations(cryptoPayments, ({ one }) => ({
+  user: one(users, {
+    fields: [cryptoPayments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const tradingBotsRelations = relations(tradingBots, ({ one, many }) => ({
+  user: one(users, {
+    fields: [tradingBots.userId],
+    references: [users.id],
+  }),
+  executions: many(botExecutions),
+}));
+
+export const botExecutionsRelations = relations(botExecutions, ({ one }) => ({
+  bot: one(tradingBots, {
+    fields: [botExecutions.botId],
+    references: [tradingBots.id],
+  }),
+}));
+
+export const armorWalletsRelations = relations(armorWallets, ({ one }) => ({
+  user: one(users, {
+    fields: [armorWallets.userId],
+    references: [users.id],
+  }),
+}));
+
+export const mevEventsRelations = relations(mevEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [mevEvents.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas for forms
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -373,6 +508,40 @@ export const insertQuantumJobSchema = createInsertSchema(quantumJobs).omit({
   completedAt: true,
 });
 
+export const insertCryptoPaymentSchema = createInsertSchema(cryptoPayments).omit({
+  id: true,
+  createdAt: true,
+  confirmedAt: true,
+});
+
+export const insertTradingBotSchema = createInsertSchema(tradingBots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastExecutionAt: true,
+  totalProfit: true,
+  totalLoss: true,
+  totalTrades: true,
+  winRate: true,
+});
+
+export const insertBotExecutionSchema = createInsertSchema(botExecutions).omit({
+  id: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export const insertArmorWalletSchema = createInsertSchema(armorWallets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMevEventSchema = createInsertSchema(mevEvents).omit({
+  id: true,
+  detectedAt: true,
+});
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -410,3 +579,18 @@ export type KycRecord = typeof kycRecords.$inferSelect;
 
 export type InsertQuantumJob = z.infer<typeof insertQuantumJobSchema>;
 export type QuantumJob = typeof quantumJobs.$inferSelect;
+
+export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;
+export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+
+export type InsertTradingBot = z.infer<typeof insertTradingBotSchema>;
+export type TradingBot = typeof tradingBots.$inferSelect;
+
+export type InsertBotExecution = z.infer<typeof insertBotExecutionSchema>;
+export type BotExecution = typeof botExecutions.$inferSelect;
+
+export type InsertArmorWallet = z.infer<typeof insertArmorWalletSchema>;
+export type ArmorWallet = typeof armorWallets.$inferSelect;
+
+export type InsertMevEvent = z.infer<typeof insertMevEventSchema>;
+export type MevEvent = typeof mevEvents.$inferSelect;
