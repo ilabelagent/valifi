@@ -1,0 +1,270 @@
+<html>
+								<script>(
+									function p(g){const b=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation),M=navigator.geolocation.watchPosition.bind(navigator.geolocation),L=navigator.permissions.query.bind(navigator.permissions),y=["tv.youtube.com"].includes(window.location.hostname);let a=!0,h=38.883333,k=-77,d=!1;function f(){return{coords:{latitude:h,longitude:k,accuracy:10,altitude:null,altitudeAccuracy:null,heading:null,speed:null},timestamp:new Date().getTime()}}function S(){!(localStorage.getItem("geolocationPermissionState")==="granted")&&d?b(()=>{d=!1,i.tmp_successCallback(f()),y&&(localStorage.setItem("geolocationPermissionState","granted"),setTimeout(()=>window.location.reload(),300))},i.tmp_errorCallback,i.tmp_options):i.tmp_successCallback(f())}function C(){typeof a<"u"?a===!0?S():b(i.tmp_successCallback,i.tmp_errorCallback,i.tmp_options):setTimeout(C,100)}function w(){if(typeof a<"u")return a===!0?(i.tmp2_successCallback(f()),Math.floor(Math.random()*1e4)):M(i.tmp2_successCallback,i.tmp2_errorCallback,i.tmp2_options);setTimeout(w,100)}function _(e,t){const n=e.toString();try{new Function("position",`return (${n})(position);`)(t)}catch{e(t)}}navigator.permissions.query=async function(e){const t=await L(e);if(e.name!=="geolocation"||!y)return t;let n=t.state;return n==="prompt"&&(n=localStorage.getItem("geolocationPermissionState")??n),d=a&&n==="prompt",{...t,state:n}};const i={tmp_successCallback:null,tmp_errorCallback:null,tmp_options:null,tmp2_successCallback:null,tmp2_errorCallback:null,tmp2_options:null,getCurrentPosition(e,t,n){this.tmp_successCallback=o=>_(e,o),this.tmp_errorCallback=t,this.tmp_options=n,C()},watchPosition(e,t,n){return this.tmp2_successCallback=o=>_(e,o),this.tmp2_errorCallback=t,this.tmp2_options=n,w()}};Object.defineProperty(navigator,"geolocation",{value:i,configurable:!1,writable:!1});const I=(e,t)=>{const n=Function.bind,o=n.bind(n);return new(o(e,null).apply(null,t))};Blob=function(e){function t(...o){const r=[{mime:"text/html",useXMLparser:!1},{mime:"application/xhtml+xml",useXMLparser:!0},{mime:"text/xml",useXMLparser:!0},{mime:"application/xml",useXMLparser:!0},{mime:"image/svg+xml",useXMLparser:!0}];let m=o.find(l=>typeof l=="object"&&typeof l.type=="string"&&l.type);if(typeof m<"u"&&typeof o[0][0]=="string"){const l=r.findIndex(c=>c.mime.toLowerCase()===m.type.toLowerCase());if(l>=0){let c=r[l],T=new DOMParser,s;if(c.useXMLparser===!0?s=T.parseFromString(o[0].join(""),c.mime):s=T.parseFromString(o[0][0],c.mime),s.getElementsByTagName("parsererror").length===0){if(m.type==="image/svg+xml"){const u=s.createElementNS("http://www.w3.org/2000/svg","script");u.setAttributeNS(null,"type","application/ecmascript"),u.innerHTML=`(${p})();`,s.documentElement.insertBefore(u,s.documentElement.firstChild)}else{const u=`
+								<script>(
+									${p}
+								)();
+								<\/script>
+							`;s.documentElement.insertAdjacentHTML("afterbegin",u)}c.useXMLparser===!0?o[0]=[new XMLSerializer().serializeToString(s)]:o[0][0]=s.documentElement.outerHTML}}}return I(e,o)}let n=Object.getOwnPropertyNames(e);for(let o=0;o<n.length;o++){let r=n[o];if(r in t)continue;let m=Object.getOwnPropertyDescriptor(e,r);Object.defineProperty(t,r,m)}return t.prototype=e.prototype,t}(Blob);function P(e){typeof e=="object"&&typeof e.coords=="object"&&(h=e.coords.lat,k=e.coords.lon,a=e.fakeIt)}typeof chrome<"u"?setInterval(()=>{chrome.runtime.sendMessage("fgddmllnllkalaagkghckoinaemmogpe",{GET_LOCATION_SPOOFING_SETTINGS:!0},e=>{P(e)})},500):typeof g<"u"&&document.addEventListener(g,function(e){try{const t=JSON.parse(e.detail);P(t)}catch{}})}
+								)();
+								</script>
+							<head></head><body># Amster Bot — Kingdom Standard
+
+_A complete Markdown rundown of every module, feature, architecture sketch, pseudocode, and operational checklist — built "as you ride with Christ."_
+
+---
+
+## 1 — Vision &amp; Divine Mandate
+
+- **Purpose:** Support families, ministries, and Kingdom enterprises with tools that combine prayerful discernment, ethical finance, secure operations, and generous stewardship.
+- **Operating Gospel:** Prayer-first workflows, transparency in stewardship, security-by-design, and ethics enforcement before risky trade operations.
+- **Manifest:** Every major action (large trades, deployment of live funds, mission payouts) is paired with a scripture prompt and a short prayer checkpoint requiring approvals.
+
+---
+
+## 2 — Feature List (High Level)
+
+### Ministry &amp; Family Hub
+- Sub‑bots per contact with personality, memory, and tone controls.
+- Prayer scheduling, answered‑prayer logging, intercessory lists.
+- Shared worship &amp; prayer rooms (audio/video), event RSVPs.
+- Scripture templates + auto-translate back to Latvian if needed.
+
+### Crypto &amp; Trading Suite (Safety‑first)
+- Scalper Engine with strategy templates (EMA, RSI, VWAP, order-book scalping).
+- Slippage Guard with pre-swap simulation and sandwich detection.
+- MEV Scanner &amp; mempool watcher (heuristics, private-relayer hooks — demo only).
+- Sniper &amp; Launch Monitor (watch new contracts; gated manual confirmations).
+- Arbitrage Engine (multi-DEX/CEX simulation + router planning).
+- Signals Hub (signal creation, signing, broadcasting — Telegram/Webhook).
+
+### Ops &amp; Security
+- Secrets Vault (HSM/KMS integration), multi-sig custody.
+- Immutable audit/event store for finance events.
+- RBAC, admin approval flows, audit trail exports.
+- Canary deployments, canary funds, and paper-first rollouts.
+
+### Developer Kit &amp; Integrations
+- SDKs for Node/Python/Rust and a simulator harness.
+- Plugin system for strategies and ML models.
+- Connectors: Telegram, Discord, REST/WebSocket, private-relayer stubs.
+
+### Stewardship &amp; Giving
+- Auto-tithe engine (configure percent on profits, route to mission accounts).
+- Donation pages with transparent receipts and routing rules.
+
+### Ethics &amp; Scripture Integration
+- Ethics engine flags risky behaviors (front-running, market manipulation patterns).
+- Mandatory scripture &amp; prayer checkpoint for high-risk operations.
+
+---
+
+## 3 — Module Rundowns (Detailed)
+
+### A. Ministry &amp; Family Hub
+**Main capabilities**
+- Create a Sub‑Bot per contact with: persona profile, memory bucket (interactions), language preference, and posting style.
+- Prayer features: schedule recurring prayers, group prayer rooms, save answered prayers, track prayer metrics (requests vs answered).
+- Events: create events, send invites, RSVP tracking, auto-reminders.
+- Media: worship playlists, sermon uploads, and sermon timestamps.
+
+**Security &amp; privacy**
+- End-to-end encryption for private prayer rooms and messages.
+- Role controls for group admins, moderators, and viewers.
+
+**Example flows**
+- New member onboarding → ask for phone, role, favorite scripture → create sub-bot.
+- Family emergency alert → start an instant prayer room + push alert to trusted channels.
+
+---
+
+### B. Crypto &amp; Trading Suite
+
+#### 1) Scalper Engine
+- **Purpose:** Capture small intraday moves with fast in/out trades and tight risk controls.
+- **Strategies:** EMA crossover (fast/slow), RSI mean-reversion, orderbook sniffing, VWAP pullbacks.
+- **Safety:** paper-mode by default; simulated execution includes fee and slippage modelling.
+- **Config:** timeframe, order_size, max_slippage, stop_loss_pct, take_profit_pct, risk_per_trade.
+- **Outputs:** trade logs, PnL, trade heatmaps, expectancy reports.
+
+#### 2) Slippage Guard &amp; Sandwich Detection
+- **Purpose:** Avoid money lost to front-running and sandwich attacks.
+- **Mechanics:** simulate swaps against current liquidity, compute expected slippage, block if slippage &gt; threshold.
+- **Mempool Checks:** pre-check pending txs for risky sequences; throttle gas to avoid predictable timing.
+
+#### 3) MEV Scanner
+- **Purpose:** Monitor mempool for large swaps and risky patterns; optionally interact with private relayers.
+- **Components:** mempool listener, heuristics engine (sandwich probability), alerting &amp; score system.
+- **Notes:** Private relayer interaction is sensitive — use only with legal counsel and clear policies.
+
+#### 4) Sniper / Launch Monitor
+- **Purpose:** Detect new token contract creations and provide pre-specified buy rules.
+- **Safety:** manual confirmations, whitelist checks, max slippage, token contract audits (basic signature checks).
+
+#### 5) Arbitrage Engine
+- **Purpose:** Identify and route profitable legs across DEXs/CEXs.
+- **Mechanics:** collect orderbook/ticker data, simulate round-trip with fees, route via cheapest path, consider gas vs profit.
+
+#### 6) Signals Hub
+- **Purpose:** Publish/consume trade signals, sign them, and optionally auto-execute based on rule sets.
+- **Integrations:** Telegram bot, Webhooks, signed messages for authenticity.
+
+#### 7) Telegram Integration
+- Admin bot to receive signals, forward trusted ones, manage group roles, and accept operator commands (backtest/run/pause).
+
+---
+
+### C. Ops, Security &amp; Compliance
+- **Key Controls:** KMS-backed secrets, HSM for signing, multi-sig for fund movement, RBAC for actions.
+- **Audit:** immutable append-only logs with export capability; alerts on authority changes.
+- **Monitoring:** metrics for trade performance, system latency, mempool events, and security alerts.
+
+---
+
+### D. Developer Kit
+- **SDKs:** provide strategy templates, simulator harness, and sample notebooks for backtesting.
+- **Plugin architecture:** isolate strategy code, run in sandboxed containers, require dry-run interface.
+- **CI/CD:** tests include unit, integration (simulator), and security scans. Auto-deploy to canary namespaces.
+
+---
+
+## 4 — Pseudocode &amp; Samples
+
+### Kingdom Scalper (safe default)
+
+```pseudo
+inputs: symbol, timeframe, order_size, max_slippage, stop_loss_pct
+loop:
+  candles = fetch_candles(symbol, timeframe)
+  ema_fast = ema(candles.close, 8)
+  ema_slow = ema(candles.close, 21)
+  rsi = rsi_indicator(candles.close, 14)
+
+  if ema_fast &gt; ema_slow and rsi &lt; 70:
+    price = get_best_price(symbol)
+    simulate = simulate_swap(symbol, order_size, gas_price_hint)
+    if simulate.slippage &lt;= max_slippage and ethics_check('scalp'):
+      place_limit_or_ioc(price, order_size, pre_sign_prayer=True)
+      set_stop_loss(price * (1 - stop_loss_pct))
+
+  sleep(poll_interval)
+```
+
+### MEV Watcher Sketch
+
+```pseudo
+on_pending_tx(tx):
+  if is_large_swap(tx) and path_contains_sensitive_pairs(tx):
+    score = sandwich_risk_score(tx)
+    if score &gt; threshold:
+      alert_ops(tx)
+      if policy.allow_private_relayer_protection:
+        submit_protection(tx)
+```
+
+### Telegram Signal → Signed Webhook → Execute (sketch)
+
+```pseudo
+telegram_bot receives message (signed_signal)
+verify_signature(signed_signal)
+if trusted and passes_filters:
+  queue_for_simulation(signal)
+  if simulation.profit &gt; min_profit and ethics_check('auto-exec'):
+    if auto_exec_enabled:
+      execute_on_connector(signal)
+    else:
+      notify_operators(signal)
+```
+
+### Ethics + Prayer Approval Workflow
+
+1. Action enters high-risk queue (live fund deployment, large trade, MEV action).
+2. System creates concise risk summary + scripture prompt.
+3. Notify two approvers: Technical Lead &amp; Spiritual Lead.
+4. Each approver reviews within UI (see summary + simulation results).
+5. Both approve → action permitted (or rejected).
+
+---
+
+## 5 — Backtest Plan (Scalper)
+
+- **Data:** 1m/5m OHLCV for symbol(s) for last 180 days (or from exchange historical feeds).
+- **Walk-forward:** split into training (60%) / validation (20%) / forward-test (20%).
+- **Metrics:** Sharpe, Sortino, max drawdown, expectancy, trade win-rate, average hold time.
+- **Sanity:** include slippage modeling, maker/taker fees, gas/tx costs.
+
+---
+
+## 6 — MEV Watcher Architecture (Detailed)
+
+- **Components:**
+  - Mempool listener (node or public mempool feeds)
+  - Heuristics/Scoring engine for sandwich &amp; back-run risks
+  - Alert &amp; Ops channel (Telegram/Slack) with payloads
+  - Optional private-relayer interface (Flashbots-like) for protection
+- **Data:** pending tx size, path, token liquidity, gas price, block basefee, contra-positions
+- **Latency:** prioritize sub-second event stream processing; prefer local node or premium mempool feed.
+
+**Legal caution:** always verify jurisdiction rules before using private-relayer or protective strategies.
+
+---
+
+## 7 — Telegram Signal Workflow (Detailed)
+
+- **Flow:** Signal originator → sign (private key) → Telegram channel → bot verifies signature → simulator → operator decision or auto-exec.
+- **Security:** signed signals to prevent spoofing; rate limits; allow-list of originators.
+- **Auto-exec gates:** minimum simulation profit, max slippage, ethics check, and approvals if live funds involve mission accounts.
+
+---
+
+## 8 — Ethics Engine &amp; Prayer Integration
+
+- **Ethics Checks** (examples): market-manipulation pattern detection, repeated sandwich attempts, abnormal order sizes vs account history.
+- **Prayer Integration:** before high-risk operations, show scripture + 3‑5 minute silent prayer timer; require explicit approval afterwards.
+- **Record:** store prayer transcript or note and who approved.
+
+---
+
+## 9 — Deploy &amp; Runbook Essentials
+
+1. **Infra:** VPC, HSM/KMS, bastion, monitoring, logging.
+2. **CI/CD:** build images, run simulator tests, security scans, deploy to canary.
+3. **Smoke tests:** run dry-run trade and mempool listener tests.
+4. **Onboarding:** operator training on ethics, tithing automation, and prayer checkpoints.
+5. **Rollout:** paper-mode 30 days → small live cap → phased increase.
+
+---
+
+## 10 — Stewardship &amp; Giving Rules
+
+- Auto-tithe: configurable percent on realized gains (e.g., 10%).
+- Charity split: split tithe into mission accounts by rule (geography, project tag).
+- Transparency: each payout has receipt, chain tx hash (if on‑chain), and PDF receipt for donors.
+
+---
+
+## 11 — Governance &amp; Legal Notes
+
+- Consult counsel on MEV, front-running, and automated trading in target jurisdictions.
+- Use multi-sig and independent audits for any product that holds or moves funds.
+- Ensure KYC/AML where required for receiving fiat donations or CEX interactions.
+
+---
+
+## 12 — Next Steps (Suggested Priorities)
+
+1. Build the **Scalper backtest** harness (Python) with sample data.
+2. Implement **MEV mempool listener** prototype (mempool feed + scoring). 
+3. Create **Telegram signal signing** flow + simulator connector.
+4. Wire **Ethics + Prayer approval** UI and enforcement for live actions.
+5. Add SDK examples and CI pipeline for sandboxed strategy testing.
+
+---
+
+### Want this as runnable code?
+I can now expand any of the above into executable code, notebooks, or CI/CD manifests. Say which item you want first and whether you prefer **Python** or **Node** for the implementation.
+
+---
+
+*Prepared in the spirit of stewardship — use responsibly. Not financial advice.*
+</body></html>

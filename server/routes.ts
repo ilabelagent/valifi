@@ -19,6 +19,9 @@ import { fromError } from "zod-validation-error";
 import { z } from "zod";
 import { web3Service } from "./web3Service";
 import { jesusCartelService } from "./jesusCartelService";
+import { agentOrchestrator } from "./agentOrchestrator";
+import { websocketService } from "./websocketService";
+import { encryptionService } from "./encryptionService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
@@ -82,19 +85,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create blockchain wallet
       const walletData = await web3Service.createWallet(userId, network);
 
-      // Store in database (encrypt private key in production!)
+      // Encrypt private key with user-specific encryption
+      const encryptedPrivateKey = encryptionService.encrypt(
+        walletData.privateKey,
+        userId
+      );
+
+      // Store in database with encrypted private key
       const wallet = await storage.createWallet({
         userId,
         address: walletData.address,
         currency: currency || network.toUpperCase(),
         balance: "0",
         network,
-        encryptedPrivateKey: walletData.privateKey, // TODO: Encrypt this!
+        encryptedPrivateKey,
       });
 
+      // SECURITY: Return mnemonic ONLY ONCE for user backup
+      // Client must save this immediately - never stored or returned again
       res.json({
-        ...wallet,
-        mnemonic: walletData.mnemonic, // Return mnemonic once for user to backup
+        id: wallet.id,
+        address: wallet.address,
+        currency: wallet.currency,
+        network: wallet.network,
+        balance: wallet.balance,
+        mnemonic: walletData.mnemonic,
+        warning: "Save this mnemonic phrase securely - it will never be shown again!",
       });
     } catch (error) {
       console.error("Error creating Web3 wallet:", error);
@@ -138,9 +154,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this wallet" });
       }
 
-      // Send transaction (decrypt private key in production!)
-      const result = await web3Service.sendTransaction(
+      // Decrypt private key securely
+      const privateKey = encryptionService.decrypt(
         wallet.encryptedPrivateKey || "",
+        userId
+      );
+
+      // Send transaction
+      const result = await web3Service.sendTransaction(
+        privateKey,
         to,
         amount,
         wallet.network || "ethereum"
@@ -175,12 +197,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this wallet" });
       }
 
+      // Decrypt private key securely
+      const privateKey = encryptionService.decrypt(
+        wallet.encryptedPrivateKey || "",
+        userId
+      );
+
       // Deploy ERC-20 token
       const deployment = await web3Service.deployERC20(
         name,
         symbol,
         initialSupply,
-        wallet.encryptedPrivateKey || "",
+        privateKey,
         network
       );
 
@@ -213,11 +241,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this wallet" });
       }
 
+      // Decrypt private key securely
+      const privateKey = encryptionService.decrypt(
+        wallet.encryptedPrivateKey || "",
+        userId
+      );
+
       // Deploy ERC-721 NFT contract
       const deployment = await web3Service.deployERC721(
         name,
         symbol,
-        wallet.encryptedPrivateKey || "",
+        privateKey,
         network
       );
 
@@ -239,13 +273,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this wallet" });
       }
 
+      // Decrypt private key securely
+      const privateKey = encryptionService.decrypt(
+        wallet.encryptedPrivateKey || "",
+        userId
+      );
+
       // Mint NFT
       const result = await web3Service.mintNFT(
         contractAddress,
         wallet.address,
         tokenId,
         tokenURI,
-        wallet.encryptedPrivateKey || "",
+        privateKey,
         network
       );
 
@@ -584,6 +624,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Agent orchestration endpoint
+  app.post("/api/agents/execute", isAuthenticated, async (req: any, res) => {
+    try {
+      const { task, agentType } = req.body;
+
+      if (!task) {
+        return res.status(400).json({ message: "Task is required" });
+      }
+
+      // Execute task through agent orchestrator
+      const result = await agentOrchestrator.execute(task, agentType);
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error executing agent task:", error);
+      res.status(500).json({ message: error.message || "Agent execution failed" });
+    }
+  });
+
   // Dashboard stats endpoint
   app.get("/api/stats/dashboard", isAuthenticated, async (req: any, res) => {
     try {
@@ -778,5 +837,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket server
+  websocketService.initialize(httpServer);
+  
   return httpServer;
 }

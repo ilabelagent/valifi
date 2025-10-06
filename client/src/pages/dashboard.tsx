@@ -36,29 +36,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-serif divine-gradient-text">Valifi Kingdom</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.location.href = "/api/logout"}
-              data-testid="button-logout"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-6 py-8">
         <div className="space-y-8">
           <div>
             <h2 className="text-3xl font-bold mb-2">Kingdom Dashboard</h2>

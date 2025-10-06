@@ -1,5 +1,6 @@
 import { web3Service } from "./web3Service";
 import { storage } from "./storage";
+import { encryptionService } from "./encryptionService";
 import type { Song, Wallet } from "@shared/schema";
 
 export interface PublishResult {
@@ -102,6 +103,12 @@ export class JesusCartelService {
     tokenId: string;
     txHash: string;
   }> {
+    // Decrypt private key securely
+    const privateKey = encryptionService.decrypt(
+      wallet.encryptedPrivateKey || "",
+      wallet.userId
+    );
+
     // Generate NFT collection name and symbol
     const collectionName = `${song.artist} - ${song.title}`;
     const collectionSymbol = this.generateSymbol(song.title);
@@ -110,7 +117,7 @@ export class JesusCartelService {
     const deployment = await web3Service.deployERC721(
       collectionName,
       collectionSymbol,
-      wallet.encryptedPrivateKey || "",
+      privateKey,
       network
     );
 
@@ -123,7 +130,7 @@ export class JesusCartelService {
       wallet.address,
       tokenId,
       tokenURI,
-      wallet.encryptedPrivateKey || "",
+      privateKey,
       network
     );
 
@@ -165,6 +172,12 @@ export class JesusCartelService {
     symbol: string;
     txHash: string;
   }> {
+    // Decrypt private key securely
+    const privateKey = encryptionService.decrypt(
+      wallet.encryptedPrivateKey || "",
+      wallet.userId
+    );
+
     // Generate token details
     const tokenName = `${song.title} by ${song.artist}`;
     const tokenSymbol = this.generateSymbol(song.title);
@@ -174,7 +187,7 @@ export class JesusCartelService {
       tokenName,
       tokenSymbol,
       initialSupply,
-      wallet.encryptedPrivateKey || "",
+      privateKey,
       network
     );
 
