@@ -23,7 +23,7 @@ export const agentTypeEnum = pgEnum("agent_type", [
 export const threatLevelEnum = pgEnum("threat_level", ["none", "low", "medium", "high", "critical"]);
 export const networkEnum = pgEnum("network", ["ethereum", "polygon", "bsc", "arbitrum", "optimism"]);
 export const cryptoProcessorEnum = pgEnum("crypto_processor", ["bitpay", "binance_pay", "bybit", "kucoin", "luno"]);
-export const tradingStrategyEnum = pgEnum("trading_strategy", ["grid", "dca", "arbitrage", "scalping", "market_making", "mev"]);
+export const tradingStrategyEnum = pgEnum("trading_strategy", ["grid", "dca", "arbitrage", "scalping", "market_making", "momentum_ai", "mev"]);
 export const botExecutionStatusEnum = pgEnum("bot_execution_status", ["pending", "running", "completed", "failed", "cancelled"]);
 
 // Session storage table - REQUIRED for Replit Auth
