@@ -590,7 +590,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMevEventsByNetwork(network: string): Promise<MevEvent[]> {
-    return db.select().from(mevEvents).where(eq(mevEvents.network, network)).orderBy(desc(mevEvents.detectedAt));
+    return db.select().from(mevEvents).where(sql`${mevEvents.network} = ${network}`).orderBy(desc(mevEvents.detectedAt));
   }
 
   async createMevEvent(insertEvent: InsertMevEvent): Promise<MevEvent> {

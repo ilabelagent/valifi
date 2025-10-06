@@ -14,6 +14,11 @@ import {
   insertPaymentSchema,
   insertKycRecordSchema,
   insertQuantumJobSchema,
+  insertCryptoPaymentSchema,
+  insertTradingBotSchema,
+  insertBotExecutionSchema,
+  insertArmorWalletSchema,
+  insertMevEventSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -22,6 +27,9 @@ import { jesusCartelService } from "./jesusCartelService";
 import { agentOrchestrator } from "./agentOrchestrator";
 import { websocketService } from "./websocketService";
 import { encryptionService } from "./encryptionService";
+import { cryptoProcessorService } from "./cryptoProcessorService";
+import { tradingBotService } from "./tradingBotService";
+import { armorWalletService } from "./armorWalletService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
@@ -833,6 +841,245 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating quantum job:", error);
       res.status(500).json({ message: "Failed to create quantum job" });
+    }
+  });
+
+  // Crypto payment processor routes
+  app.post("/api/crypto-payments/create", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { processor, amount, currency } = req.body;
+
+      const invoice = await cryptoProcessorService.createPayment(
+        processor,
+        amount,
+        currency,
+        userId
+      );
+
+      const payment = await storage.createCryptoPayment({
+        userId,
+        processor,
+        processorInvoiceId: invoice.invoiceId,
+        amount: invoice.amount,
+        currency: invoice.currency,
+        fiatAmount: amount.toString(),
+        fiatCurrency: "usd",
+        status: invoice.status,
+        paymentUrl: invoice.paymentUrl,
+        qrCode: invoice.qrCode,
+        expiresAt: invoice.expiresAt,
+        metadata: {},
+      });
+
+      res.json({ payment, invoice });
+    } catch (error: any) {
+      console.error("Error creating crypto payment:", error);
+      res.status(500).json({ message: error.message || "Failed to create crypto payment" });
+    }
+  });
+
+  app.get("/api/crypto-payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payments = await storage.getCryptoPaymentsByUserId(userId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching crypto payments:", error);
+      res.status(500).json({ message: "Failed to fetch crypto payments" });
+    }
+  });
+
+  // Trading bot routes
+  app.post("/api/trading-bots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertTradingBotSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid bot data", error: fromError(validation.error).toString() });
+      }
+
+      const bot = await storage.createBot({ ...validation.data, userId });
+      res.json(bot);
+    } catch (error) {
+      console.error("Error creating trading bot:", error);
+      res.status(500).json({ message: "Failed to create trading bot" });
+    }
+  });
+
+  app.get("/api/trading-bots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bots = await storage.getUserBots(userId);
+      res.json(bots);
+    } catch (error) {
+      console.error("Error fetching bots:", error);
+      res.status(500).json({ message: "Failed to fetch bots" });
+    }
+  });
+
+  app.post("/api/trading-bots/:botId/execute", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { botId } = req.params;
+
+      const bot = await storage.getBot(botId);
+      if (!bot || bot.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const marketData = await tradingBotService.getMarketData(bot.exchange, bot.tradingPair);
+      const execution = await tradingBotService.executeBot(bot, marketData);
+      res.json(execution);
+    } catch (error: any) {
+      console.error("Error executing bot:", error);
+      res.status(500).json({ message: error.message || "Bot execution failed" });
+    }
+  });
+
+  app.get("/api/trading-bots/:botId/executions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { botId } = req.params;
+
+      const bot = await storage.getBot(botId);
+      if (!bot || bot.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const executions = await storage.getBotExecutions(botId);
+      res.json(executions);
+    } catch (error) {
+      console.error("Error fetching bot executions:", error);
+      res.status(500).json({ message: "Failed to fetch executions" });
+    }
+  });
+
+  app.patch("/api/trading-bots/:botId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { botId } = req.params;
+
+      const bot = await storage.getBot(botId);
+      if (!bot || bot.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.updateBot(botId, req.body);
+      const updatedBot = await storage.getBot(botId);
+      res.json(updatedBot);
+    } catch (error) {
+      console.error("Error updating bot:", error);
+      res.status(500).json({ message: "Failed to update bot" });
+    }
+  });
+
+  // Armor Wallet routes
+  app.post("/api/armor-wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletType, chains, dailyLimit, requiresTwoFa } = req.body;
+
+      const wallet = await armorWalletService.createWallet(userId, {
+        walletType,
+        chains,
+        dailyLimit,
+        requiresTwoFa,
+      });
+
+      res.json(wallet);
+    } catch (error: any) {
+      console.error("Error creating Armor wallet:", error);
+      res.status(500).json({ message: error.message || "Failed to create Armor wallet" });
+    }
+  });
+
+  app.get("/api/armor-wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallets = await storage.getArmorWalletsByUserId(userId);
+      res.json(wallets);
+    } catch (error) {
+      console.error("Error fetching Armor wallets:", error);
+      res.status(500).json({ message: "Failed to fetch Armor wallets" });
+    }
+  });
+
+  app.post("/api/armor-wallets/:walletId/trade", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId } = req.params;
+
+      const wallet = await storage.getArmorWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const result = await armorWalletService.executeTrade(walletId, req.body);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error executing Armor trade:", error);
+      res.status(500).json({ message: error.message || "Trade execution failed" });
+    }
+  });
+
+  app.post("/api/armor-wallets/:walletId/natural-language", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId } = req.params;
+      const { command, chain } = req.body;
+
+      const wallet = await storage.getArmorWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const result = await armorWalletService.naturalLanguageTrade(walletId, command, chain);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error executing natural language trade:", error);
+      res.status(500).json({ message: error.message || "Natural language trade failed" });
+    }
+  });
+
+  app.get("/api/armor-wallets/:walletId/portfolio", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId } = req.params;
+
+      const wallet = await storage.getArmorWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const portfolio = await armorWalletService.getPortfolio(walletId);
+      res.json(portfolio);
+    } catch (error: any) {
+      console.error("Error fetching portfolio:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch portfolio" });
+    }
+  });
+
+  // MEV monitoring routes
+  app.get("/api/mev/events", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const events = await storage.getMevEventsByUserId(userId);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching MEV events:", error);
+      res.status(500).json({ message: "Failed to fetch MEV events" });
+    }
+  });
+
+  app.get("/api/mev/events/:network", isAuthenticated, async (req: any, res) => {
+    try {
+      const { network } = req.params;
+      const events = await storage.getMevEventsByNetwork(network);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching MEV events by network:", error);
+      res.status(500).json({ message: "Failed to fetch MEV events" });
     }
   });
 

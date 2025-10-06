@@ -391,11 +391,16 @@ class TradingBotService {
     const profit = parseFloat(execution.profit || "0");
     const isWin = profit > 0;
 
+    const totalTrades = (bot.totalTrades || 0) + 1;
+    const currentProfit = parseFloat(bot.totalProfit || "0");
+    const currentLoss = parseFloat(bot.totalLoss || "0");
+    const currentWinRate = parseFloat(bot.winRate || "0");
+
     const updates = {
-      totalTrades: bot.totalTrades + 1,
-      totalProfit: (parseFloat(bot.totalProfit) + (isWin ? profit : 0)).toString(),
-      totalLoss: (parseFloat(bot.totalLoss) + (!isWin && profit < 0 ? Math.abs(profit) : 0)).toString(),
-      winRate: ((bot.totalTrades > 0 ? ((isWin ? 1 : 0) + parseFloat(bot.winRate) * bot.totalTrades) / (bot.totalTrades + 1) : 0) * 100).toFixed(2),
+      totalTrades,
+      totalProfit: (currentProfit + (isWin ? profit : 0)).toString(),
+      totalLoss: (currentLoss + (!isWin && profit < 0 ? Math.abs(profit) : 0)).toString(),
+      winRate: ((totalTrades > 1 ? ((isWin ? 1 : 0) + currentWinRate * (totalTrades - 1)) / totalTrades : (isWin ? 100 : 0))).toFixed(2),
       lastExecutionAt: new Date(),
     };
 
