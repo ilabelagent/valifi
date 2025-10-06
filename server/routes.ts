@@ -17,6 +17,8 @@ import {
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
+import { web3Service } from "./web3Service";
+import { jesusCartelService } from "./jesusCartelService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
@@ -68,6 +70,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating wallet:", error);
       res.status(500).json({ message: "Failed to create wallet" });
+    }
+  });
+
+  // Web3 Blockchain routes
+  app.post("/api/web3/create-wallet", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { network = "ethereum", currency } = req.body;
+
+      // Create blockchain wallet
+      const walletData = await web3Service.createWallet(userId, network);
+
+      // Store in database (encrypt private key in production!)
+      const wallet = await storage.createWallet({
+        userId,
+        address: walletData.address,
+        currency: currency || network.toUpperCase(),
+        balance: "0",
+        network,
+        encryptedPrivateKey: walletData.privateKey, // TODO: Encrypt this!
+      });
+
+      res.json({
+        ...wallet,
+        mnemonic: walletData.mnemonic, // Return mnemonic once for user to backup
+      });
+    } catch (error) {
+      console.error("Error creating Web3 wallet:", error);
+      res.status(500).json({ message: "Failed to create Web3 wallet" });
+    }
+  });
+
+  app.get("/api/web3/balance/:walletId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(req.params.walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      const balance = await web3Service.getBalance(
+        wallet.address,
+        wallet.network || "ethereum"
+      );
+
+      // Update balance in database
+      await storage.updateWalletBalance(wallet.id, balance);
+
+      res.json({ balance, address: wallet.address });
+    } catch (error) {
+      console.error("Error fetching Web3 balance:", error);
+      res.status(500).json({ message: "Failed to fetch balance" });
+    }
+  });
+
+  app.post("/api/web3/send-transaction", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId, to, amount } = req.body;
+
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      // Send transaction (decrypt private key in production!)
+      const result = await web3Service.sendTransaction(
+        wallet.encryptedPrivateKey || "",
+        to,
+        amount,
+        wallet.network || "ethereum"
+      );
+
+      // Record transaction
+      await storage.createTransaction({
+        walletId: wallet.id,
+        type: "send",
+        amount,
+        toAddress: to,
+        status: "confirmed",
+        txHash: result.hash,
+        network: wallet.network || "ethereum",
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error sending transaction:", error);
+      res.status(500).json({ message: error.message || "Transaction failed" });
+    }
+  });
+
+  app.post("/api/web3/deploy-erc20", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId, name, symbol, initialSupply, network = "polygon" } = req.body;
+
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      // Deploy ERC-20 token
+      const deployment = await web3Service.deployERC20(
+        name,
+        symbol,
+        initialSupply,
+        wallet.encryptedPrivateKey || "",
+        network
+      );
+
+      // Store token in database
+      const token = await storage.createToken({
+        walletId: wallet.id,
+        contractAddress: deployment.address,
+        name,
+        symbol,
+        balance: initialSupply,
+        network,
+        tokenType: "ERC20",
+      });
+
+      res.json({ ...token, txHash: deployment.txHash });
+    } catch (error: any) {
+      console.error("Error deploying ERC-20:", error);
+      res.status(500).json({ message: error.message || "Deployment failed" });
+    }
+  });
+
+  app.post("/api/web3/deploy-erc721", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId, name, symbol, network = "polygon" } = req.body;
+
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      // Deploy ERC-721 NFT contract
+      const deployment = await web3Service.deployERC721(
+        name,
+        symbol,
+        wallet.encryptedPrivateKey || "",
+        network
+      );
+
+      res.json(deployment);
+    } catch (error: any) {
+      console.error("Error deploying ERC-721:", error);
+      res.status(500).json({ message: error.message || "Deployment failed" });
+    }
+  });
+
+  app.post("/api/web3/mint-nft", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletId, contractAddress, tokenId, tokenURI, network = "polygon" } = req.body;
+
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      // Mint NFT
+      const result = await web3Service.mintNFT(
+        contractAddress,
+        wallet.address,
+        tokenId,
+        tokenURI,
+        wallet.encryptedPrivateKey || "",
+        network
+      );
+
+      // Store NFT in database
+      const nft = await storage.createNft({
+        walletId: wallet.id,
+        contractAddress,
+        tokenId: tokenId.toString(),
+        name: `NFT #${tokenId}`,
+        description: "Minted NFT",
+        imageUrl: tokenURI,
+        network,
+      });
+
+      res.json({ ...nft, txHash: result.txHash });
+    } catch (error: any) {
+      console.error("Error minting NFT:", error);
+      res.status(500).json({ message: error.message || "Minting failed" });
     }
   });
 
@@ -255,8 +451,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate publication data
       const publishSchema = z.object({
-        nftId: z.string().optional(),
-        tokenId: z.string().optional(),
+        walletId: z.string(),
+        mintNFT: z.boolean().optional().default(true),
+        createToken: z.boolean().optional().default(true),
+        network: z.string().optional().default("polygon"),
+        tokenSupply: z.string().optional().default("1000000"),
       });
       
       const validation = publishSchema.safeParse(req.body);
@@ -267,15 +466,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      await storage.updateSongPublication(
-        req.params.id, 
-        validation.data.nftId, 
-        validation.data.tokenId
+      // Verify wallet belongs to user
+      const wallet = await storage.getWallet(validation.data.walletId);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(403).json({ message: "Access denied to this wallet" });
+      }
+
+      // Execute Jesus Cartel publishing pipeline
+      const result = await jesusCartelService.publishSong(
+        req.params.id,
+        validation.data.walletId,
+        {
+          mintNFT: validation.data.mintNFT,
+          createToken: validation.data.createToken,
+          network: validation.data.network,
+          tokenSupply: validation.data.tokenSupply,
+        }
       );
-      res.json({ success: true });
-    } catch (error) {
+
+      res.json(result);
+    } catch (error: any) {
       console.error("Error publishing song:", error);
-      res.status(500).json({ message: "Failed to publish song" });
+      res.status(500).json({ 
+        message: error.message || "Failed to publish song" 
+      });
     }
   });
 
