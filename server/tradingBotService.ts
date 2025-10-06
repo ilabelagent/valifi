@@ -60,37 +60,85 @@ class GridTradingStrategy implements BotStrategy {
     const { gridSpacing, orderSize, priceRange } = config;
     const currentPrice = marketData.price;
 
-    // Calculate grid levels
-    const lowerBound = currentPrice * (1 - priceRange / 100);
-    const upperBound = currentPrice * (1 + priceRange / 100);
+    // Use static grid anchors (set on bot creation, stored in config)
+    // If not set, initialize them now and persist to storage
+    let shouldPersistConfig = false;
     
-    // Check if price hit a grid level
-    const gridLevelHit = this.checkGridLevel(currentPrice, gridSpacing, lowerBound);
+    if (!config.gridAnchorPrice) {
+      config.gridAnchorPrice = currentPrice;
+      config.gridLowerBound = currentPrice * (1 - priceRange / 100);
+      config.gridUpperBound = currentPrice * (1 + priceRange / 100);
+      shouldPersistConfig = true;
+    }
 
-    if (gridLevelHit) {
-      // If price dropped, buy. If price rose, sell
-      const action = currentPrice < marketData.bidPrice ? "buy" : "sell";
+    const { gridAnchorPrice, gridLowerBound, gridUpperBound } = config;
+    const lastTriggeredLevel = config.lastTriggeredGridLevel || null;
+    
+    // Check if price hit a NEW grid level (different from last triggered)
+    const gridLevelHit = this.checkGridLevel(currentPrice, gridSpacing, gridLowerBound);
+
+    if (gridLevelHit !== null && gridLevelHit !== lastTriggeredLevel) {
+      // Determine action based on price relative to anchor
+      // Buy below anchor, sell above anchor
+      const action = currentPrice < gridAnchorPrice ? "buy" : "sell";
+      
+      // Update last triggered level to prevent re-firing and persist
+      config.lastTriggeredGridLevel = gridLevelHit;
+      shouldPersistConfig = true;
+      
+      // Persist config changes to storage so they survive bot reload
+      if (shouldPersistConfig) {
+        await storage.updateBot(bot.id, { config });
+      }
       
       return {
         action,
         amount: orderSize,
         price: currentPrice,
-        reason: `Grid level hit at ${currentPrice}, executing ${action}`,
-        metadata: { gridLevel: gridLevelHit, range: priceRange },
+        reason: `Grid level ${gridLevelHit} hit at ${currentPrice.toFixed(2)}, executing ${action}`,
+        metadata: { 
+          gridLevel: gridLevelHit, 
+          range: priceRange,
+          spacing: gridSpacing,
+          anchorPrice: gridAnchorPrice,
+          lowerBound: gridLowerBound,
+          upperBound: gridUpperBound,
+          lastTriggeredLevel,
+        },
       };
+    }
+
+    // Persist initial config if needed
+    if (shouldPersistConfig) {
+      await storage.updateBot(bot.id, { config });
     }
 
     return {
       action: "hold",
       amount: 0,
       price: currentPrice,
-      reason: "No grid level triggered",
+      reason: gridLevelHit === lastTriggeredLevel 
+        ? `Grid level ${gridLevelHit} already triggered` 
+        : "No grid level triggered",
     };
   }
 
+  /**
+   * Check if price is at a grid boundary (within tolerance)
+   * Returns grid level number if at boundary, null otherwise
+   */
   private checkGridLevel(price: number, spacing: number, lowerBound: number): number | null {
-    const gridLevel = Math.floor((price - lowerBound) / spacing);
-    return gridLevel % 1 === 0 ? gridLevel : null;
+    const priceFromLower = price - lowerBound;
+    const remainder = priceFromLower % spacing;
+    const tolerance = spacing * 0.01; // 1% tolerance to account for price fluctuations
+    
+    // Check if price is close to a grid level
+    if (remainder < tolerance || remainder > spacing - tolerance) {
+      const gridLevel = Math.round(priceFromLower / spacing);
+      return gridLevel;
+    }
+    
+    return null;
   }
 }
 
