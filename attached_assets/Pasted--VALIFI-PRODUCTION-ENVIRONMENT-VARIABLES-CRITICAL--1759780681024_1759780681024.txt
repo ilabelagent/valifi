@@ -1,0 +1,138 @@
+# VALIFI PRODUCTION ENVIRONMENT VARIABLES
+# =========================================
+# 
+# CRITICAL: Fill in ALL values before production deployment!
+# DO NOT use placeholder values in production!
+
+# Application Settings
+NODE_ENV=production
+NEXT_PUBLIC_APP_URL=https://valifi.com
+NEXT_PUBLIC_API_URL=https://valifi.com/api
+PORT=3000
+
+# Database (REQUIRED)
+DATABASE_URL=postgresql://username:password@host:5432/valifi_production
+AWS_RDS_HOST=your-rds-endpoint.rds.amazonaws.com
+AWS_RDS_PORT=5432
+AWS_RDS_DATABASE=valifi_fintech
+AWS_RDS_USERNAME=valifi_user
+AWS_RDS_PASSWORD=your-secure-password
+AWS_RDS_SSL=true
+AWS_RDS_MAX_CONNECTIONS=20
+AWS_RDS_CONNECTION_TIMEOUT=30000
+TURSO_DATABASE_URL=libsql://your-db-url.turso.io
+TURSO_AUTH_TOKEN=your-turso-auth-token
+
+# Security (REQUIRED - Generate strong secrets!)
+JWT_SECRET=GENERATE_STRONG_SECRET_HERE_64_CHARS_MIN
+JWT_REFRESH_SECRET=GENERATE_STRONG_REFRESH_SECRET_HERE_64_CHARS_MIN
+ENCRYPTION_KEY=GENERATE_32_CHAR_ENCRYPTION_KEY_HERE
+
+# Market Data APIs (REQUIRED for trading bots)
+POLYGON_API_KEY=your_polygon_api_key
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key
+IEX_CLOUD_API_KEY=your_iex_api_key
+
+# Trading/Broker APIs (REQUIRED for real trading)
+ALPACA_API_KEY=your_alpaca_api_key
+ALPACA_API_SECRET=your_alpaca_secret_key
+ALPACA_PAPER_TRADING=false
+ALPACA_BASE_URL=https://api.alpaca.markets  # Use https://paper-api.alpaca.markets for testing
+ALPACA_DATA_URL=https://data.alpaca.markets/v2
+
+# Interactive Brokers Gateway
+IB_GATEWAY_HOST=localhost
+IB_GATEWAY_PORT=7497
+IB_CLIENT_ID=1
+IB_ENCRYPTION_KEY=your-32-byte-hex-encryption-key
+
+# Payment Processing (REQUIRED for deposits/withdrawals)
+STRIPE_SECRET_KEY=sk_live_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_live_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+
+# Coinbase Commerce (Crypto Payments)
+COINBASE_API_KEY=your_coinbase_api_key
+COINBASE_API_SECRET=your_coinbase_api_secret
+COINBASE_PASSPHRASE=your_coinbase_passphrase
+COINBASE_SANDBOX=false
+
+# Banking Integration (REQUIRED for bank accounts)
+PLAID_CLIENT_ID=your_plaid_client_id
+PLAID_SECRET=your_plaid_secret
+PLAID_ENV=production  # or sandbox for testing
+
+# KYC/AML Compliance (REQUIRED for regulatory compliance)
+JUMIO_API_TOKEN=your_jumio_api_token
+JUMIO_API_SECRET=your_jumio_api_secret
+JUMIO_BASE_URL=https://netverify.com/api/v4
+
+# Chainalysis Wallet Screening
+CHAINALYSIS_API_KEY=your_chainalysis_api_key
+
+# OFAC Sanctions Screening
+OFAC_API_KEY=your_ofac_api_key
+
+# ArmorWallet Integration
+ARMOR_WALLET_API_URL=https://api.armorwallet.com/v1
+ARMOR_WALLET_API_KEY=your_armor_wallet_api_key
+ARMOR_WALLET_API_SECRET=your_armor_wallet_api_secret
+ARMOR_WALLET_ENCRYPTION_KEY=your-32-byte-hex-encryption-key
+
+# Crypto/Blockchain (OPTIONAL)
+BITCOIN_NODE_URL=https://bitcoin-node.valifi.com
+ETHEREUM_NODE_URL=https://ethereum-node.valifi.com
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_SECRET_KEY=your_binance_secret_key
+
+# Email/Notifications (REQUIRED)
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=your_sendgrid_api_key
+FROM_EMAIL=noreply@valifi.com
+
+# Error Monitoring (HIGHLY RECOMMENDED)
+SENTRY_DSN=https://your-sentry-dsn@sentry.io
+DATADOG_API_KEY=your_datadog_api_key
+
+# AWS/Cloud Services (REQUIRED for production)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_S3_BUCKET=valifi-production-assets
+
+# Security & Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+CORS_ORIGIN=https://valifi.com
+
+# Feature Flags
+ENABLE_TRADING_BOTS=true
+ENABLE_REAL_MONEY=false  # Set to true only when ready!
+ENABLE_KYC_VERIFICATION=true
+ENABLE_TWO_FACTOR_AUTH=true
+
+# Compliance Settings
+MAX_DAILY_TRADING_VOLUME=50000
+MAX_POSITION_SIZE=10000
+REQUIRE_KYC_FOR_TRADING=true
+AML_REPORTING_THRESHOLD=10000
+
+# PRODUCTION DEPLOYMENT CHECKLIST:
+# ================================
+# □ All API keys obtained and configured
+# □ Database created and migrated
+# □ SSL certificates configured
+# □ Monitoring and logging set up
+# □ Security audit completed
+# □ Compliance procedures implemented
+# □ Real money handling tested
+# □ Backup and disaster recovery tested
+# □ Legal compliance verified
+# □ Insurance and liability coverage obtained
+
+# WARNING: DO NOT DEPLOY WITH PLACEHOLDER VALUES!
+# Ensure all API keys and secrets are real production values.

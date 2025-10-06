@@ -1,0 +1,116 @@
+ valifi-fintech-platform@3.0.0 full-stack
+> concurrently "cross-env PORT=3001 node simple-server.js" "vite"
+
+[1] 
+[1]   VITE v7.1.7  ready in 1531 ms
+[1] 
+[1]   ➜  Local:   http://localhost:5000/
+[1]   ➜  Network: http://172.31.118.34:5000/
+[0] 👑 Kingdom Standard Orchestrator initialized
+[0] 🔗 PHP Exchange Bridge initialized
+[0] 
+[0] ╔═══════════════════════════════════════════════════════════╗
+[0] ║                                                           ║
+[0] ║     KINGDOM STANDARD ORCHESTRATOR                        ║
+[0] ║     Unified Bot Management System                        ║
+[0] ║                                                           ║
+[0] ╚═══════════════════════════════════════════════════════════╝
+[0]     
+[0] 📦 Loaded: 401k-bot
+[0] 📦 Loaded: address-book-bot
+[0] 📦 Loaded: admin-control-bot
+[0] 📦 Loaded: admin-dashboard-bot
+[0] 📦 Loaded: advanced-services-bot
+[0] 📦 Loaded: advanced-trading-bot
+[0] 📦 Loaded: amm-bot
+[0] 📦 Loaded: armor-crypto-bot
+[0] 📦 Loaded: banking-bot
+[0] 📦 Loaded: bonds-bot
+[0] 📦 Loaded: bridge-bot
+[0] 📦 Loaded: coin-mixer-bot
+[0] 📦 Loaded: collectibles-bot
+[0] 📦 Loaded: commodities-bot
+[0] 📦 Loaded: communication-bot
+[0] 📦 Loaded: community-exchange-bot
+[0] 📦 Loaded: compliance-bot
+[0] 📦 Loaded: contact-manager-bot
+[0] 📦 Loaded: crypto-derivatives-bot
+[0] 📦 Loaded: cyberlab-bot
+[0] 📦 Loaded: defi-bot
+[0] 📦 Loaded: divine-oracle-bot
+[0] 📦 Loaded: education-bot
+[0] 📦 Loaded: enterprise-bot
+[0] 📦 Loaded: escrow-bot
+[0] 📦 Loaded: forex-bot
+[0] 📦 Loaded: gas-optimizer-bot
+[0] 📦 Loaded: guardian-angel-bot
+[0] 📦 Loaded: hardware-wallet-bot
+[0] 📦 Loaded: hd-wallet-bot
+[0] 📦 Loaded: innovative-bot
+[0] 📦 Loaded: ira-bot
+[0] 📦 Loaded: jesus-cartel-bot
+[0] 📦 Loaded: lending-bot
+[0] 📦 Loaded: liquidity-bot
+[0] 📦 Loaded: mail-bot
+[0] 📦 Loaded: metals-bot
+[0] 📦 Loaded: mining-bot
+[0] 📦 Loaded: multichain-bot
+[0] 📦 Loaded: multisig-bot
+[0] 📦 Loaded: mutualfunds-bot
+[0] 📦 Loaded: nft-bot
+[0] 📦 Loaded: nft-minting-bot
+[0] 📦 Loaded: onboarding-bot
+[0] 📦 Loaded: options-bot
+[0] 📦 Loaded: payment-bot
+[0] 📦 Loaded: pension-bot
+[0] 📦 Loaded: platform-bot
+[0] 📦 Loaded: portfolio-analytics-bot
+[0] 📦 Loaded: portfolio-bot
+[0] 📦 Loaded: privacy-bot
+[0] 📦 Loaded: reit-bot
+[0] 📦 Loaded: seed-management-bot
+[0] 📦 Loaded: smart-contract-bot
+[0] 📦 Loaded: stocks-bot
+[0] 📦 Loaded: token-creation-bot
+[0] 📦 Loaded: trading-bot
+[0] 📦 Loaded: transaction-history-bot
+[0] 📦 Loaded: translation-bot
+[0] 📦 Loaded: vip-desk-bot
+[0] 📦 Loaded: wallet-bot
+[0] 📦 Loaded: web3-bot
+[0] 📦 Loaded: word-bot
+[0] 
+[0] 🎯 Kingdom Standard Status:
+[0]    📊 Total Bots: 63
+[0]    ✝️ Divine: Jesus Cartel, Word Bot, Divine Oracle, Admin Dashboard
+[0]    🛡️ Security: Guardian Angel (ML threat detection), Coin Mixing
+[0]    🧪 CyberDefense: CyberLab (penetration testing & simulations)
+[0]    📈 Trading: Enhanced strategies with real indicators
+[0]    🤖 Intelligence: Contact Manager (34K+), AI Chat Systems
+[0] 
+[0] ╔══════════════════════════════════════════════════════════╗
+[0] ║                                                          ║
+[0] ║     VALIFI FINTECH PLATFORM - PRODUCTION READY         ║
+[0] ║                                                          ║
+[0] ║     Runtime: Node.js v20.19.3                    ║
+[0] ║     Server:  http://localhost:3001                    ║
+[0] ║     Status:  development                      ║
+[0] ║                                                          ║
+[0] ║     Features:                                           ║
+[0] ║     ✓ PostgreSQL Database                               ║
+[0] ║     ✓ JWT Authentication                                ║
+[0] ║     ✓ Kingdom Standard Orchestrator                     ║
+[0] ║     ✓ Armor Wallet Integration                          ║
+[0] ║     ✓ Coin Mixing Service                               ║
+[0] ║     ✓ 63+ Trading Bots                                        ║
+[0] ║                                                          ║
+[0] ╚══════════════════════════════════════════════════════════╝
+[0]     
+[0] 🔗 Initializing integrations...
+[0] ✅ Armor Wallet API configured
+[0] ❌ Database connection failed: Connection terminated due to connection timeout
+[0] ⚠️ PHP Exchange not available - using database fallback
+[0] ✅ PHP Exchange Bridge initialized
+[0] ⚠️ PHP Exchange not available (optional)
+[0] ✅ Orchestrator initialized with 63 bots
+[0] ✅ Kingdom Standard Orchestrator initialized
