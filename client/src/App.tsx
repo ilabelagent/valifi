@@ -20,6 +20,13 @@ import SecurityPage from "@/pages/security";
 import PaymentsPage from "@/pages/payments";
 import KycPage from "@/pages/kyc";
 import QuantumPage from "@/pages/quantum";
+import ExchangePage from "@/pages/exchange";
+import TradingBotsPage from "@/pages/trading-bots";
+import MixerPage from "@/pages/mixer";
+import CommunityPage from "@/pages/community";
+import ChatPage from "@/pages/chat";
+import MetalsPage from "@/pages/metals";
+import NewsPage from "@/pages/news";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -58,6 +65,13 @@ function Router() {
           <main className="flex-1 overflow-auto">
             <Switch>
               <Route path="/" component={Dashboard} />
+              <Route path="/exchange" component={ExchangePage} />
+              <Route path="/trading-bots" component={TradingBotsPage} />
+              <Route path="/mixer" component={MixerPage} />
+              <Route path="/community" component={CommunityPage} />
+              <Route path="/chat" component={ChatPage} />
+              <Route path="/metals" component={MetalsPage} />
+              <Route path="/news" component={NewsPage} />
               <Route path="/trading" component={TradingPage} />
               <Route path="/terminal" component={TerminalPage} />
               <Route path="/blockchain" component={BlockchainPage} />
