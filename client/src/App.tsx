@@ -28,6 +28,10 @@ import ChatPage from "@/pages/chat";
 import MetalsPage from "@/pages/metals";
 import NewsPage from "@/pages/news";
 import P2PPage from "@/pages/p2p";
+import FinancialServicesPage from "@/pages/financial-services";
+import AdvancedTradingPage from "@/pages/advanced-trading";
+import WalletSecurityPage from "@/pages/wallet-security";
+import AnalyticsIntelligencePage from "@/pages/analytics-intelligence";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -68,7 +72,11 @@ function Router() {
               <Route path="/" component={Dashboard} />
               <Route path="/exchange" component={ExchangePage} />
               <Route path="/trading-bots" component={TradingBotsPage} />
+              <Route path="/financial-services" component={FinancialServicesPage} />
+              <Route path="/advanced-trading" component={AdvancedTradingPage} />
               <Route path="/mixer" component={MixerPage} />
+              <Route path="/wallet-security" component={WalletSecurityPage} />
+              <Route path="/analytics-intelligence" component={AnalyticsIntelligencePage} />
               <Route path="/community" component={CommunityPage} />
               <Route path="/chat" component={ChatPage} />
               <Route path="/metals" component={MetalsPage} />

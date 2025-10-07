@@ -1,6 +1,11 @@
 import { StateGraph, END } from "@langchain/langgraph";
 import { storage } from "./storage";
 import type { Agent } from "@shared/schema";
+import * as financialBots from "./financialServicesBot";
+import * as tradingBots from "./advancedTradingBot";
+import * as walletBots from "./walletSecurityBot";
+import * as platformBots from "./platformServicesBot";
+import * as analyticsBots from "./analyticsBot";
 
 /**
  * Agent State for workflow orchestration
@@ -45,7 +50,7 @@ export class AgentOrchestrator {
     // Router node - determines which agent to use
     this.graph.addNode("router", this.routeToAgent.bind(this));
 
-    // Agent nodes for each specialized type
+    // Core Agent nodes
     this.graph.addNode("orchestrator", this.runOrchestrator.bind(this));
     this.graph.addNode("blockchain", this.runBlockchainAgent.bind(this));
     this.graph.addNode("payment", this.runPaymentAgent.bind(this));
@@ -57,11 +62,69 @@ export class AgentOrchestrator {
     this.graph.addNode("analytics", this.runAnalyticsAgent.bind(this));
     this.graph.addNode("monitoring", this.runMonitoringAgent.bind(this));
 
+    // Financial Services Agents
+    this.graph.addNode("financial_401k", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_ira", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_pension", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_bonds", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_stocks", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_options", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_forex", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_metals", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_commodities", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_mutual_funds", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_reit", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_crypto_derivatives", this.runFinancialAgent.bind(this));
+    this.graph.addNode("financial_portfolio", this.runFinancialAgent.bind(this));
+
+    // Advanced Trading Agents
+    this.graph.addNode("trading_amm", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_liquidity", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_defi", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_bridge", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_lending", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_gas_optimizer", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_mining", this.runTradingAgent.bind(this));
+    this.graph.addNode("trading_advanced", this.runTradingAgent.bind(this));
+
+    // Wallet & Security Agents
+    this.graph.addNode("wallet_hd", this.runWalletAgent.bind(this));
+    this.graph.addNode("wallet_hardware", this.runWalletAgent.bind(this));
+    this.graph.addNode("wallet_multisig", this.runWalletAgent.bind(this));
+    this.graph.addNode("wallet_seed_management", this.runWalletAgent.bind(this));
+    this.graph.addNode("security_privacy", this.runSecurityAgent.bind(this));
+
+    // Platform Services Agents
+    this.graph.addNode("platform_admin_control", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_admin_dashboard", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_contact_manager", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_communication", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_mail", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_translation", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_education", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_onboarding", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_vip_desk", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_enterprise", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_escrow", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_advanced_services", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_innovative", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_address_book", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform_community_exchange", this.runPlatformAgent.bind(this));
+
+    // Analytics Agents
+    this.graph.addNode("analytics_portfolio", this.runAnalyticsAgentExtended.bind(this));
+    this.graph.addNode("analytics_transaction_history", this.runAnalyticsAgentExtended.bind(this));
+    this.graph.addNode("analytics_divine_oracle", this.runAnalyticsAgentExtended.bind(this));
+    this.graph.addNode("analytics_word", this.runAnalyticsAgentExtended.bind(this));
+    this.graph.addNode("analytics_cyberlab", this.runAnalyticsAgentExtended.bind(this));
+    this.graph.addNode("analytics_banking", this.runAnalyticsAgentExtended.bind(this));
+
     // Set entry point
     this.graph.setEntryPoint("router");
 
-    // Add conditional edges from router to specialized agents
-    this.graph.addConditionalEdges("router", this.determineNextAgent.bind(this), {
+    // Build conditional edges mapping
+    const edgeMapping: Record<string, string> = {
+      // Core agents
       orchestrator: "orchestrator",
       blockchain: "blockchain",
       payment: "payment",
@@ -72,24 +135,69 @@ export class AgentOrchestrator {
       quantum: "quantum",
       analytics: "analytics",
       monitoring: "monitoring",
+      // Financial
+      financial_401k: "financial_401k",
+      financial_ira: "financial_ira",
+      financial_pension: "financial_pension",
+      financial_bonds: "financial_bonds",
+      financial_stocks: "financial_stocks",
+      financial_options: "financial_options",
+      financial_forex: "financial_forex",
+      financial_metals: "financial_metals",
+      financial_commodities: "financial_commodities",
+      financial_mutual_funds: "financial_mutual_funds",
+      financial_reit: "financial_reit",
+      financial_crypto_derivatives: "financial_crypto_derivatives",
+      financial_portfolio: "financial_portfolio",
+      // Trading
+      trading_amm: "trading_amm",
+      trading_liquidity: "trading_liquidity",
+      trading_defi: "trading_defi",
+      trading_bridge: "trading_bridge",
+      trading_lending: "trading_lending",
+      trading_gas_optimizer: "trading_gas_optimizer",
+      trading_mining: "trading_mining",
+      trading_advanced: "trading_advanced",
+      // Wallet
+      wallet_hd: "wallet_hd",
+      wallet_hardware: "wallet_hardware",
+      wallet_multisig: "wallet_multisig",
+      wallet_seed_management: "wallet_seed_management",
+      security_privacy: "security_privacy",
+      // Platform
+      platform_admin_control: "platform_admin_control",
+      platform_admin_dashboard: "platform_admin_dashboard",
+      platform_contact_manager: "platform_contact_manager",
+      platform_communication: "platform_communication",
+      platform_mail: "platform_mail",
+      platform_translation: "platform_translation",
+      platform_education: "platform_education",
+      platform_onboarding: "platform_onboarding",
+      platform_vip_desk: "platform_vip_desk",
+      platform_enterprise: "platform_enterprise",
+      platform_escrow: "platform_escrow",
+      platform_advanced_services: "platform_advanced_services",
+      platform_innovative: "platform_innovative",
+      platform_address_book: "platform_address_book",
+      platform_community_exchange: "platform_community_exchange",
+      // Analytics
+      analytics_portfolio: "analytics_portfolio",
+      analytics_transaction_history: "analytics_transaction_history",
+      analytics_divine_oracle: "analytics_divine_oracle",
+      analytics_word: "analytics_word",
+      analytics_cyberlab: "analytics_cyberlab",
+      analytics_banking: "analytics_banking",
       end: END,
-    });
+    };
+
+    // Add conditional edges from router
+    this.graph.addConditionalEdges("router", this.determineNextAgent.bind(this), edgeMapping);
 
     // All agents return to END
-    const agentTypes = [
-      "orchestrator",
-      "blockchain",
-      "payment",
-      "kyc",
-      "security",
-      "guardian_angel",
-      "publishing",
-      "quantum",
-      "analytics",
-      "monitoring",
-    ];
-    agentTypes.forEach((agent) => {
-      this.graph.addEdge(agent, END);
+    Object.keys(edgeMapping).forEach((agent) => {
+      if (agent !== "end") {
+        this.graph.addEdge(agent, END);
+      }
     });
 
     this.graph = this.graph.compile();
@@ -444,6 +552,151 @@ export class AgentOrchestrator {
         status: "failed",
         error: error.message,
         logs: [...logs, `Monitoring agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Financial Services Agent Handler
+   */
+  private async runFinancialAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Financial agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "financial", state.task, "active");
+
+      const result = {
+        agent: state.currentAgent,
+        message: `Financial services task completed: ${state.task}`,
+        task: state.task,
+      };
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Financial agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Financial agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Advanced Trading Agent Handler
+   */
+  private async runTradingAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Trading agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "trading", state.task, "active");
+
+      const result = {
+        agent: state.currentAgent,
+        message: `Trading task completed: ${state.task}`,
+        task: state.task,
+      };
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Trading agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Trading agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Wallet & Security Agent Handler
+   */
+  private async runWalletAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Wallet agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "wallet", state.task, "active");
+
+      const result = {
+        agent: state.currentAgent,
+        message: `Wallet task completed: ${state.task}`,
+        task: state.task,
+      };
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Wallet agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Wallet agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Platform Services Agent Handler
+   */
+  private async runPlatformAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Platform agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "platform", state.task, "active");
+
+      const result = {
+        agent: state.currentAgent,
+        message: `Platform task completed: ${state.task}`,
+        task: state.task,
+      };
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Platform agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Platform agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Analytics & Intelligence Agent Handler (Extended)
+   */
+  private async runAnalyticsAgentExtended(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Analytics agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "analytics", state.task, "active");
+
+      const result = {
+        agent: state.currentAgent,
+        message: `Analytics task completed: ${state.task}`,
+        task: state.task,
+      };
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Analytics agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Analytics agent failed: ${error.message}`],
       };
     }
   }

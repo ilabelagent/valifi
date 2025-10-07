@@ -41,6 +41,16 @@ const tradingItems = [
     icon: Bot,
   },
   {
+    title: "Financial Services",
+    url: "/financial-services",
+    icon: TrendingUp,
+  },
+  {
+    title: "Advanced Trading",
+    url: "/advanced-trading",
+    icon: Zap,
+  },
+  {
     title: "Metals & Gold",
     url: "/metals",
     icon: Crown,
@@ -57,6 +67,11 @@ const blockchainItems = [
     title: "Wallets & Blockchain",
     url: "/blockchain",
     icon: Wallet,
+  },
+  {
+    title: "Wallet Security",
+    url: "/wallet-security",
+    icon: ShieldCheck,
   },
   {
     title: "Coin Mixer",
@@ -98,6 +113,11 @@ const platformItems = [
     title: "Guardian Angel",
     url: "/security",
     icon: Shield,
+  },
+  {
+    title: "Analytics & Intelligence",
+    url: "/analytics-intelligence",
+    icon: TrendingUp,
   },
   {
     title: "Payments",

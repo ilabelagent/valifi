@@ -9,6 +9,7 @@ export const kycStatusEnum = pgEnum("kyc_status", ["pending", "in_review", "appr
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "confirmed", "failed"]);
 export const botStatusEnum = pgEnum("bot_status", ["active", "idle", "error", "maintenance"]);
 export const agentTypeEnum = pgEnum("agent_type", [
+  // Core System Agents
   "orchestrator", 
   "blockchain", 
   "payment", 
@@ -18,7 +19,64 @@ export const agentTypeEnum = pgEnum("agent_type", [
   "quantum", 
   "analytics",
   "monitoring",
-  "guardian_angel"
+  "guardian_angel",
+  
+  // Financial Services Agents (13)
+  "financial_401k",
+  "financial_ira",
+  "financial_pension",
+  "financial_bonds",
+  "financial_stocks",
+  "financial_options",
+  "financial_forex",
+  "financial_metals",
+  "financial_commodities",
+  "financial_mutual_funds",
+  "financial_reit",
+  "financial_crypto_derivatives",
+  "financial_portfolio",
+  
+  // Advanced Trading & DeFi Agents (8)
+  "trading_amm",
+  "trading_liquidity",
+  "trading_defi",
+  "trading_bridge",
+  "trading_lending",
+  "trading_gas_optimizer",
+  "trading_mining",
+  "trading_advanced",
+  
+  // Wallet & Security Agents (5)
+  "wallet_hd",
+  "wallet_hardware",
+  "wallet_multisig",
+  "wallet_seed_management",
+  "security_privacy",
+  
+  // Platform Services Agents (15)
+  "platform_admin_control",
+  "platform_admin_dashboard",
+  "platform_contact_manager",
+  "platform_communication",
+  "platform_mail",
+  "platform_translation",
+  "platform_education",
+  "platform_onboarding",
+  "platform_vip_desk",
+  "platform_enterprise",
+  "platform_escrow",
+  "platform_advanced_services",
+  "platform_innovative",
+  "platform_address_book",
+  "platform_community_exchange",
+  
+  // Analytics & Intelligence Agents (6)
+  "analytics_portfolio",
+  "analytics_transaction_history",
+  "analytics_divine_oracle",
+  "analytics_word",
+  "analytics_cyberlab",
+  "analytics_banking"
 ]);
 export const threatLevelEnum = pgEnum("threat_level", ["none", "low", "medium", "high", "critical"]);
 export const networkEnum = pgEnum("network", ["ethereum", "polygon", "bsc", "arbitrum", "optimism"]);
