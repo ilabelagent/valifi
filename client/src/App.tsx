@@ -17,6 +17,7 @@ import BlockchainPage from "@/pages/blockchain";
 import AgentsPage from "@/pages/agents";
 import PublishingPage from "@/pages/publishing";
 import SecurityPage from "@/pages/security";
+import PaymentsPage from "@/pages/payments";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -61,7 +62,7 @@ function Router() {
               <Route path="/agents" component={AgentsPage} />
               <Route path="/publishing" component={PublishingPage} />
               <Route path="/security" component={SecurityPage} />
-              <Route path="/payments" component={() => <div className="p-6">Payments coming soon...</div>} />
+              <Route path="/payments" component={PaymentsPage} />
               <Route path="/kyc" component={() => <div className="p-6">KYC coming soon...</div>} />
               <Route path="/quantum" component={() => <div className="p-6">Quantum coming soon...</div>} />
               <Route component={NotFound} />
