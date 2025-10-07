@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, FileText, Sparkles, FileCode, Shield, Building2 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AnalyticsIntelligence() {
   return (
@@ -35,9 +36,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>Performance metrics & risk analysis</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-view-analytics">
-                View Analytics
-              </Button>
+              <Link href="/payments">
+                <Button size="sm" className="w-full" data-testid="button-view-analytics">
+                  View Analytics
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -53,9 +56,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>Complete transaction analysis</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-view-history">
-                View History
-              </Button>
+              <Link href="/payments">
+                <Button size="sm" className="w-full" data-testid="button-view-history">
+                  View History
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -71,9 +76,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>AI predictions & market sentiment</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-divine-insights">
-                Divine Insights
-              </Button>
+              <Link href="/trading">
+                <Button size="sm" className="w-full" data-testid="button-divine-insights">
+                  Divine Insights
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -89,9 +96,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>NLP & text processing</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-nlp-tools">
-                NLP Tools
-              </Button>
+              <Link href="/chat">
+                <Button size="sm" className="w-full" data-testid="button-nlp-tools">
+                  NLP Tools
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -107,9 +116,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>Penetration testing & security</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-security-testing">
-                Run Tests
-              </Button>
+              <Link href="/security">
+                <Button size="sm" className="w-full" data-testid="button-security-testing">
+                  Run Tests
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -125,9 +136,11 @@ export default function AnalyticsIntelligence() {
               <CardDescription>Traditional bank integration</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-link-bank">
-                Link Bank
-              </Button>
+              <Link href="/payments">
+                <Button size="sm" className="w-full" data-testid="button-link-bank">
+                  Link Bank
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

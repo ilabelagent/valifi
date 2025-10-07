@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Wallet, Shield, Key, HardDrive, Eye} from "lucide-react";
+import { Link } from "wouter";
 
 export default function WalletSecurity() {
   return (
@@ -35,9 +36,11 @@ export default function WalletSecurity() {
               <CardDescription>Hierarchical deterministic wallets</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-manage-hd">
-                Derive Addresses
-              </Button>
+              <Link href="/blockchain">
+                <Button size="sm" className="w-full" data-testid="button-manage-hd">
+                  Derive Addresses
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -53,9 +56,11 @@ export default function WalletSecurity() {
               <CardDescription>Ledger & Trezor integration</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-connect-hardware">
-                Connect Device
-              </Button>
+              <Link href="/blockchain">
+                <Button size="sm" className="w-full" data-testid="button-connect-hardware">
+                  Connect Device
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -71,9 +76,11 @@ export default function WalletSecurity() {
               <CardDescription>Multi-signature wallets</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-create-multisig">
-                Create Multisig
-              </Button>
+              <Link href="/blockchain">
+                <Button size="sm" className="w-full" data-testid="button-create-multisig">
+                  Create Multisig
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -89,9 +96,11 @@ export default function WalletSecurity() {
               <CardDescription>Secure mnemonic management</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-manage-seed">
-                Manage Seeds
-              </Button>
+              <Link href="/blockchain">
+                <Button size="sm" className="w-full" data-testid="button-manage-seed">
+                  Manage Seeds
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -107,9 +116,11 @@ export default function WalletSecurity() {
               <CardDescription>Coin mixing & stealth addresses</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="sm" className="w-full" data-testid="button-privacy-tools">
-                Privacy Features
-              </Button>
+              <Link href="/mixer">
+                <Button size="sm" className="w-full" data-testid="button-privacy-tools">
+                  Privacy Features
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
