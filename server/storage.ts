@@ -89,6 +89,7 @@ export interface IStorage {
   // Songs (Jesus Cartel)
   getSong(id: string): Promise<Song | undefined>;
   getSongsByUserId(userId: string): Promise<Song[]>;
+  getSongsWithDetailsByUserId(userId: string): Promise<any[]>;
   createSong(song: InsertSong): Promise<Song>;
   updateSongPublication(id: string, nftId?: string, tokenId?: string): Promise<void>;
 
@@ -291,6 +292,25 @@ export class DatabaseStorage implements IStorage {
 
   async getSongsByUserId(userId: string): Promise<Song[]> {
     return db.select().from(songs).where(eq(songs.userId, userId));
+  }
+
+  async getSongsWithDetailsByUserId(userId: string): Promise<any[]> {
+    const songsWithDetails = await db
+      .select({
+        song: songs,
+        nft: nfts,
+        token: tokens,
+      })
+      .from(songs)
+      .leftJoin(nfts, eq(songs.nftId, nfts.id))
+      .leftJoin(tokens, eq(songs.tokenId, tokens.id))
+      .where(eq(songs.userId, userId));
+    
+    return songsWithDetails.map(row => ({
+      ...row.song,
+      nftDetails: row.nft,
+      tokenDetails: row.token,
+    }));
   }
 
   async createSong(insertSong: InsertSong): Promise<Song> {

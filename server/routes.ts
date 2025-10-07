@@ -501,8 +501,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/songs", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const songs = await storage.getSongsByUserId(userId);
-      res.json(songs);
+      const includeDetails = req.query.includeDetails === 'true';
+      
+      if (includeDetails) {
+        const songs = await storage.getSongsWithDetailsByUserId(userId);
+        res.json(songs);
+      } else {
+        const songs = await storage.getSongsByUserId(userId);
+        res.json(songs);
+      }
     } catch (error) {
       console.error("Error fetching songs:", error);
       res.status(500).json({ message: "Failed to fetch songs" });
