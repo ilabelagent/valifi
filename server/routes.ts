@@ -19,6 +19,17 @@ import {
   insertBotExecutionSchema,
   insertArmorWalletSchema,
   insertMevEventSchema,
+  insertExchangeOrderSchema,
+  insertLiquidityPoolSchema,
+  insertMixingRequestSchema,
+  insertForumCategorySchema,
+  insertForumThreadSchema,
+  insertForumReplySchema,
+  insertChatSessionSchema,
+  insertChatMessageSchema,
+  insertMetalInventorySchema,
+  insertMetalTradeSchema,
+  insertBlogPostSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -1459,6 +1470,299 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching MEV events by network:", error);
       res.status(500).json({ message: "Failed to fetch MEV events" });
+    }
+  });
+
+  // Exchange Platform routes
+  app.get("/api/exchange/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const orders = await storage.getExchangeOrdersByUserId(userId);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching exchange orders:", error);
+      res.status(500).json({ message: "Failed to fetch exchange orders" });
+    }
+  });
+
+  app.post("/api/exchange/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertExchangeOrderSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid order data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const order = await storage.createExchangeOrder({ ...validation.data, userId });
+      res.json(order);
+    } catch (error) {
+      console.error("Error creating exchange order:", error);
+      res.status(500).json({ message: "Failed to create exchange order" });
+    }
+  });
+
+  app.get("/api/exchange/liquidity-pools", isAuthenticated, async (req: any, res) => {
+    try {
+      const pools = await storage.getAllLiquidityPools();
+      res.json(pools);
+    } catch (error) {
+      console.error("Error fetching liquidity pools:", error);
+      res.status(500).json({ message: "Failed to fetch liquidity pools" });
+    }
+  });
+
+  app.post("/api/exchange/liquidity-pools", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertLiquidityPoolSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid pool data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const pool = await storage.createLiquidityPool({ ...validation.data, userId });
+      res.json(pool);
+    } catch (error) {
+      console.error("Error creating liquidity pool:", error);
+      res.status(500).json({ message: "Failed to create liquidity pool" });
+    }
+  });
+
+  // Coin Mixer routes
+  app.get("/api/mixer/requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requests = await storage.getMixingRequestsByUserId(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching mixing requests:", error);
+      res.status(500).json({ message: "Failed to fetch mixing requests" });
+    }
+  });
+
+  app.post("/api/mixer/requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertMixingRequestSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid mixing request data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const request = await storage.createMixingRequest({ ...validation.data, userId });
+      res.json(request);
+    } catch (error) {
+      console.error("Error creating mixing request:", error);
+      res.status(500).json({ message: "Failed to create mixing request" });
+    }
+  });
+
+  // Forum/Community routes
+  app.get("/api/forum/categories", isAuthenticated, async (req: any, res) => {
+    try {
+      const categories = await storage.getAllForumCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching forum categories:", error);
+      res.status(500).json({ message: "Failed to fetch forum categories" });
+    }
+  });
+
+  app.get("/api/forum/threads", isAuthenticated, async (req: any, res) => {
+    try {
+      const threads = await storage.getAllForumThreads();
+      res.json(threads);
+    } catch (error) {
+      console.error("Error fetching forum threads:", error);
+      res.status(500).json({ message: "Failed to fetch forum threads" });
+    }
+  });
+
+  app.post("/api/forum/threads", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertForumThreadSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid thread data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const thread = await storage.createForumThread({ ...validation.data, userId });
+      res.json(thread);
+    } catch (error) {
+      console.error("Error creating forum thread:", error);
+      res.status(500).json({ message: "Failed to create forum thread" });
+    }
+  });
+
+  app.get("/api/forum/replies", isAuthenticated, async (req: any, res) => {
+    try {
+      const replies = await storage.getAllForumReplies();
+      res.json(replies);
+    } catch (error) {
+      console.error("Error fetching forum replies:", error);
+      res.status(500).json({ message: "Failed to fetch forum replies" });
+    }
+  });
+
+  app.post("/api/forum/replies", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertForumReplySchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid reply data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const reply = await storage.createForumReply({ ...validation.data, userId });
+      res.json(reply);
+    } catch (error) {
+      console.error("Error creating forum reply:", error);
+      res.status(500).json({ message: "Failed to create forum reply" });
+    }
+  });
+
+  // Chat routes
+  app.get("/api/chat/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sessions = await storage.getChatSessionsByUserId(userId);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching chat sessions:", error);
+      res.status(500).json({ message: "Failed to fetch chat sessions" });
+    }
+  });
+
+  app.post("/api/chat/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertChatSessionSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid session data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const session = await storage.createChatSession({ ...validation.data, userId });
+      res.json(session);
+    } catch (error) {
+      console.error("Error creating chat session:", error);
+      res.status(500).json({ message: "Failed to create chat session" });
+    }
+  });
+
+  app.get("/api/chat/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const { sessionId } = req.query;
+      if (!sessionId || typeof sessionId !== 'string') {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+      const messages = await storage.getChatMessagesBySessionId(sessionId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch chat messages" });
+    }
+  });
+
+  app.post("/api/chat/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertChatMessageSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid message data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const message = await storage.createChatMessage(validation.data);
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating chat message:", error);
+      res.status(500).json({ message: "Failed to create chat message" });
+    }
+  });
+
+  // Metals Trading routes
+  app.get("/api/metals/inventory", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const inventory = await storage.getMetalInventoryByUserId(userId);
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error fetching metal inventory:", error);
+      res.status(500).json({ message: "Failed to fetch metal inventory" });
+    }
+  });
+
+  app.get("/api/metals/trades", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trades = await storage.getMetalTradesByUserId(userId);
+      res.json(trades);
+    } catch (error) {
+      console.error("Error fetching metal trades:", error);
+      res.status(500).json({ message: "Failed to fetch metal trades" });
+    }
+  });
+
+  app.post("/api/metals/trades", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertMetalTradeSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid trade data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const trade = await storage.createMetalTrade({ ...validation.data, userId });
+      res.json(trade);
+    } catch (error) {
+      console.error("Error creating metal trade:", error);
+      res.status(500).json({ message: "Failed to create metal trade" });
+    }
+  });
+
+  // Blog/News routes
+  app.get("/api/blog/posts", async (req: any, res) => {
+    try {
+      const posts = await storage.getAllBlogPosts();
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).json({ message: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.post("/api/blog/posts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Only admins can create blog posts
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const validation = insertBlogPostSchema.omit({ authorId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid blog post data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const post = await storage.createBlogPost({ ...validation.data, authorId: userId });
+      res.json(post);
+    } catch (error) {
+      console.error("Error creating blog post:", error);
+      res.status(500).json({ message: "Failed to create blog post" });
     }
   });
 

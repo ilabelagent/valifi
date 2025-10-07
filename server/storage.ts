@@ -16,6 +16,17 @@ import {
   botExecutions,
   armorWallets,
   mevEvents,
+  exchangeOrders,
+  liquidityPools,
+  mixingRequests,
+  forumCategories,
+  forumThreads,
+  forumReplies,
+  chatSessions,
+  chatMessages,
+  metalInventory,
+  metalTrades,
+  blogPosts,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -51,6 +62,28 @@ import {
   type InsertArmorWallet,
   type MevEvent,
   type InsertMevEvent,
+  type ExchangeOrder,
+  type InsertExchangeOrder,
+  type LiquidityPool,
+  type InsertLiquidityPool,
+  type MixingRequest,
+  type InsertMixingRequest,
+  type ForumCategory,
+  type InsertForumCategory,
+  type ForumThread,
+  type InsertForumThread,
+  type ForumReply,
+  type InsertForumReply,
+  type ChatSession,
+  type InsertChatSession,
+  type ChatMessage,
+  type InsertChatMessage,
+  type MetalInventory,
+  type InsertMetalInventory,
+  type MetalTrade,
+  type InsertMetalTrade,
+  type BlogPost,
+  type InsertBlogPost,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -163,6 +196,61 @@ export interface IStorage {
   getMevEventsByUserId(userId: string): Promise<MevEvent[]>;
   getMevEventsByNetwork(network: string): Promise<MevEvent[]>;
   createMevEvent(event: InsertMevEvent): Promise<MevEvent>;
+
+  // Exchange Orders
+  getExchangeOrder(id: string): Promise<ExchangeOrder | undefined>;
+  getExchangeOrdersByUserId(userId: string): Promise<ExchangeOrder[]>;
+  createExchangeOrder(order: InsertExchangeOrder): Promise<ExchangeOrder>;
+
+  // Liquidity Pools
+  getLiquidityPool(id: string): Promise<LiquidityPool | undefined>;
+  getAllLiquidityPools(): Promise<LiquidityPool[]>;
+  createLiquidityPool(pool: InsertLiquidityPool): Promise<LiquidityPool>;
+
+  // Mixing Requests
+  getMixingRequest(id: string): Promise<MixingRequest | undefined>;
+  getMixingRequestsByUserId(userId: string): Promise<MixingRequest[]>;
+  createMixingRequest(request: InsertMixingRequest): Promise<MixingRequest>;
+
+  // Forum Categories
+  getForumCategory(id: string): Promise<ForumCategory | undefined>;
+  getAllForumCategories(): Promise<ForumCategory[]>;
+  createForumCategory(category: InsertForumCategory): Promise<ForumCategory>;
+
+  // Forum Threads
+  getForumThread(id: string): Promise<ForumThread | undefined>;
+  getAllForumThreads(): Promise<ForumThread[]>;
+  createForumThread(thread: InsertForumThread): Promise<ForumThread>;
+
+  // Forum Replies
+  getForumReply(id: string): Promise<ForumReply | undefined>;
+  getAllForumReplies(): Promise<ForumReply[]>;
+  createForumReply(reply: InsertForumReply): Promise<ForumReply>;
+
+  // Chat Sessions
+  getChatSession(id: string): Promise<ChatSession | undefined>;
+  getChatSessionsByUserId(userId: string): Promise<ChatSession[]>;
+  createChatSession(session: InsertChatSession): Promise<ChatSession>;
+
+  // Chat Messages
+  getChatMessage(id: string): Promise<ChatMessage | undefined>;
+  getChatMessagesBySessionId(sessionId: string): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+
+  // Metal Inventory
+  getMetalInventoryItem(id: string): Promise<MetalInventory | undefined>;
+  getMetalInventoryByUserId(userId: string): Promise<MetalInventory[]>;
+  createMetalInventory(item: InsertMetalInventory): Promise<MetalInventory>;
+
+  // Metal Trades
+  getMetalTrade(id: string): Promise<MetalTrade | undefined>;
+  getMetalTradesByUserId(userId: string): Promise<MetalTrade[]>;
+  createMetalTrade(trade: InsertMetalTrade): Promise<MetalTrade>;
+
+  // Blog Posts
+  getBlogPost(id: string): Promise<BlogPost | undefined>;
+  getAllBlogPosts(): Promise<BlogPost[]>;
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -616,6 +704,181 @@ export class DatabaseStorage implements IStorage {
   async createMevEvent(insertEvent: InsertMevEvent): Promise<MevEvent> {
     const [event] = await db.insert(mevEvents).values(insertEvent).returning();
     return event;
+  }
+
+  // Exchange Orders
+  async getExchangeOrder(id: string): Promise<ExchangeOrder | undefined> {
+    const [order] = await db.select().from(exchangeOrders).where(eq(exchangeOrders.id, id));
+    return order || undefined;
+  }
+
+  async getExchangeOrdersByUserId(userId: string): Promise<ExchangeOrder[]> {
+    return db.select().from(exchangeOrders).where(eq(exchangeOrders.userId, userId)).orderBy(desc(exchangeOrders.createdAt));
+  }
+
+  async createExchangeOrder(insertOrder: InsertExchangeOrder): Promise<ExchangeOrder> {
+    const [order] = await db.insert(exchangeOrders).values(insertOrder).returning();
+    return order;
+  }
+
+  // Liquidity Pools
+  async getLiquidityPool(id: string): Promise<LiquidityPool | undefined> {
+    const [pool] = await db.select().from(liquidityPools).where(eq(liquidityPools.id, id));
+    return pool || undefined;
+  }
+
+  async getAllLiquidityPools(): Promise<LiquidityPool[]> {
+    return db.select().from(liquidityPools).orderBy(desc(liquidityPools.createdAt));
+  }
+
+  async createLiquidityPool(insertPool: InsertLiquidityPool): Promise<LiquidityPool> {
+    const [pool] = await db.insert(liquidityPools).values(insertPool).returning();
+    return pool;
+  }
+
+  // Mixing Requests
+  async getMixingRequest(id: string): Promise<MixingRequest | undefined> {
+    const [request] = await db.select().from(mixingRequests).where(eq(mixingRequests.id, id));
+    return request || undefined;
+  }
+
+  async getMixingRequestsByUserId(userId: string): Promise<MixingRequest[]> {
+    return db.select().from(mixingRequests).where(eq(mixingRequests.userId, userId)).orderBy(desc(mixingRequests.createdAt));
+  }
+
+  async createMixingRequest(insertRequest: InsertMixingRequest): Promise<MixingRequest> {
+    const [request] = await db.insert(mixingRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  // Forum Categories
+  async getForumCategory(id: string): Promise<ForumCategory | undefined> {
+    const [category] = await db.select().from(forumCategories).where(eq(forumCategories.id, id));
+    return category || undefined;
+  }
+
+  async getAllForumCategories(): Promise<ForumCategory[]> {
+    return db.select().from(forumCategories).orderBy(desc(forumCategories.createdAt));
+  }
+
+  async createForumCategory(insertCategory: InsertForumCategory): Promise<ForumCategory> {
+    const [category] = await db.insert(forumCategories).values(insertCategory).returning();
+    return category;
+  }
+
+  // Forum Threads
+  async getForumThread(id: string): Promise<ForumThread | undefined> {
+    const [thread] = await db.select().from(forumThreads).where(eq(forumThreads.id, id));
+    return thread || undefined;
+  }
+
+  async getAllForumThreads(): Promise<ForumThread[]> {
+    return db.select().from(forumThreads).orderBy(desc(forumThreads.createdAt));
+  }
+
+  async createForumThread(insertThread: InsertForumThread): Promise<ForumThread> {
+    const [thread] = await db.insert(forumThreads).values(insertThread).returning();
+    return thread;
+  }
+
+  // Forum Replies
+  async getForumReply(id: string): Promise<ForumReply | undefined> {
+    const [reply] = await db.select().from(forumReplies).where(eq(forumReplies.id, id));
+    return reply || undefined;
+  }
+
+  async getAllForumReplies(): Promise<ForumReply[]> {
+    return db.select().from(forumReplies).orderBy(desc(forumReplies.createdAt));
+  }
+
+  async createForumReply(insertReply: InsertForumReply): Promise<ForumReply> {
+    const [reply] = await db.insert(forumReplies).values(insertReply).returning();
+    return reply;
+  }
+
+  // Chat Sessions
+  async getChatSession(id: string): Promise<ChatSession | undefined> {
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, id));
+    return session || undefined;
+  }
+
+  async getChatSessionsByUserId(userId: string): Promise<ChatSession[]> {
+    return db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).orderBy(desc(chatSessions.createdAt));
+  }
+
+  async createChatSession(insertSession: InsertChatSession): Promise<ChatSession> {
+    const [session] = await db.insert(chatSessions).values(insertSession).returning();
+    return session;
+  }
+
+  // Chat Messages
+  async getChatMessage(id: string): Promise<ChatMessage | undefined> {
+    const [message] = await db.select().from(chatMessages).where(eq(chatMessages.id, id));
+    return message || undefined;
+  }
+
+  async getChatMessagesBySessionId(sessionId: string): Promise<ChatMessage[]> {
+    return db.select().from(chatMessages).where(eq(chatMessages.sessionId, sessionId)).orderBy(chatMessages.createdAt);
+  }
+
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await db.insert(chatMessages).values(insertMessage).returning();
+    return message;
+  }
+
+  // Metal Inventory
+  async getMetalInventoryItem(id: string): Promise<MetalInventory | undefined> {
+    const [item] = await db.select().from(metalInventory).where(eq(metalInventory.id, id));
+    return item || undefined;
+  }
+
+  async getMetalInventoryByUserId(userId: string): Promise<MetalInventory[]> {
+    // Get inventory items from trades associated with this user
+    const userTrades = await db.select({ inventoryId: metalTrades.inventoryId })
+      .from(metalTrades)
+      .where(eq(metalTrades.userId, userId));
+    
+    if (userTrades.length === 0) return [];
+    
+    const inventoryIds = [...new Set(userTrades.map(t => t.inventoryId))];
+    return db.select().from(metalInventory)
+      .where(sql`${metalInventory.id} = ANY(${inventoryIds})`)
+      .orderBy(desc(metalInventory.createdAt));
+  }
+
+  async createMetalInventory(insertItem: InsertMetalInventory): Promise<MetalInventory> {
+    const [item] = await db.insert(metalInventory).values(insertItem).returning();
+    return item;
+  }
+
+  // Metal Trades
+  async getMetalTrade(id: string): Promise<MetalTrade | undefined> {
+    const [trade] = await db.select().from(metalTrades).where(eq(metalTrades.id, id));
+    return trade || undefined;
+  }
+
+  async getMetalTradesByUserId(userId: string): Promise<MetalTrade[]> {
+    return db.select().from(metalTrades).where(eq(metalTrades.userId, userId)).orderBy(desc(metalTrades.createdAt));
+  }
+
+  async createMetalTrade(insertTrade: InsertMetalTrade): Promise<MetalTrade> {
+    const [trade] = await db.insert(metalTrades).values(insertTrade).returning();
+    return trade;
+  }
+
+  // Blog Posts
+  async getBlogPost(id: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post || undefined;
+  }
+
+  async getAllBlogPosts(): Promise<BlogPost[]> {
+    return db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+  }
+
+  async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
+    const [post] = await db.insert(blogPosts).values(insertPost).returning();
+    return post;
   }
 }
 
