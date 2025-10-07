@@ -25,6 +25,7 @@ import {
   Crown,
   Newspaper,
   ArrowLeftRight,
+  ArrowUpDown,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -102,6 +103,11 @@ const platformItems = [
     title: "Payments",
     url: "/payments",
     icon: CreditCard,
+  },
+  {
+    title: "P2P Trading",
+    url: "/p2p",
+    icon: ArrowUpDown,
   },
   {
     title: "KYC/Compliance",

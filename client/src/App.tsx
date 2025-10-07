@@ -27,6 +27,7 @@ import CommunityPage from "@/pages/community";
 import ChatPage from "@/pages/chat";
 import MetalsPage from "@/pages/metals";
 import NewsPage from "@/pages/news";
+import P2PPage from "@/pages/p2p";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -79,6 +80,7 @@ function Router() {
               <Route path="/publishing" component={PublishingPage} />
               <Route path="/security" component={SecurityPage} />
               <Route path="/payments" component={PaymentsPage} />
+              <Route path="/p2p" component={P2PPage} />
               <Route path="/kyc" component={KycPage} />
               <Route path="/quantum" component={QuantumPage} />
               <Route component={NotFound} />
