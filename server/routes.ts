@@ -30,6 +30,9 @@ import {
   insertMetalInventorySchema,
   insertMetalTradeSchema,
   insertBlogPostSchema,
+  insertUserDashboardConfigSchema,
+  insertDashboardWidgetSchema,
+  insertUserWidgetPreferenceSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -45,6 +48,20 @@ import { armorWalletService } from "./armorWalletService";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
   await setupAuth(app);
+
+  // Admin check middleware
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Authorization check failed" });
+    }
+  };
 
   // Auth routes
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
@@ -1763,6 +1780,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating blog post:", error);
       res.status(500).json({ message: "Failed to create blog post" });
+    }
+  });
+
+  // Dashboard System Routes
+  app.get("/api/dashboard/config", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const config = await storage.getUserDashboardConfig(userId);
+      res.json(config || null);
+    } catch (error) {
+      console.error("Error fetching dashboard config:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard config" });
+    }
+  });
+
+  app.post("/api/dashboard/config", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertUserDashboardConfigSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid dashboard config", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const config = await storage.createOrUpdateDashboardConfig({
+        ...validation.data,
+        userId,
+      });
+      res.json(config);
+    } catch (error) {
+      console.error("Error saving dashboard config:", error);
+      res.status(500).json({ message: "Failed to save dashboard config" });
+    }
+  });
+
+  app.get("/api/dashboard/widgets", isAuthenticated, async (req: any, res) => {
+    try {
+      const widgets = await storage.getDashboardWidgets();
+      res.json(widgets);
+    } catch (error) {
+      console.error("Error fetching widgets:", error);
+      res.status(500).json({ message: "Failed to fetch widgets" });
+    }
+  });
+
+  app.post("/api/dashboard/widgets", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const validation = insertDashboardWidgetSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid widget data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const widget = await storage.createDashboardWidget(validation.data);
+      res.status(201).json(widget);
+    } catch (error) {
+      console.error("Error creating widget:", error);
+      res.status(500).json({ message: "Failed to create widget" });
+    }
+  });
+
+  app.get("/api/dashboard/preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const preferences = await storage.getUserWidgetPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error fetching widget preferences:", error);
+      res.status(500).json({ message: "Failed to fetch widget preferences" });
+    }
+  });
+
+  app.post("/api/dashboard/preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertUserWidgetPreferenceSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid preference data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const preference = await storage.createOrUpdateWidgetPreference({
+        ...validation.data,
+        userId,
+      });
+      res.status(201).json(preference);
+    } catch (error) {
+      console.error("Error saving widget preference:", error);
+      res.status(500).json({ message: "Failed to save widget preference" });
+    }
+  });
+
+  app.delete("/api/dashboard/preferences/:widgetId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { widgetId } = req.params;
+      const deleted = await storage.deleteWidgetPreference(userId, widgetId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Widget preference not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting widget preference:", error);
+      res.status(500).json({ message: "Failed to delete widget preference" });
     }
   });
 

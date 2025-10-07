@@ -27,6 +27,9 @@ import {
   metalInventory,
   metalTrades,
   blogPosts,
+  userDashboardConfigs,
+  dashboardWidgets,
+  userWidgetPreferences,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -84,9 +87,15 @@ import {
   type InsertMetalTrade,
   type BlogPost,
   type InsertBlogPost,
+  type UserDashboardConfig,
+  type InsertUserDashboardConfig,
+  type DashboardWidget,
+  type InsertDashboardWidget,
+  type UserWidgetPreference,
+  type InsertUserWidgetPreference,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Users (Replit Auth compatible)
@@ -251,6 +260,15 @@ export interface IStorage {
   getBlogPost(id: string): Promise<BlogPost | undefined>;
   getAllBlogPosts(): Promise<BlogPost[]>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+
+  // Dashboard System
+  getUserDashboardConfig(userId: string): Promise<UserDashboardConfig | undefined>;
+  createOrUpdateDashboardConfig(config: InsertUserDashboardConfig): Promise<UserDashboardConfig>;
+  getDashboardWidgets(): Promise<DashboardWidget[]>;
+  createDashboardWidget(widget: InsertDashboardWidget): Promise<DashboardWidget>;
+  getUserWidgetPreferences(userId: string): Promise<UserWidgetPreference[]>;
+  createOrUpdateWidgetPreference(pref: InsertUserWidgetPreference): Promise<UserWidgetPreference>;
+  deleteWidgetPreference(userId: string, widgetId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -840,7 +858,7 @@ export class DatabaseStorage implements IStorage {
     
     if (userTrades.length === 0) return [];
     
-    const inventoryIds = [...new Set(userTrades.map(t => t.inventoryId))];
+    const inventoryIds = Array.from(new Set(userTrades.map(t => t.inventoryId)));
     return db.select().from(metalInventory)
       .where(sql`${metalInventory.id} = ANY(${inventoryIds})`)
       .orderBy(desc(metalInventory.createdAt));
@@ -879,6 +897,69 @@ export class DatabaseStorage implements IStorage {
   async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
     const [post] = await db.insert(blogPosts).values(insertPost).returning();
     return post;
+  }
+
+  // Dashboard System
+  async getUserDashboardConfig(userId: string) {
+    return await db.query.userDashboardConfigs.findFirst({
+      where: eq(userDashboardConfigs.userId, userId),
+    });
+  }
+
+  async createOrUpdateDashboardConfig(config: InsertUserDashboardConfig) {
+    const existing = await this.getUserDashboardConfig(config.userId);
+    if (existing) {
+      const [updated] = await db.update(userDashboardConfigs)
+        .set({ ...config, updatedAt: new Date() })
+        .where(eq(userDashboardConfigs.userId, config.userId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(userDashboardConfigs).values(config).returning();
+    return created;
+  }
+
+  async getDashboardWidgets() {
+    return await db.query.dashboardWidgets.findMany({
+      orderBy: [asc(dashboardWidgets.type)],
+    });
+  }
+
+  async createDashboardWidget(widget: InsertDashboardWidget) {
+    const [created] = await db.insert(dashboardWidgets).values(widget).returning();
+    return created;
+  }
+
+  async getUserWidgetPreferences(userId: string) {
+    return await db.query.userWidgetPreferences.findMany({
+      where: eq(userWidgetPreferences.userId, userId),
+      with: { widget: true },
+    });
+  }
+
+  async createOrUpdateWidgetPreference(pref: InsertUserWidgetPreference) {
+    const [result] = await db.insert(userWidgetPreferences)
+      .values(pref)
+      .onConflictDoUpdate({
+        target: [userWidgetPreferences.userId, userWidgetPreferences.widgetId],
+        set: {
+          position: pref.position,
+          config: pref.config,
+          isVisible: pref.isVisible,
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async deleteWidgetPreference(userId: string, widgetId: string) {
+    const result = await db.delete(userWidgetPreferences)
+      .where(and(
+        eq(userWidgetPreferences.userId, userId),
+        eq(userWidgetPreferences.widgetId, widgetId)
+      ))
+      .returning();
+    return result.length > 0;
   }
 }
 
