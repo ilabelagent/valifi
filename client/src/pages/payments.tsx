@@ -254,143 +254,143 @@ export default function PaymentsPage() {
       <div className="p-6 flex-1 overflow-auto">
         {/* Payment Processors Overview */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Payment Processors</h2>
+          <h2 className="text-xl font-semibold mb-4" data-testid="heading-processors">Payment Processors</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Fiat Processors */}
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-stripe">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-stripe">
                     <SiStripe className="h-5 w-5" />
                     Stripe
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-stripe">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Cards, ACH, Bank Transfers</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-stripe">Cards, ACH, Bank Transfers</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-paypal">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-paypal">
                     <SiPaypal className="h-5 w-5" />
                     PayPal
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-paypal">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">PayPal, Venmo, Credit Cards</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-paypal">PayPal, Venmo, Credit Cards</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-plaid">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-plaid">
                     <Wallet className="h-5 w-5" />
                     Plaid
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-plaid">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Bank Account Linking, ACH</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-plaid">Bank Account Linking, ACH</p>
               </CardContent>
             </Card>
 
             {/* Crypto Processors */}
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-bitpay">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-bitpay">
                     <Bitcoin className="h-5 w-5" />
                     BitPay
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-bitpay">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">BTC, BCH, ETH, USDC, more</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-bitpay">BTC, BCH, ETH, USDC, more</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-binance">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-binance">
                     <Bitcoin className="h-5 w-5" />
                     Binance Pay
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-binance">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">USDT, BUSD, BNB, Multi-crypto</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-binance">USDT, BUSD, BNB, Multi-crypto</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-bybit">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-bybit">
                     <Bitcoin className="h-5 w-5" />
                     Bybit
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-bybit">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Crypto Deposits & Withdrawals</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-bybit">Crypto Deposits & Withdrawals</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-kucoin">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-kucoin">
                     <Bitcoin className="h-5 w-4" />
                     KuCoin Pay
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-kucoin">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Multi-chain Crypto Payments</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-kucoin">Multi-chain Crypto Payments</p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-luno">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-luno">
                     <Bitcoin className="h-5 w-5" />
                     Luno
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-luno">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">BTC, ETH, XRP, LTC, more</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-luno">BTC, ETH, XRP, LTC, more</p>
               </CardContent>
             </Card>
 
             {/* Direct Blockchain */}
-            <Card className="hover-elevate">
+            <Card className="hover-elevate" data-testid="card-processor-blockchain">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2" data-testid="text-processor-blockchain">
                     <Wallet className="h-5 w-5" />
                     Direct Blockchain
                   </CardTitle>
-                  <Badge variant="default">Active</Badge>
+                  <Badge variant="default" data-testid="badge-status-blockchain">Active</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">ETH, MATIC, BNB, ARB, OP</p>
+                <p className="text-sm text-muted-foreground" data-testid="text-description-blockchain">ETH, MATIC, BNB, ARB, OP</p>
               </CardContent>
             </Card>
           </div>

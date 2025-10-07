@@ -108,6 +108,7 @@ const platformItems = [
     title: "P2P Trading",
     url: "/p2p",
     icon: ArrowUpDown,
+    testId: "link-p2p",
   },
   {
     title: "KYC/Compliance",
