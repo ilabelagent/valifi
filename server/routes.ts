@@ -33,6 +33,9 @@ import {
   insertUserDashboardConfigSchema,
   insertDashboardWidgetSchema,
   insertUserWidgetPreferenceSchema,
+  insertAdminUserSchema,
+  insertAdminAuditLogSchema,
+  insertAdminBroadcastSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -49,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
   await setupAuth(app);
 
-  // Admin check middleware
+  // Admin check middleware with role attachment
   const isAdmin = async (req: any, res: any, next: any) => {
     try {
       const userId = req.user.claims.sub;
@@ -57,10 +60,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
+      
+      // Load and attach adminUser for role-based checks
+      const adminUser = await storage.getAdminUser(userId);
+      if (!adminUser) {
+        return res.status(403).json({ message: "Admin profile not found" });
+      }
+      
+      req.adminUser = adminUser;
       next();
     } catch (error) {
       res.status(500).json({ message: "Authorization check failed" });
     }
+  };
+
+  // Super admin check middleware
+  const isSuperAdmin = (req: any, res: any, next: any) => {
+    if (req.adminUser?.role !== "super_admin") {
+      return res.status(403).json({ message: "Super admin access required" });
+    }
+    next();
   };
 
   // Auth routes
@@ -1887,6 +1906,219 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting widget preference:", error);
       res.status(500).json({ message: "Failed to delete widget preference" });
+    }
+  });
+
+  // Admin Panel Routes (all require admin access)
+  app.get("/api/admin/users", isAuthenticated, isAdmin, isSuperAdmin, async (req: any, res) => {
+    try {
+      const adminUsers = await storage.getAllAdminUsers();
+      res.json(adminUsers);
+    } catch (error) {
+      console.error("Error fetching admin users:", error);
+      res.status(500).json({ message: "Failed to fetch admin users" });
+    }
+  });
+
+  app.post("/api/admin/users", isAuthenticated, isAdmin, isSuperAdmin, async (req: any, res) => {
+    try {
+      const adminUser = req.adminUser;
+      
+      const validation = insertAdminUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid admin user data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      
+      // Check if admin user already exists
+      const exists = await storage.adminUserExists(validation.data.userId);
+      if (exists) {
+        return res.status(409).json({ message: "Admin user already exists" });
+      }
+      
+      // Verify target user exists in users table
+      const targetUser = await storage.getUser(validation.data.userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Target user not found" });
+      }
+      
+      const newAdmin = await storage.createAdminUser(validation.data);
+      
+      // Log admin creation
+      await storage.createAdminAuditLog({
+        adminId: adminUser.id,
+        action: "create_admin",
+        targetType: "admin_user",
+        targetId: newAdmin.id,
+        details: { role: newAdmin.role, targetUserId: newAdmin.userId },
+      });
+      
+      res.status(201).json(newAdmin);
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+      res.status(500).json({ message: "Failed to create admin user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/role", isAuthenticated, isAdmin, isSuperAdmin, async (req: any, res) => {
+    try {
+      const requesterId = req.user.claims.sub;
+      const adminUser = req.adminUser;
+      const { userId } = req.params;
+      const { role } = req.body;
+      
+      // Prevent self-escalation
+      if (userId === requesterId) {
+        return res.status(403).json({ message: "Cannot modify your own role" });
+      }
+      
+      // Validate role enum
+      if (!["super_admin", "admin", "moderator", "support"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      // Check target exists
+      const targetAdmin = await storage.getAdminUser(userId);
+      if (!targetAdmin) {
+        return res.status(404).json({ message: "Target admin user not found" });
+      }
+      
+      // Prevent demoting the only super_admin
+      if (targetAdmin.role === "super_admin" && role !== "super_admin") {
+        const allAdmins = await storage.getAllAdminUsers();
+        const superAdminCount = allAdmins.filter(a => a.role === "super_admin").length;
+        if (superAdminCount <= 1) {
+          return res.status(403).json({ message: "Cannot demote the only super admin" });
+        }
+      }
+      
+      const updated = await storage.updateAdminRole(userId, role);
+      if (!updated) {
+        return res.status(404).json({ message: "Failed to update role" });
+      }
+      
+      // Log role change
+      await storage.createAdminAuditLog({
+        adminId: adminUser.id,
+        action: "update_role",
+        targetType: "admin_user",
+        targetId: targetAdmin.id,
+        details: { oldRole: targetAdmin.role, newRole: role, targetUserId: userId },
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating admin role:", error);
+      res.status(500).json({ message: "Failed to update admin role" });
+    }
+  });
+
+  app.get("/api/admin/audit-logs", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await storage.getAdminAuditLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.post("/api/admin/audit-logs", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminUser = req.adminUser;
+      
+      const validation = insertAdminAuditLogSchema.omit({ adminId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid audit log data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      
+      const log = await storage.createAdminAuditLog({
+        ...validation.data,
+        adminId: adminUser.id,
+      });
+      
+      res.status(201).json(log);
+    } catch (error) {
+      console.error("Error creating audit log:", error);
+      res.status(500).json({ message: "Failed to create audit log" });
+    }
+  });
+
+  app.get("/api/admin/broadcasts", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const broadcasts = await storage.getAdminBroadcasts(limit);
+      res.json(broadcasts);
+    } catch (error) {
+      console.error("Error fetching broadcasts:", error);
+      res.status(500).json({ message: "Failed to fetch broadcasts" });
+    }
+  });
+
+  app.post("/api/admin/broadcasts", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminUser = req.adminUser;
+      
+      // Only super_admin and admin can create broadcasts
+      if (!["super_admin", "admin"].includes(adminUser.role)) {
+        return res.status(403).json({ message: "Admin or super admin access required" });
+      }
+      
+      const validation = insertAdminBroadcastSchema.omit({ adminId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid broadcast data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      
+      const broadcast = await storage.createAdminBroadcast({
+        ...validation.data,
+        adminId: adminUser.id,
+      });
+      
+      // Log broadcast creation
+      await storage.createAdminAuditLog({
+        adminId: adminUser.id,
+        action: "create_broadcast",
+        targetType: "broadcast",
+        targetId: broadcast.id,
+        details: { title: broadcast.title },
+      });
+      
+      res.status(201).json(broadcast);
+    } catch (error) {
+      console.error("Error creating broadcast:", error);
+      res.status(500).json({ message: "Failed to create broadcast" });
+    }
+  });
+
+  app.patch("/api/admin/broadcasts/:id/send", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminUser = req.adminUser;
+      const { id } = req.params;
+      
+      await storage.markBroadcastAsSent(id);
+      
+      // Log broadcast send
+      await storage.createAdminAuditLog({
+        adminId: adminUser.id,
+        action: "send_broadcast",
+        targetType: "broadcast",
+        targetId: id,
+        details: { broadcastId: id },
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error sending broadcast:", error);
+      res.status(500).json({ message: "Failed to send broadcast" });
     }
   });
 

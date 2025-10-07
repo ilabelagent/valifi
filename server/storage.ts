@@ -30,6 +30,9 @@ import {
   userDashboardConfigs,
   dashboardWidgets,
   userWidgetPreferences,
+  adminUsers,
+  adminAuditLogs,
+  adminBroadcasts,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -93,6 +96,12 @@ import {
   type InsertDashboardWidget,
   type UserWidgetPreference,
   type InsertUserWidgetPreference,
+  type AdminUser,
+  type InsertAdminUser,
+  type AdminAuditLog,
+  type InsertAdminAuditLog,
+  type AdminBroadcast,
+  type InsertAdminBroadcast,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -269,6 +278,18 @@ export interface IStorage {
   getUserWidgetPreferences(userId: string): Promise<UserWidgetPreference[]>;
   createOrUpdateWidgetPreference(pref: InsertUserWidgetPreference): Promise<UserWidgetPreference>;
   deleteWidgetPreference(userId: string, widgetId: string): Promise<boolean>;
+
+  // Admin Panel
+  getAdminUser(userId: string): Promise<AdminUser | undefined>;
+  getAllAdminUsers(): Promise<AdminUser[]>;
+  adminUserExists(userId: string): Promise<boolean>;
+  createAdminUser(admin: InsertAdminUser): Promise<AdminUser>;
+  updateAdminRole(userId: string, role: string): Promise<boolean>;
+  getAdminAuditLogs(limit?: number): Promise<AdminAuditLog[]>;
+  createAdminAuditLog(log: InsertAdminAuditLog): Promise<AdminAuditLog>;
+  getAdminBroadcasts(limit?: number): Promise<AdminBroadcast[]>;
+  createAdminBroadcast(broadcast: InsertAdminBroadcast): Promise<AdminBroadcast>;
+  markBroadcastAsSent(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -960,6 +981,73 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning();
     return result.length > 0;
+  }
+
+  // Admin Panel
+  async getAdminUser(userId: string) {
+    return await db.query.adminUsers.findFirst({
+      where: eq(adminUsers.userId, userId),
+      with: { user: true },
+    });
+  }
+
+  async getAllAdminUsers() {
+    return await db.query.adminUsers.findMany({
+      with: { user: true },
+      orderBy: [asc(adminUsers.createdAt)],
+    });
+  }
+
+  async adminUserExists(userId: string) {
+    const admin = await db.query.adminUsers.findFirst({
+      where: eq(adminUsers.userId, userId),
+    });
+    return !!admin;
+  }
+
+  async createAdminUser(admin: InsertAdminUser) {
+    const [created] = await db.insert(adminUsers).values(admin).returning();
+    return created;
+  }
+
+  async updateAdminRole(userId: string, role: string) {
+    const result = await db.update(adminUsers)
+      .set({ role: role as any })
+      .where(eq(adminUsers.userId, userId))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getAdminAuditLogs(limit: number = 100) {
+    return await db.query.adminAuditLogs.findMany({
+      orderBy: [desc(adminAuditLogs.createdAt)],
+      limit,
+      with: { admin: { with: { user: true } } },
+    });
+  }
+
+  async createAdminAuditLog(log: InsertAdminAuditLog) {
+    const [created] = await db.insert(adminAuditLogs).values(log).returning();
+    return created;
+  }
+
+  async getAdminBroadcasts(limit: number = 50) {
+    return await db.query.adminBroadcasts.findMany({
+      orderBy: [desc(adminBroadcasts.sentAt)],
+      limit,
+      with: { admin: { with: { user: true } } },
+    });
+  }
+
+  async createAdminBroadcast(broadcast: InsertAdminBroadcast) {
+    const [created] = await db.insert(adminBroadcasts).values(broadcast).returning();
+    return created;
+  }
+
+  async markBroadcastAsSent(id: string) {
+    await db.update(adminBroadcasts)
+      .set({ sentAt: new Date() })
+      .where(eq(adminBroadcasts.id, id));
   }
 }
 
