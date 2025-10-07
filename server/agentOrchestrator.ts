@@ -6,6 +6,8 @@ import * as tradingBots from "./advancedTradingBot";
 import * as walletBots from "./walletSecurityBot";
 import * as platformBots from "./platformServicesBot";
 import * as analyticsBots from "./analyticsBot";
+import * as nftBots from "./nftBot";
+import * as communityBots from "./communityBot";
 
 /**
  * Agent State for workflow orchestration
@@ -121,13 +123,13 @@ export class AgentOrchestrator {
     this.graph.addNode("analytics_banking", this.runAnalyticsAgentExtended.bind(this));
 
     // NFT & Collectibles Agents
-    this.graph.addNode("nft_minting", this.runPublishingAgent.bind(this));
-    this.graph.addNode("collectibles", this.runPublishingAgent.bind(this));
-    this.graph.addNode("smart_contract", this.runBlockchainAgent.bind(this));
+    this.graph.addNode("nft_minting", this.runNFTAgent.bind(this));
+    this.graph.addNode("collectibles", this.runNFTAgent.bind(this));
+    this.graph.addNode("smart_contract", this.runNFTAgent.bind(this));
 
     // Community & Social Agents
-    this.graph.addNode("community_exchange", this.runPlatformAgent.bind(this));
-    this.graph.addNode("multichain", this.runBlockchainAgent.bind(this));
+    this.graph.addNode("community_exchange", this.runCommunityAgent.bind(this));
+    this.graph.addNode("multichain", this.runCommunityAgent.bind(this));
 
     // Set entry point
     this.graph.setEntryPoint("router");
@@ -716,6 +718,80 @@ export class AgentOrchestrator {
         status: "failed",
         error: error.message,
         logs: [...logs, `Analytics agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * NFT Agent Handler
+   */
+  private async runNFTAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `NFT agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "nft", state.task, "active");
+
+      let result;
+      if (state.currentAgent === "nft_minting") {
+        result = await nftBots.runNFTMintingBot(state.task);
+      } else if (state.currentAgent === "collectibles") {
+        result = await nftBots.runCollectiblesBot(state.task);
+      } else if (state.currentAgent === "smart_contract") {
+        result = await nftBots.runSmartContractBot(state.task);
+      } else {
+        result = {
+          agent: state.currentAgent,
+          message: `NFT task completed: ${state.task}`,
+          task: state.task,
+        };
+      }
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `NFT agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `NFT agent failed: ${error.message}`],
+      };
+    }
+  }
+
+  /**
+   * Community Agent Handler
+   */
+  private async runCommunityAgent(state: AgentState): Promise<Partial<AgentState>> {
+    const logs = [...state.logs, `Community agent (${state.currentAgent}) executing`];
+
+    try {
+      await this.logAgentActivity(state.currentAgent || "community", state.task, "active");
+
+      let result;
+      if (state.currentAgent === "community_exchange") {
+        result = await communityBots.runCommunityExchangeBot(state.task);
+      } else if (state.currentAgent === "multichain") {
+        result = await communityBots.runMultichainBot(state.task);
+      } else {
+        result = {
+          agent: state.currentAgent,
+          message: `Community task completed: ${state.task}`,
+          task: state.task,
+        };
+      }
+
+      return {
+        status: "completed",
+        result,
+        logs: [...logs, `Community agent (${state.currentAgent}) completed`],
+      };
+    } catch (error: any) {
+      return {
+        status: "failed",
+        error: error.message,
+        logs: [...logs, `Community agent failed: ${error.message}`],
       };
     }
   }
