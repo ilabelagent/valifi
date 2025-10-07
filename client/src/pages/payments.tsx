@@ -252,6 +252,150 @@ export default function PaymentsPage() {
       </div>
 
       <div className="p-6 flex-1 overflow-auto">
+        {/* Payment Processors Overview */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4">Payment Processors</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Fiat Processors */}
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <SiStripe className="h-5 w-5" />
+                    Stripe
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Cards, ACH, Bank Transfers</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <SiPaypal className="h-5 w-5" />
+                    PayPal
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">PayPal, Venmo, Credit Cards</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wallet className="h-5 w-5" />
+                    Plaid
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Bank Account Linking, ACH</p>
+              </CardContent>
+            </Card>
+
+            {/* Crypto Processors */}
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bitcoin className="h-5 w-5" />
+                    BitPay
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">BTC, BCH, ETH, USDC, more</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bitcoin className="h-5 w-5" />
+                    Binance Pay
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">USDT, BUSD, BNB, Multi-crypto</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bitcoin className="h-5 w-5" />
+                    Bybit
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Crypto Deposits & Withdrawals</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bitcoin className="h-5 w-4" />
+                    KuCoin Pay
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Multi-chain Crypto Payments</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bitcoin className="h-5 w-5" />
+                    Luno
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">BTC, ETH, XRP, LTC, more</p>
+              </CardContent>
+            </Card>
+
+            {/* Direct Blockchain */}
+            <Card className="hover-elevate">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wallet className="h-5 w-5" />
+                    Direct Blockchain
+                  </CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">ETH, MATIC, BNB, ARB, OP</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         <Tabs defaultValue="fiat" className="space-y-4" data-testid="tabs-payments">
           <TabsList>
             <TabsTrigger value="fiat" data-testid="tab-fiat">
