@@ -33,6 +33,13 @@ import {
   adminUsers,
   adminAuditLogs,
   adminBroadcasts,
+  botMarketplaceListings,
+  botRentals,
+  botSubscriptions,
+  botReviews,
+  botLearningSession,
+  botTrainingData,
+  botSkills,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -102,6 +109,20 @@ import {
   type InsertAdminAuditLog,
   type AdminBroadcast,
   type InsertAdminBroadcast,
+  type BotMarketplaceListing,
+  type InsertBotMarketplaceListing,
+  type BotRental,
+  type InsertBotRental,
+  type BotSubscription,
+  type InsertBotSubscription,
+  type BotReview,
+  type InsertBotReview,
+  type BotLearningSession,
+  type InsertBotLearningSession,
+  type BotTrainingData,
+  type InsertBotTrainingData,
+  type BotSkill,
+  type InsertBotSkill,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -290,6 +311,40 @@ export interface IStorage {
   getAdminBroadcasts(limit?: number): Promise<AdminBroadcast[]>;
   createAdminBroadcast(broadcast: InsertAdminBroadcast): Promise<AdminBroadcast>;
   markBroadcastAsSent(id: string): Promise<void>;
+
+  // Bot Marketplace
+  getBotMarketplaceListings(): Promise<BotMarketplaceListing[]>;
+  getBotMarketplaceListing(id: string): Promise<BotMarketplaceListing | undefined>;
+  createBotMarketplaceListing(listing: InsertBotMarketplaceListing): Promise<BotMarketplaceListing>;
+  updateBotMarketplaceListing(id: string, updates: Partial<InsertBotMarketplaceListing>): Promise<boolean>;
+
+  // Bot Rentals
+  getBotRental(id: string): Promise<BotRental | undefined>;
+  getUserBotRentals(userId: string): Promise<BotRental[]>;
+  createBotRental(rental: InsertBotRental): Promise<BotRental>;
+  updateBotRental(id: string, updates: Partial<InsertBotRental>): Promise<boolean>;
+
+  // Bot Subscriptions
+  getBotSubscription(id: string): Promise<BotSubscription | undefined>;
+  getUserBotSubscriptions(userId: string): Promise<BotSubscription[]>;
+  createBotSubscription(subscription: InsertBotSubscription): Promise<BotSubscription>;
+  updateBotSubscription(id: string, updates: Partial<InsertBotSubscription>): Promise<boolean>;
+
+  // Bot Reviews
+  getBotReviews(listingId: string): Promise<BotReview[]>;
+  createBotReview(review: InsertBotReview): Promise<BotReview>;
+
+  // Bot Learning
+  getBotLearningSessions(botId: string): Promise<BotLearningSession[]>;
+  createBotLearningSession(session: InsertBotLearningSession): Promise<BotLearningSession>;
+  updateBotLearningSession(id: string, updates: Partial<InsertBotLearningSession>): Promise<boolean>;
+  createBotTrainingData(data: InsertBotTrainingData): Promise<BotTrainingData>;
+  getBotTrainingData(botId: string): Promise<BotTrainingData[]>;
+
+  // Bot Skills
+  getBotSkills(botId: string): Promise<BotSkill[]>;
+  createBotSkill(skill: InsertBotSkill): Promise<BotSkill>;
+  updateBotSkill(id: string, updates: Partial<InsertBotSkill>): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1048,6 +1103,172 @@ export class DatabaseStorage implements IStorage {
     await db.update(adminBroadcasts)
       .set({ sentAt: new Date() })
       .where(eq(adminBroadcasts.id, id));
+  }
+
+  // Bot Marketplace
+  async getBotMarketplaceListings() {
+    return await db.query.botMarketplaceListings.findMany({
+      with: { seller: true },
+      orderBy: [desc(botMarketplaceListings.createdAt)],
+    });
+  }
+
+  async getBotMarketplaceListing(id: string) {
+    return await db.query.botMarketplaceListings.findFirst({
+      where: eq(botMarketplaceListings.id, id),
+      with: { seller: true },
+    });
+  }
+
+  async createBotMarketplaceListing(listing: InsertBotMarketplaceListing) {
+    const [created] = await db.insert(botMarketplaceListings).values(listing).returning();
+    return created;
+  }
+
+  async updateBotMarketplaceListing(id: string, updates: Partial<InsertBotMarketplaceListing>) {
+    const result = await db.update(botMarketplaceListings)
+      .set(updates)
+      .where(eq(botMarketplaceListings.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Bot Rentals
+  async getBotRental(id: string) {
+    return await db.query.botRentals.findFirst({
+      where: eq(botRentals.id, id),
+      with: { 
+        listing: { with: { seller: true } },
+        renter: true 
+      },
+    });
+  }
+
+  async getUserBotRentals(userId: string) {
+    return await db.query.botRentals.findMany({
+      where: eq(botRentals.renterId, userId),
+      with: { 
+        listing: { with: { seller: true } },
+        renter: true 
+      },
+      orderBy: [desc(botRentals.startTime)],
+    });
+  }
+
+  async createBotRental(rental: InsertBotRental) {
+    const [created] = await db.insert(botRentals).values(rental).returning();
+    return created;
+  }
+
+  async updateBotRental(id: string, updates: Partial<InsertBotRental>) {
+    const result = await db.update(botRentals)
+      .set(updates)
+      .where(eq(botRentals.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Bot Subscriptions
+  async getBotSubscription(id: string) {
+    return await db.query.botSubscriptions.findFirst({
+      where: eq(botSubscriptions.id, id),
+      with: { 
+        listing: { with: { seller: true } },
+        subscriber: true 
+      },
+    });
+  }
+
+  async getUserBotSubscriptions(userId: string) {
+    return await db.query.botSubscriptions.findMany({
+      where: eq(botSubscriptions.subscriberId, userId),
+      with: { 
+        listing: { with: { seller: true } },
+        subscriber: true 
+      },
+      orderBy: [desc(botSubscriptions.currentPeriodStart)],
+    });
+  }
+
+  async createBotSubscription(subscription: InsertBotSubscription) {
+    const [created] = await db.insert(botSubscriptions).values(subscription).returning();
+    return created;
+  }
+
+  async updateBotSubscription(id: string, updates: Partial<InsertBotSubscription>) {
+    const result = await db.update(botSubscriptions)
+      .set(updates)
+      .where(eq(botSubscriptions.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Bot Reviews
+  async getBotReviews(listingId: string) {
+    return await db.query.botReviews.findMany({
+      where: eq(botReviews.listingId, listingId),
+      with: { reviewer: true },
+      orderBy: [desc(botReviews.createdAt)],
+    });
+  }
+
+  async createBotReview(review: InsertBotReview) {
+    const [created] = await db.insert(botReviews).values(review).returning();
+    return created;
+  }
+
+  // Bot Learning
+  async getBotLearningSessions(botId: string) {
+    return await db.query.botLearningSession.findMany({
+      where: eq(botLearningSession.botId, botId),
+      orderBy: [desc(botLearningSession.startedAt)],
+    });
+  }
+
+  async createBotLearningSession(session: InsertBotLearningSession) {
+    const [created] = await db.insert(botLearningSession).values(session).returning();
+    return created;
+  }
+
+  async updateBotLearningSession(id: string, updates: Partial<InsertBotLearningSession>) {
+    const result = await db.update(botLearningSession)
+      .set(updates)
+      .where(eq(botLearningSession.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async createBotTrainingData(data: InsertBotTrainingData) {
+    const [created] = await db.insert(botTrainingData).values(data).returning();
+    return created;
+  }
+
+  async getBotTrainingData(botId: string) {
+    return await db.query.botTrainingData.findMany({
+      where: eq(botTrainingData.botId, botId),
+      orderBy: [asc(botTrainingData.createdAt)],
+    });
+  }
+
+  // Bot Skills
+  async getBotSkills(botId: string) {
+    return await db.query.botSkills.findMany({
+      where: eq(botSkills.botId, botId),
+      orderBy: [asc(botSkills.unlockedAt)],
+    });
+  }
+
+  async createBotSkill(skill: InsertBotSkill) {
+    const [created] = await db.insert(botSkills).values(skill).returning();
+    return created;
+  }
+
+  async updateBotSkill(id: string, updates: Partial<InsertBotSkill>) {
+    const result = await db.update(botSkills)
+      .set(updates)
+      .where(eq(botSkills.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 

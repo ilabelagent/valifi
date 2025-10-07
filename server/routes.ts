@@ -36,6 +36,13 @@ import {
   insertAdminUserSchema,
   insertAdminAuditLogSchema,
   insertAdminBroadcastSchema,
+  insertBotMarketplaceListingSchema,
+  insertBotRentalSchema,
+  insertBotSubscriptionSchema,
+  insertBotReviewSchema,
+  insertBotLearningSessionSchema,
+  insertBotTrainingDataSchema,
+  insertBotSkillSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -2119,6 +2126,279 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending broadcast:", error);
       res.status(500).json({ message: "Failed to send broadcast" });
+    }
+  });
+
+  // Bot Marketplace Routes
+  app.get("/api/bot-marketplace/listings", isAuthenticated, async (req: any, res) => {
+    try {
+      const listings = await storage.getBotMarketplaceListings();
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching bot listings:", error);
+      res.status(500).json({ message: "Failed to fetch bot listings" });
+    }
+  });
+
+  app.get("/api/bot-marketplace/listings/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const listing = await storage.getBotMarketplaceListing(id);
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      res.json(listing);
+    } catch (error) {
+      console.error("Error fetching bot listing:", error);
+      res.status(500).json({ message: "Failed to fetch bot listing" });
+    }
+  });
+
+  app.post("/api/bot-marketplace/listings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertBotMarketplaceListingSchema.omit({ sellerId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid listing data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const listing = await storage.createBotMarketplaceListing({
+        ...validation.data,
+        sellerId: userId,
+      });
+      res.status(201).json(listing);
+    } catch (error) {
+      console.error("Error creating bot listing:", error);
+      res.status(500).json({ message: "Failed to create bot listing" });
+    }
+  });
+
+  app.patch("/api/bot-marketplace/listings/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertBotMarketplaceListingSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const updated = await storage.updateBotMarketplaceListing(id, validation.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating bot listing:", error);
+      res.status(500).json({ message: "Failed to update bot listing" });
+    }
+  });
+
+  // Bot Rentals Routes
+  app.get("/api/bot-rentals", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const rentals = await storage.getUserBotRentals(userId);
+      res.json(rentals);
+    } catch (error) {
+      console.error("Error fetching bot rentals:", error);
+      res.status(500).json({ message: "Failed to fetch bot rentals" });
+    }
+  });
+
+  app.post("/api/bot-rentals", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertBotRentalSchema.omit({ renterId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid rental data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const rental = await storage.createBotRental({
+        ...validation.data,
+        renterId: userId,
+      });
+      res.status(201).json(rental);
+    } catch (error) {
+      console.error("Error creating bot rental:", error);
+      res.status(500).json({ message: "Failed to create bot rental" });
+    }
+  });
+
+  // Bot Subscriptions Routes
+  app.get("/api/bot-subscriptions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscriptions = await storage.getUserBotSubscriptions(userId);
+      res.json(subscriptions);
+    } catch (error) {
+      console.error("Error fetching bot subscriptions:", error);
+      res.status(500).json({ message: "Failed to fetch bot subscriptions" });
+    }
+  });
+
+  app.post("/api/bot-subscriptions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertBotSubscriptionSchema.omit({ subscriberId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid subscription data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const subscription = await storage.createBotSubscription({
+        ...validation.data,
+        subscriberId: userId,
+      });
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error("Error creating bot subscription:", error);
+      res.status(500).json({ message: "Failed to create bot subscription" });
+    }
+  });
+
+  // Bot Reviews Routes
+  app.get("/api/bot-reviews/:listingId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { listingId } = req.params;
+      const reviews = await storage.getBotReviews(listingId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching bot reviews:", error);
+      res.status(500).json({ message: "Failed to fetch bot reviews" });
+    }
+  });
+
+  app.post("/api/bot-reviews", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertBotReviewSchema.omit({ reviewerId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid review data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const review = await storage.createBotReview({
+        ...validation.data,
+        reviewerId: userId,
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating bot review:", error);
+      res.status(500).json({ message: "Failed to create bot review" });
+    }
+  });
+
+  // Bot Learning Routes
+  app.get("/api/bot-learning/:botId/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const { botId } = req.params;
+      const sessions = await storage.getBotLearningSessions(botId);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching learning sessions:", error);
+      res.status(500).json({ message: "Failed to fetch learning sessions" });
+    }
+  });
+
+  app.post("/api/bot-learning/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertBotLearningSessionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid session data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const session = await storage.createBotLearningSession(validation.data);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating learning session:", error);
+      res.status(500).json({ message: "Failed to create learning session" });
+    }
+  });
+
+  app.patch("/api/bot-learning/sessions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertBotLearningSessionSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const updated = await storage.updateBotLearningSession(id, validation.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Learning session not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating learning session:", error);
+      res.status(500).json({ message: "Failed to update learning session" });
+    }
+  });
+
+  app.post("/api/bot-learning/training-data", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertBotTrainingDataSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid training data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const data = await storage.createBotTrainingData(validation.data);
+      res.status(201).json(data);
+    } catch (error) {
+      console.error("Error creating training data:", error);
+      res.status(500).json({ message: "Failed to create training data" });
+    }
+  });
+
+  app.get("/api/bot-learning/training-data/:botId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { botId } = req.params;
+      const data = await storage.getBotTrainingData(botId);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching training data:", error);
+      res.status(500).json({ message: "Failed to fetch training data" });
+    }
+  });
+
+  // Bot Skills Routes
+  app.get("/api/bot-skills/:botId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { botId } = req.params;
+      const skills = await storage.getBotSkills(botId);
+      res.json(skills);
+    } catch (error) {
+      console.error("Error fetching bot skills:", error);
+      res.status(500).json({ message: "Failed to fetch bot skills" });
+    }
+  });
+
+  app.post("/api/bot-skills", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertBotSkillSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid skill data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const skill = await storage.createBotSkill(validation.data);
+      res.status(201).json(skill);
+    } catch (error) {
+      console.error("Error creating bot skill:", error);
+      res.status(500).json({ message: "Failed to create bot skill" });
     }
   });
 
