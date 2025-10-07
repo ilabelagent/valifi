@@ -930,3 +930,36 @@ export type ArmorWallet = typeof armorWallets.$inferSelect;
 
 export type InsertMevEvent = z.infer<typeof insertMevEventSchema>;
 export type MevEvent = typeof mevEvents.$inferSelect;
+
+export type InsertExchangeOrder = z.infer<typeof insertExchangeOrderSchema>;
+export type ExchangeOrder = typeof exchangeOrders.$inferSelect;
+
+export type InsertLiquidityPool = z.infer<typeof insertLiquidityPoolSchema>;
+export type LiquidityPool = typeof liquidityPools.$inferSelect;
+
+export type InsertMixingRequest = z.infer<typeof insertMixingRequestSchema>;
+export type MixingRequest = typeof mixingRequests.$inferSelect;
+
+export type InsertForumCategory = z.infer<typeof insertForumCategorySchema>;
+export type ForumCategory = typeof forumCategories.$inferSelect;
+
+export type InsertForumThread = z.infer<typeof insertForumThreadSchema>;
+export type ForumThread = typeof forumThreads.$inferSelect;
+
+export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
+export type ForumReply = typeof forumReplies.$inferSelect;
+
+export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
+export type ChatSession = typeof chatSessions.$inferSelect;
+
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type InsertMetalInventory = z.infer<typeof insertMetalInventorySchema>;
+export type MetalInventory = typeof metalInventory.$inferSelect;
+
+export type InsertMetalTrade = z.infer<typeof insertMetalTradeSchema>;
+export type MetalTrade = typeof metalTrades.$inferSelect;
+
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type BlogPost = typeof blogPosts.$inferSelect;
