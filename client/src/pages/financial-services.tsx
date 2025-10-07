@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, DollarSign, PiggyBank, Building2, BarChart3, Bitcoin } from "lucide-react";
+import { Link } from "wouter";
 
 export default function FinancialServices() {
   return (
@@ -56,9 +57,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Contribution Rate</span>
                       <span data-testid="text-401k-rate">0%</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-manage-401k">
-                      Manage 401k
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-manage-401k">
+                        Manage 401k
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -85,9 +88,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">2025 Limit</span>
                       <span data-testid="text-ira-limit">$7,000</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-manage-ira">
-                      Manage IRA
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-manage-ira">
+                        Manage IRA
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -114,9 +119,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Start Age</span>
                       <span data-testid="text-pension-age">65</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-manage-pension">
-                      View Details
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-manage-pension">
+                        View Details
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -148,9 +155,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Day Change</span>
                       <span className="text-green-600" data-testid="text-stocks-change">+0.00%</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-trade-stocks">
-                      Trade Stocks
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-stocks">
+                        Trade Stocks
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -177,9 +186,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Daily P&L</span>
                       <span data-testid="text-forex-pnl">$0.00</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-trade-forex">
-                      Trade Forex
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-forex">
+                        Trade Forex
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -206,9 +217,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Total Delta</span>
                       <span data-testid="text-options-delta">0.00</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-trade-options">
-                      Trade Options
-                    </Button>
+                    <Link href="/trading">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-options">
+                        Trade Options
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -225,7 +238,9 @@ export default function FinancialServices() {
                 <CardContent>
                   <p className="text-2xl font-bold" data-testid="text-bonds-value">$0.00</p>
                   <p className="text-xs text-muted-foreground">Portfolio value</p>
-                  <Button size="sm" className="w-full mt-3" data-testid="button-manage-bonds">Manage</Button>
+                  <Link href="/trading">
+                    <Button size="sm" className="w-full mt-3" data-testid="button-manage-bonds">Manage</Button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -236,7 +251,9 @@ export default function FinancialServices() {
                 <CardContent>
                   <p className="text-2xl font-bold" data-testid="text-reit-value">$0.00</p>
                   <p className="text-xs text-muted-foreground">Real estate trusts</p>
-                  <Button size="sm" className="w-full mt-3" data-testid="button-manage-reit">Manage</Button>
+                  <Link href="/trading">
+                    <Button size="sm" className="w-full mt-3" data-testid="button-manage-reit">Manage</Button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -247,7 +264,9 @@ export default function FinancialServices() {
                 <CardContent>
                   <p className="text-2xl font-bold" data-testid="text-funds-value">$0.00</p>
                   <p className="text-xs text-muted-foreground">Fund holdings</p>
-                  <Button size="sm" className="w-full mt-3" data-testid="button-manage-funds">Manage</Button>
+                  <Link href="/trading">
+                    <Button size="sm" className="w-full mt-3" data-testid="button-manage-funds">Manage</Button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -258,7 +277,9 @@ export default function FinancialServices() {
                 <CardContent>
                   <p className="text-2xl font-bold" data-testid="text-commodities-value">$0.00</p>
                   <p className="text-xs text-muted-foreground">Futures & physical</p>
-                  <Button size="sm" className="w-full mt-3" data-testid="button-manage-commodities">Manage</Button>
+                  <Link href="/metals">
+                    <Button size="sm" className="w-full mt-3" data-testid="button-manage-commodities">Manage</Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>
@@ -288,9 +309,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Total PnL</span>
                       <span data-testid="text-crypto-deriv-pnl">$0.00</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-trade-crypto-deriv">
-                      Trade Perpetuals
-                    </Button>
+                    <Link href="/exchange">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-crypto-deriv">
+                        Trade Perpetuals
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -313,9 +336,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Value</span>
                       <span data-testid="text-metals-value">$0.00</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-trade-metals">
-                      Trade Metals
-                    </Button>
+                    <Link href="/metals">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-metals">
+                        Trade Metals
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -338,9 +363,11 @@ export default function FinancialServices() {
                       <span className="text-muted-foreground">Sharpe Ratio</span>
                       <span data-testid="text-portfolio-sharpe">0.00</span>
                     </div>
-                    <Button size="sm" className="w-full mt-2" data-testid="button-manage-portfolio">
-                      Rebalance
-                    </Button>
+                    <Link href="/analytics-intelligence">
+                      <Button size="sm" className="w-full mt-2" data-testid="button-manage-portfolio">
+                        Rebalance
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>

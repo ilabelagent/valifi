@@ -2,17 +2,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, Zap, DollarSign, Link2, Sparkles, TrendingUp, Cpu, Pickaxe } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AdvancedTrading() {
   const features = [
-    { id: "amm", name: "AMM", icon: Activity, desc: "Automated Market Maker", testId: "amm" },
-    { id: "liquidity", name: "Liquidity", icon: DollarSign, desc: "LP Management", testId: "liquidity" },
-    { id: "defi", name: "DeFi", icon: Sparkles, desc: "Protocol Automation", testId: "defi" },
-    { id: "bridge", name: "Bridge", icon: Link2, desc: "Cross-chain Bridging", testId: "bridge" },
-    { id: "lending", name: "Lending", icon: TrendingUp, desc: "Borrow & Lend", testId: "lending" },
-    { id: "gas", name: "Gas Optimizer", icon: Zap, desc: "Gas Savings", testId: "gas" },
-    { id: "mining", name: "Mining", icon: Pickaxe, desc: "Mining Management", testId: "mining" },
-    { id: "advanced", name: "Advanced", icon: Cpu, desc: "Flash Loans & Arbitrage", testId: "advanced" },
+    { id: "amm", name: "AMM", icon: Activity, desc: "Automated Market Maker", testId: "amm", route: "/exchange" },
+    { id: "liquidity", name: "Liquidity", icon: DollarSign, desc: "LP Management", testId: "liquidity", route: "/exchange" },
+    { id: "defi", name: "DeFi", icon: Sparkles, desc: "Protocol Automation", testId: "defi", route: "/exchange" },
+    { id: "bridge", name: "Bridge", icon: Link2, desc: "Cross-chain Bridging", testId: "bridge", route: "/blockchain" },
+    { id: "lending", name: "Lending", icon: TrendingUp, desc: "Borrow & Lend", testId: "lending", route: "/exchange" },
+    { id: "gas", name: "Gas Optimizer", icon: Zap, desc: "Gas Savings", testId: "gas", route: "/blockchain" },
+    { id: "mining", name: "Mining", icon: Pickaxe, desc: "Mining Management", testId: "mining", route: "/blockchain" },
+    { id: "advanced", name: "Advanced", icon: Cpu, desc: "Flash Loans & Arbitrage", testId: "advanced", route: "/exchange" },
   ];
 
   return (
@@ -47,9 +48,11 @@ export default function AdvancedTrading() {
                 <CardDescription>{feature.desc}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button size="sm" className="w-full" data-testid={`button-manage-${feature.testId}`}>
-                  Manage
-                </Button>
+                <Link href={feature.route}>
+                  <Button size="sm" className="w-full" data-testid={`button-manage-${feature.testId}`}>
+                    Manage
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
