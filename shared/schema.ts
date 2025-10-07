@@ -230,6 +230,105 @@ export const cryptoPayments = pgTable("crypto_payments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// P2P Trading System
+export const p2pOfferTypeEnum = pgEnum("p2p_offer_type", ["buy", "sell"]);
+export const p2pOfferStatusEnum = pgEnum("p2p_offer_status", ["active", "paused", "completed", "cancelled"]);
+export const p2pOrderStatusEnum = pgEnum("p2p_order_status", ["created", "escrowed", "paid", "released", "disputed", "cancelled", "completed"]);
+export const p2pDisputeStatusEnum = pgEnum("p2p_dispute_status", ["open", "reviewing", "resolved", "escalated"]);
+
+export const p2pOffers = pgTable("p2p_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: p2pOfferTypeEnum("type").notNull(),
+  cryptocurrency: text("cryptocurrency").notNull(), // BTC, ETH, USDT, etc.
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  fiatCurrency: text("fiat_currency").notNull(), // USD, EUR, etc.
+  pricePerUnit: decimal("price_per_unit", { precision: 12, scale: 2 }).notNull(),
+  paymentMethods: text("payment_methods").array(), // bank_transfer, paypal, etc.
+  minAmount: decimal("min_amount", { precision: 36, scale: 18 }),
+  maxAmount: decimal("max_amount", { precision: 36, scale: 18 }),
+  timeLimit: integer("time_limit").default(30), // minutes
+  terms: text("terms"),
+  status: p2pOfferStatusEnum("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const p2pOrders = pgTable("p2p_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  offerId: varchar("offer_id").references(() => p2pOffers.id).notNull(),
+  buyerId: varchar("buyer_id").references(() => users.id).notNull(),
+  sellerId: varchar("seller_id").references(() => users.id).notNull(),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  fiatAmount: decimal("fiat_amount", { precision: 12, scale: 2 }).notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  status: p2pOrderStatusEnum("status").default("created"),
+  escrowTxHash: text("escrow_tx_hash"),
+  releaseTxHash: text("release_tx_hash"),
+  disputeReason: text("dispute_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  paidAt: timestamp("paid_at"),
+  completedAt: timestamp("completed_at"),
+});
+
+export const p2pPaymentMethods = pgTable("p2p_payment_methods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // bank_transfer, paypal, venmo, cash_app, zelle, etc.
+  details: jsonb("details"), // account number, email, etc.
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const p2pChatMessages = pgTable("p2p_chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => p2pOrders.id).notNull(),
+  senderId: varchar("sender_id").references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  attachments: text("attachments").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const p2pDisputes = pgTable("p2p_disputes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => p2pOrders.id).notNull(),
+  raisedBy: varchar("raised_by").references(() => users.id).notNull(),
+  reason: text("reason").notNull(),
+  evidence: jsonb("evidence"),
+  status: p2pDisputeStatusEnum("status").default("open"),
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by").references(() => adminUsers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+export const p2pReviews = pgTable("p2p_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => p2pOrders.id).notNull(),
+  reviewerId: varchar("reviewer_id").references(() => users.id).notNull(),
+  reviewedUserId: varchar("reviewed_user_id").references(() => users.id).notNull(),
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// WalletConnect Sessions
+export const walletConnectSessionStatusEnum = pgEnum("wallet_connect_session_status", ["active", "expired", "disconnected"]);
+
+export const walletConnectSessions = pgTable("wallet_connect_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  walletType: text("wallet_type").notNull(), // metamask, trust, rainbow, coinbase, etc.
+  chainId: integer("chain_id").notNull(),
+  network: text("network").notNull(), // ethereum, polygon, bsc, etc.
+  status: walletConnectSessionStatusEnum("status").default("active"),
+  sessionData: jsonb("session_data"),
+  lastUsedAt: timestamp("last_used_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
 // Trading bot configurations
 export const tradingBots = pgTable("trading_bots", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1184,6 +1283,15 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   personaAssignments: many(personaAssignments),
   backgroundChecks: many(backgroundChecks),
   creditReports: many(creditReports),
+  p2pOffers: many(p2pOffers),
+  p2pOrdersAsBuyer: many(p2pOrders),
+  p2pOrdersAsSeller: many(p2pOrders),
+  p2pPaymentMethods: many(p2pPaymentMethods),
+  p2pChatMessages: many(p2pChatMessages),
+  p2pDisputesRaised: many(p2pDisputes),
+  p2pReviewsGiven: many(p2pReviews),
+  p2pReviewsReceived: many(p2pReviews),
+  walletConnectSessions: many(walletConnectSessions),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -1279,6 +1387,87 @@ export const quantumJobsRelations = relations(quantumJobs, ({ one }) => ({
 export const cryptoPaymentsRelations = relations(cryptoPayments, ({ one }) => ({
   user: one(users, {
     fields: [cryptoPayments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const p2pOffersRelations = relations(p2pOffers, ({ one, many }) => ({
+  user: one(users, {
+    fields: [p2pOffers.userId],
+    references: [users.id],
+  }),
+  orders: many(p2pOrders),
+}));
+
+export const p2pOrdersRelations = relations(p2pOrders, ({ one, many }) => ({
+  offer: one(p2pOffers, {
+    fields: [p2pOrders.offerId],
+    references: [p2pOffers.id],
+  }),
+  buyer: one(users, {
+    fields: [p2pOrders.buyerId],
+    references: [users.id],
+  }),
+  seller: one(users, {
+    fields: [p2pOrders.sellerId],
+    references: [users.id],
+  }),
+  chatMessages: many(p2pChatMessages),
+  disputes: many(p2pDisputes),
+  reviews: many(p2pReviews),
+}));
+
+export const p2pPaymentMethodsRelations = relations(p2pPaymentMethods, ({ one }) => ({
+  user: one(users, {
+    fields: [p2pPaymentMethods.userId],
+    references: [users.id],
+  }),
+}));
+
+export const p2pChatMessagesRelations = relations(p2pChatMessages, ({ one }) => ({
+  order: one(p2pOrders, {
+    fields: [p2pChatMessages.orderId],
+    references: [p2pOrders.id],
+  }),
+  sender: one(users, {
+    fields: [p2pChatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const p2pDisputesRelations = relations(p2pDisputes, ({ one }) => ({
+  order: one(p2pOrders, {
+    fields: [p2pDisputes.orderId],
+    references: [p2pOrders.id],
+  }),
+  raisedByUser: one(users, {
+    fields: [p2pDisputes.raisedBy],
+    references: [users.id],
+  }),
+  resolvedByAdmin: one(adminUsers, {
+    fields: [p2pDisputes.resolvedBy],
+    references: [adminUsers.id],
+  }),
+}));
+
+export const p2pReviewsRelations = relations(p2pReviews, ({ one }) => ({
+  order: one(p2pOrders, {
+    fields: [p2pReviews.orderId],
+    references: [p2pOrders.id],
+  }),
+  reviewer: one(users, {
+    fields: [p2pReviews.reviewerId],
+    references: [users.id],
+  }),
+  reviewedUser: one(users, {
+    fields: [p2pReviews.reviewedUserId],
+    references: [users.id],
+  }),
+}));
+
+export const walletConnectSessionsRelations = relations(walletConnectSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [walletConnectSessions.userId],
     references: [users.id],
   }),
 }));
@@ -1833,6 +2022,48 @@ export const insertCryptoPaymentSchema = createInsertSchema(cryptoPayments).omit
   confirmedAt: true,
 });
 
+export const insertP2POfferSchema = createInsertSchema(p2pOffers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertP2POrderSchema = createInsertSchema(p2pOrders).omit({
+  id: true,
+  createdAt: true,
+  paidAt: true,
+  completedAt: true,
+});
+
+export const insertP2PPaymentMethodSchema = createInsertSchema(p2pPaymentMethods).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertP2PChatMessageSchema = createInsertSchema(p2pChatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertP2PDisputeSchema = createInsertSchema(p2pDisputes).omit({
+  id: true,
+  createdAt: true,
+  resolvedAt: true,
+});
+
+export const insertP2PReviewSchema = createInsertSchema(p2pReviews).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWalletConnectSessionSchema = createInsertSchema(walletConnectSessions).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type InsertWalletConnectSession = z.infer<typeof insertWalletConnectSessionSchema>;
+export type WalletConnectSession = typeof walletConnectSessions.$inferSelect;
+
 export const insertTradingBotSchema = createInsertSchema(tradingBots).omit({
   id: true,
   createdAt: true,
@@ -1970,6 +2201,24 @@ export type QuantumJob = typeof quantumJobs.$inferSelect;
 
 export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+
+export type InsertP2POffer = z.infer<typeof insertP2POfferSchema>;
+export type P2POffer = typeof p2pOffers.$inferSelect;
+
+export type InsertP2POrder = z.infer<typeof insertP2POrderSchema>;
+export type P2POrder = typeof p2pOrders.$inferSelect;
+
+export type InsertP2PPaymentMethod = z.infer<typeof insertP2PPaymentMethodSchema>;
+export type P2PPaymentMethod = typeof p2pPaymentMethods.$inferSelect;
+
+export type InsertP2PChatMessage = z.infer<typeof insertP2PChatMessageSchema>;
+export type P2PChatMessage = typeof p2pChatMessages.$inferSelect;
+
+export type InsertP2PDispute = z.infer<typeof insertP2PDisputeSchema>;
+export type P2PDispute = typeof p2pDisputes.$inferSelect;
+
+export type InsertP2PReview = z.infer<typeof insertP2PReviewSchema>;
+export type P2PReview = typeof p2pReviews.$inferSelect;
 
 export type InsertTradingBot = z.infer<typeof insertTradingBotSchema>;
 export type TradingBot = typeof tradingBots.$inferSelect;

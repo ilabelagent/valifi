@@ -150,6 +150,17 @@ Preferred communication style: Simple, everyday language.
 - tradingStrategies: Custom strategy definitions
 - botPerformanceMetrics: Historical performance analytics
 
+**P2P Trading System** (6 tables - NEW October 2025)
+- p2pOffers: User buy/sell crypto offers with payment methods and limits
+- p2pOrders: Peer-to-peer trade orders with escrow, buyer/seller tracking
+- p2pPaymentMethods: User payment method registry with verification status
+- p2pChatMessages: Order-specific chat with attachments support
+- p2pDisputes: Dispute resolution with admin oversight and evidence tracking
+- p2pReviews: Post-trade rating system with comments
+
+**WalletConnect Sessions** (1 table - NEW October 2025)
+- walletConnectSessions: External wallet session management (MetaMask, Trust, Rainbow, Coinbase)
+
 *Data Integrity Features*
 - Composite unique constraints on all join tables to prevent duplicate relationships
 - Foreign key relationships with cascade rules for data consistency
@@ -184,20 +195,36 @@ Preferred communication style: Simple, everyday language.
 - Wallet generation with HD derivation paths
 - Real on-chain balance queries and transaction submission
 
-**Payment Processors**
+**Payment Systems (Complete Infrastructure)**
 
-*Fiat Payments*
-- Stripe: cards, ACH, webhooks for real-time updates
+*Fiat Payments* (3 processors)
+- Stripe: cards, ACH, webhooks for real-time updates (`payments` table)
 - PayPal SDK: orders, subscriptions, payouts
 - Plaid: bank account linking and transfers
 
-*Crypto Payments*
+*Crypto Payments* (5 processors + Direct Blockchain)
 - BitPay: invoice generation with QR codes
 - Binance Pay: merchant integration
 - Bybit: crypto payment processing
 - KuCoin Pay: order creation
 - Luno: deposit/withdrawal APIs
-- Coinbase Commerce: crypto checkout flows
+- Direct Blockchain: Web3Service for ETH, ERC-20 transfers across 5 networks (`cryptoPayments` table)
+
+*P2P Trading System* (6 tables - NEW October 2025)
+- p2pOffers: User buy/sell crypto offers with payment methods
+- p2pOrders: Peer-to-peer trade orders with escrow support
+- p2pPaymentMethods: User payment method registry (bank_transfer, PayPal, Venmo, etc.)
+- p2pChatMessages: Order-specific chat for buyer-seller communication
+- p2pDisputes: Dispute resolution system with admin oversight
+- p2pReviews: Post-trade rating system (1-5 stars)
+- API: 18 endpoints for offers, orders, chat, disputes, reviews
+
+*WalletConnect Integration* (NEW October 2025)
+- External wallet connection (MetaMask, Trust, Rainbow, Coinbase)
+- Multi-network support via browser wallet injection
+- Session management with database persistence (`walletConnectSessions` table)
+- Network switching & transaction signing via `walletConnectService.ts`
+- API: 4 endpoints for session management and wallet operations
 
 **Trading & Market Data**
 - Armor Wallet SDK: MPC-TEE Web3 wallet with AI trading, natural language execution

@@ -40,6 +40,13 @@ import {
   botLearningSession,
   botTrainingData,
   botSkills,
+  p2pOffers,
+  p2pOrders,
+  p2pPaymentMethods,
+  p2pChatMessages,
+  p2pDisputes,
+  p2pReviews,
+  walletConnectSessions,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -123,6 +130,20 @@ import {
   type InsertBotTrainingData,
   type BotSkill,
   type InsertBotSkill,
+  type P2POffer,
+  type InsertP2POffer,
+  type P2POrder,
+  type InsertP2POrder,
+  type P2PPaymentMethod,
+  type InsertP2PPaymentMethod,
+  type P2PChatMessage,
+  type InsertP2PChatMessage,
+  type P2PDispute,
+  type InsertP2PDispute,
+  type P2PReview,
+  type InsertP2PReview,
+  type WalletConnectSession,
+  type InsertWalletConnectSession,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -345,6 +366,38 @@ export interface IStorage {
   getBotSkills(botId: string): Promise<BotSkill[]>;
   createBotSkill(skill: InsertBotSkill): Promise<BotSkill>;
   updateBotSkill(id: string, updates: Partial<InsertBotSkill>): Promise<boolean>;
+
+  // P2P Trading
+  getP2POffers(type?: string): Promise<P2POffer[]>;
+  getP2POffer(id: string): Promise<P2POffer | undefined>;
+  createP2POffer(offer: InsertP2POffer): Promise<P2POffer>;
+  updateP2POffer(id: string, updates: Partial<InsertP2POffer>): Promise<boolean>;
+
+  getP2POrders(userId: string): Promise<P2POrder[]>;
+  getP2POrder(id: string): Promise<P2POrder | undefined>;
+  createP2POrder(order: InsertP2POrder): Promise<P2POrder>;
+  updateP2POrder(id: string, updates: Partial<InsertP2POrder>): Promise<boolean>;
+
+  getUserP2PPaymentMethods(userId: string): Promise<P2PPaymentMethod[]>;
+  createP2PPaymentMethod(method: InsertP2PPaymentMethod): Promise<P2PPaymentMethod>;
+
+  getOrderChatMessages(orderId: string): Promise<P2PChatMessage[]>;
+  createP2PChatMessage(message: InsertP2PChatMessage): Promise<P2PChatMessage>;
+
+  getP2PDisputes(status?: string): Promise<P2PDispute[]>;
+  getP2PDispute(id: string): Promise<P2PDispute | undefined>;
+  createP2PDispute(dispute: InsertP2PDispute): Promise<P2PDispute>;
+  updateP2PDispute(id: string, updates: Partial<InsertP2PDispute>): Promise<boolean>;
+
+  getUserP2PReviews(userId: string): Promise<P2PReview[]>;
+  createP2PReview(review: InsertP2PReview): Promise<P2PReview>;
+
+  // WalletConnect
+  getWalletConnectSessions(userId: string): Promise<WalletConnectSession[]>;
+  getActiveWalletSession(userId: string, walletAddress: string): Promise<WalletConnectSession | undefined>;
+  createWalletConnectSession(session: InsertWalletConnectSession): Promise<WalletConnectSession>;
+  updateWalletSessionStatus(id: string, status: string): Promise<boolean>;
+  disconnectWalletSession(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1267,6 +1320,203 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(botSkills)
       .set(updates)
       .where(eq(botSkills.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // P2P Trading
+  async getP2POffers(type?: string) {
+    if (type) {
+      return await db.query.p2pOffers.findMany({
+        where: eq(p2pOffers.type, type as any),
+        with: { user: true },
+        orderBy: [desc(p2pOffers.createdAt)],
+      });
+    }
+    return await db.query.p2pOffers.findMany({
+      with: { user: true },
+      orderBy: [desc(p2pOffers.createdAt)],
+    });
+  }
+
+  async getP2POffer(id: string) {
+    return await db.query.p2pOffers.findFirst({
+      where: eq(p2pOffers.id, id),
+      with: { user: true },
+    });
+  }
+
+  async createP2POffer(offer: InsertP2POffer) {
+    const [created] = await db.insert(p2pOffers).values(offer).returning();
+    return created;
+  }
+
+  async updateP2POffer(id: string, updates: Partial<InsertP2POffer>) {
+    const result = await db.update(p2pOffers)
+      .set(updates)
+      .where(eq(p2pOffers.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getP2POrders(userId: string) {
+    return await db.query.p2pOrders.findMany({
+      where: sql`${p2pOrders.buyerId} = ${userId} OR ${p2pOrders.sellerId} = ${userId}`,
+      with: {
+        offer: { with: { user: true } },
+        buyer: true,
+        seller: true,
+      },
+      orderBy: [desc(p2pOrders.createdAt)],
+    });
+  }
+
+  async getP2POrder(id: string) {
+    return await db.query.p2pOrders.findFirst({
+      where: eq(p2pOrders.id, id),
+      with: {
+        offer: { with: { user: true } },
+        buyer: true,
+        seller: true,
+      },
+    });
+  }
+
+  async createP2POrder(order: InsertP2POrder) {
+    const [created] = await db.insert(p2pOrders).values(order).returning();
+    return created;
+  }
+
+  async updateP2POrder(id: string, updates: Partial<InsertP2POrder>) {
+    const result = await db.update(p2pOrders)
+      .set(updates)
+      .where(eq(p2pOrders.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getUserP2PPaymentMethods(userId: string) {
+    return await db.query.p2pPaymentMethods.findMany({
+      where: eq(p2pPaymentMethods.userId, userId),
+      orderBy: [desc(p2pPaymentMethods.createdAt)],
+    });
+  }
+
+  async createP2PPaymentMethod(method: InsertP2PPaymentMethod) {
+    const [created] = await db.insert(p2pPaymentMethods).values(method).returning();
+    return created;
+  }
+
+  async getOrderChatMessages(orderId: string) {
+    return await db.query.p2pChatMessages.findMany({
+      where: eq(p2pChatMessages.orderId, orderId),
+      with: { sender: true },
+      orderBy: [asc(p2pChatMessages.createdAt)],
+    });
+  }
+
+  async createP2PChatMessage(message: InsertP2PChatMessage) {
+    const [created] = await db.insert(p2pChatMessages).values(message).returning();
+    return created;
+  }
+
+  async getP2PDisputes(status?: string) {
+    if (status) {
+      return await db.query.p2pDisputes.findMany({
+        where: eq(p2pDisputes.status, status as any),
+        with: {
+          order: { with: { offer: true, buyer: true, seller: true } },
+          raisedByUser: true,
+          resolvedByAdmin: { with: { user: true } },
+        },
+        orderBy: [desc(p2pDisputes.createdAt)],
+      });
+    }
+    return await db.query.p2pDisputes.findMany({
+      with: {
+        order: { with: { offer: true, buyer: true, seller: true } },
+        raisedByUser: true,
+        resolvedByAdmin: { with: { user: true } },
+      },
+      orderBy: [desc(p2pDisputes.createdAt)],
+    });
+  }
+
+  async getP2PDispute(id: string) {
+    return await db.query.p2pDisputes.findFirst({
+      where: eq(p2pDisputes.id, id),
+      with: {
+        order: { with: { offer: true, buyer: true, seller: true } },
+        raisedByUser: true,
+        resolvedByAdmin: { with: { user: true } },
+      },
+    });
+  }
+
+  async createP2PDispute(dispute: InsertP2PDispute) {
+    const [created] = await db.insert(p2pDisputes).values(dispute).returning();
+    return created;
+  }
+
+  async updateP2PDispute(id: string, updates: Partial<InsertP2PDispute>) {
+    const result = await db.update(p2pDisputes)
+      .set(updates)
+      .where(eq(p2pDisputes.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getUserP2PReviews(userId: string) {
+    return await db.query.p2pReviews.findMany({
+      where: eq(p2pReviews.reviewedUserId, userId),
+      with: {
+        reviewer: true,
+        order: true,
+      },
+      orderBy: [desc(p2pReviews.createdAt)],
+    });
+  }
+
+  async createP2PReview(review: InsertP2PReview) {
+    const [created] = await db.insert(p2pReviews).values(review).returning();
+    return created;
+  }
+
+  // WalletConnect
+  async getWalletConnectSessions(userId: string) {
+    return await db.query.walletConnectSessions.findMany({
+      where: eq(walletConnectSessions.userId, userId),
+      orderBy: [desc(walletConnectSessions.lastUsedAt)],
+    });
+  }
+
+  async getActiveWalletSession(userId: string, walletAddress: string) {
+    return await db.query.walletConnectSessions.findFirst({
+      where: and(
+        eq(walletConnectSessions.userId, userId),
+        eq(walletConnectSessions.walletAddress, walletAddress),
+        eq(walletConnectSessions.status, "active")
+      ),
+    });
+  }
+
+  async createWalletConnectSession(session: InsertWalletConnectSession) {
+    const [created] = await db.insert(walletConnectSessions).values(session).returning();
+    return created;
+  }
+
+  async updateWalletSessionStatus(id: string, status: string) {
+    const result = await db.update(walletConnectSessions)
+      .set({ status: status as any, lastUsedAt: new Date() })
+      .where(eq(walletConnectSessions.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async disconnectWalletSession(id: string) {
+    const result = await db.update(walletConnectSessions)
+      .set({ status: "disconnected", lastUsedAt: new Date() })
+      .where(eq(walletConnectSessions.id, id))
       .returning();
     return result.length > 0;
   }

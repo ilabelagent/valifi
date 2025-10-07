@@ -43,6 +43,13 @@ import {
   insertBotLearningSessionSchema,
   insertBotTrainingDataSchema,
   insertBotSkillSchema,
+  insertP2POfferSchema,
+  insertP2POrderSchema,
+  insertP2PPaymentMethodSchema,
+  insertP2PChatMessageSchema,
+  insertP2PDisputeSchema,
+  insertP2PReviewSchema,
+  insertWalletConnectSessionSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { z } from "zod";
@@ -2399,6 +2406,369 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating bot skill:", error);
       res.status(500).json({ message: "Failed to create bot skill" });
+    }
+  });
+
+  // P2P Trading Routes
+
+  // P2P Offers
+  app.get("/api/p2p/offers", isAuthenticated, async (req: any, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const offers = await storage.getP2POffers(type);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching P2P offers:", error);
+      res.status(500).json({ message: "Failed to fetch P2P offers" });
+    }
+  });
+
+  app.get("/api/p2p/offers/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const offer = await storage.getP2POffer(id);
+      if (!offer) {
+        return res.status(404).json({ message: "Offer not found" });
+      }
+      res.json(offer);
+    } catch (error) {
+      console.error("Error fetching P2P offer:", error);
+      res.status(500).json({ message: "Failed to fetch P2P offer" });
+    }
+  });
+
+  app.post("/api/p2p/offers", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2POfferSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid offer data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const offer = await storage.createP2POffer({
+        ...validation.data,
+        userId,
+      });
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating P2P offer:", error);
+      res.status(500).json({ message: "Failed to create P2P offer" });
+    }
+  });
+
+  app.patch("/api/p2p/offers/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertP2POfferSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const updated = await storage.updateP2POffer(id, validation.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Offer not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating P2P offer:", error);
+      res.status(500).json({ message: "Failed to update P2P offer" });
+    }
+  });
+
+  // P2P Orders
+  app.get("/api/p2p/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const orders = await storage.getP2POrders(userId);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching P2P orders:", error);
+      res.status(500).json({ message: "Failed to fetch P2P orders" });
+    }
+  });
+
+  app.get("/api/p2p/orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const order = await storage.getP2POrder(id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error fetching P2P order:", error);
+      res.status(500).json({ message: "Failed to fetch P2P order" });
+    }
+  });
+
+  app.post("/api/p2p/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = insertP2POrderSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid order data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const order = await storage.createP2POrder(validation.data);
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating P2P order:", error);
+      res.status(500).json({ message: "Failed to create P2P order" });
+    }
+  });
+
+  app.patch("/api/p2p/orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertP2POrderSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const updated = await storage.updateP2POrder(id, validation.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating P2P order:", error);
+      res.status(500).json({ message: "Failed to update P2P order" });
+    }
+  });
+
+  // P2P Payment Methods
+  app.get("/api/p2p/payment-methods", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const methods = await storage.getUserP2PPaymentMethods(userId);
+      res.json(methods);
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+      res.status(500).json({ message: "Failed to fetch payment methods" });
+    }
+  });
+
+  app.post("/api/p2p/payment-methods", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2PPaymentMethodSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid payment method data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const method = await storage.createP2PPaymentMethod({
+        ...validation.data,
+        userId,
+      });
+      res.status(201).json(method);
+    } catch (error) {
+      console.error("Error creating payment method:", error);
+      res.status(500).json({ message: "Failed to create payment method" });
+    }
+  });
+
+  // P2P Chat
+  app.get("/api/p2p/chat/:orderId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { orderId } = req.params;
+      const messages = await storage.getOrderChatMessages(orderId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch chat messages" });
+    }
+  });
+
+  app.post("/api/p2p/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2PChatMessageSchema.omit({ senderId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid message data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const message = await storage.createP2PChatMessage({
+        ...validation.data,
+        senderId: userId,
+      });
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error creating chat message:", error);
+      res.status(500).json({ message: "Failed to create chat message" });
+    }
+  });
+
+  // P2P Disputes
+  app.get("/api/p2p/disputes", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const disputes = await storage.getP2PDisputes(status);
+      res.json(disputes);
+    } catch (error) {
+      console.error("Error fetching disputes:", error);
+      res.status(500).json({ message: "Failed to fetch disputes" });
+    }
+  });
+
+  app.post("/api/p2p/disputes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2PDisputeSchema.omit({ raisedBy: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid dispute data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const dispute = await storage.createP2PDispute({
+        ...validation.data,
+        raisedBy: userId,
+      });
+      res.status(201).json(dispute);
+    } catch (error) {
+      console.error("Error creating dispute:", error);
+      res.status(500).json({ message: "Failed to create dispute" });
+    }
+  });
+
+  app.patch("/api/p2p/disputes/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertP2PDisputeSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const updated = await storage.updateP2PDispute(id, validation.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating dispute:", error);
+      res.status(500).json({ message: "Failed to update dispute" });
+    }
+  });
+
+  // P2P Reviews
+  app.get("/api/p2p/reviews/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const reviews = await storage.getUserP2PReviews(userId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/p2p/reviews", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2PReviewSchema.omit({ reviewerId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid review data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const review = await storage.createP2PReview({
+        ...validation.data,
+        reviewerId: userId,
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // WalletConnect Routes
+  app.get("/api/walletconnect/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sessions = await storage.getWalletConnectSessions(userId);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching wallet sessions:", error);
+      res.status(500).json({ message: "Failed to fetch wallet sessions" });
+    }
+  });
+
+  app.post("/api/walletconnect/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertWalletConnectSessionSchema.omit({ userId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid session data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+
+      // Check if active session exists for this wallet
+      const existingSession = await storage.getActiveWalletSession(userId, validation.data.walletAddress);
+      if (existingSession) {
+        // Update last used time
+        await storage.updateWalletSessionStatus(existingSession.id, "active");
+        return res.json(existingSession);
+      }
+
+      const session = await storage.createWalletConnectSession({
+        ...validation.data,
+        userId,
+      });
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating wallet session:", error);
+      res.status(500).json({ message: "Failed to create wallet session" });
+    }
+  });
+
+  app.patch("/api/walletconnect/sessions/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!["active", "expired", "disconnected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const updated = await storage.updateWalletSessionStatus(id, status);
+      if (!updated) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating session status:", error);
+      res.status(500).json({ message: "Failed to update session status" });
+    }
+  });
+
+  app.post("/api/walletconnect/sessions/:id/disconnect", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const disconnected = await storage.disconnectWalletSession(id);
+      if (!disconnected) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error disconnecting session:", error);
+      res.status(500).json({ message: "Failed to disconnect session" });
     }
   });
 
