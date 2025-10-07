@@ -84,6 +84,42 @@ export class Web3Service {
   }
 
   /**
+   * Import wallet from mnemonic phrase
+   */
+  async importWalletFromMnemonic(mnemonic: string): Promise<{
+    address: string;
+    privateKey: string;
+  }> {
+    try {
+      const wallet = ethers.Wallet.fromPhrase(mnemonic);
+      return {
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+      };
+    } catch (error: any) {
+      throw new Error(`Invalid mnemonic phrase: ${error.message}`);
+    }
+  }
+
+  /**
+   * Import wallet from private key
+   */
+  async importWalletFromPrivateKey(privateKey: string): Promise<{
+    address: string;
+    privateKey: string;
+  }> {
+    try {
+      const wallet = new ethers.Wallet(privateKey);
+      return {
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+      };
+    } catch (error: any) {
+      throw new Error(`Invalid private key: ${error.message}`);
+    }
+  }
+
+  /**
    * Get wallet balance
    */
   async getBalance(address: string, network: string = "ethereum"): Promise<string> {

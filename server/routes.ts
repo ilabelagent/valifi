@@ -124,6 +124,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import wallet from mnemonic or private key
+  app.post("/api/web3/import-wallet", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { mnemonic, privateKey, network = "ethereum" } = req.body;
+
+      let walletData: { address: string; privateKey: string };
+
+      if (mnemonic) {
+        walletData = await web3Service.importWalletFromMnemonic(mnemonic);
+      } else if (privateKey) {
+        walletData = await web3Service.importWalletFromPrivateKey(privateKey);
+      } else {
+        return res.status(400).json({ message: "Mnemonic or private key required" });
+      }
+
+      // Check if wallet already exists
+      const existingWallet = await storage.getWalletByAddress(walletData.address);
+      if (existingWallet) {
+        return res.status(400).json({ message: "Wallet already imported" });
+      }
+
+      // Encrypt private key
+      const encryptedPrivateKey = encryptionService.encrypt(
+        walletData.privateKey,
+        userId
+      );
+
+      // Store in database
+      const wallet = await storage.createWallet({
+        userId,
+        address: walletData.address,
+        balance: "0",
+        network,
+        privateKeyEncrypted: encryptedPrivateKey,
+      });
+
+      res.json({
+        id: wallet.id,
+        address: wallet.address,
+        network: wallet.network,
+        balance: wallet.balance,
+      });
+    } catch (error: any) {
+      console.error("Error importing wallet:", error);
+      res.status(500).json({ message: error.message || "Failed to import wallet" });
+    }
+  });
+
   app.get("/api/web3/balance/:walletId", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
