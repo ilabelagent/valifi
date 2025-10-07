@@ -809,6 +809,75 @@ export const insertMevEventSchema = createInsertSchema(mevEvents).omit({
   detectedAt: true,
 });
 
+export const insertExchangeOrderSchema = createInsertSchema(exchangeOrders).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export const insertLiquidityPoolSchema = createInsertSchema(liquidityPools).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMixingRequestSchema = createInsertSchema(mixingRequests).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export const insertForumCategorySchema = createInsertSchema(forumCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastReplyAt: true,
+  viewCount: true,
+  replyCount: true,
+});
+
+export const insertForumReplySchema = createInsertSchema(forumReplies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
+  id: true,
+  createdAt: true,
+  lastMessageAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMetalInventorySchema = createInsertSchema(metalInventory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMetalTradeSchema = createInsertSchema(metalTrades).omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
+});
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+  viewCount: true,
+});
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
