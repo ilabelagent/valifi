@@ -18,6 +18,7 @@ import AgentsPage from "@/pages/agents";
 import PublishingPage from "@/pages/publishing";
 import SecurityPage from "@/pages/security";
 import PaymentsPage from "@/pages/payments";
+import KycPage from "@/pages/kyc";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -63,7 +64,7 @@ function Router() {
               <Route path="/publishing" component={PublishingPage} />
               <Route path="/security" component={SecurityPage} />
               <Route path="/payments" component={PaymentsPage} />
-              <Route path="/kyc" component={() => <div className="p-6">KYC coming soon...</div>} />
+              <Route path="/kyc" component={KycPage} />
               <Route path="/quantum" component={() => <div className="p-6">Quantum coming soon...</div>} />
               <Route component={NotFound} />
             </Switch>
