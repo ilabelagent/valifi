@@ -9,9 +9,10 @@ export const kycStatusEnum = pgEnum("kyc_status", ["pending", "in_review", "appr
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "confirmed", "failed"]);
 export const botStatusEnum = pgEnum("bot_status", ["active", "idle", "error", "maintenance"]);
 export const agentTypeEnum = pgEnum("agent_type", [
-  // Core System Agents
+  // Core System Agents (11)
   "orchestrator", 
-  "blockchain", 
+  "blockchain",
+  "web3",
   "payment", 
   "kyc", 
   "security", 
@@ -54,6 +55,7 @@ export const agentTypeEnum = pgEnum("agent_type", [
   "security_privacy",
   
   // Platform Services Agents (15)
+  "platform",
   "platform_admin_control",
   "platform_admin_dashboard",
   "platform_contact_manager",
@@ -68,7 +70,6 @@ export const agentTypeEnum = pgEnum("agent_type", [
   "platform_advanced_services",
   "platform_innovative",
   "platform_address_book",
-  "platform_community_exchange",
   
   // Analytics & Intelligence Agents (6)
   "analytics_portfolio",
@@ -76,7 +77,16 @@ export const agentTypeEnum = pgEnum("agent_type", [
   "analytics_divine_oracle",
   "analytics_word",
   "analytics_cyberlab",
-  "analytics_banking"
+  "analytics_banking",
+  
+  // NFT & Collectibles Agents (3)
+  "nft_minting",
+  "collectibles",
+  "smart_contract",
+  
+  // Community & Social Agents (2)
+  "community_exchange",
+  "multichain"
 ]);
 export const threatLevelEnum = pgEnum("threat_level", ["none", "low", "medium", "high", "critical"]);
 export const networkEnum = pgEnum("network", ["ethereum", "polygon", "bsc", "arbitrum", "optimism"]);

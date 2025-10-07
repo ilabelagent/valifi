@@ -53,6 +53,7 @@ export class AgentOrchestrator {
     // Core Agent nodes
     this.graph.addNode("orchestrator", this.runOrchestrator.bind(this));
     this.graph.addNode("blockchain", this.runBlockchainAgent.bind(this));
+    this.graph.addNode("web3", this.runBlockchainAgent.bind(this));
     this.graph.addNode("payment", this.runPaymentAgent.bind(this));
     this.graph.addNode("kyc", this.runKYCAgent.bind(this));
     this.graph.addNode("security", this.runSecurityAgent.bind(this));
@@ -109,7 +110,7 @@ export class AgentOrchestrator {
     this.graph.addNode("platform_advanced_services", this.runPlatformAgent.bind(this));
     this.graph.addNode("platform_innovative", this.runPlatformAgent.bind(this));
     this.graph.addNode("platform_address_book", this.runPlatformAgent.bind(this));
-    this.graph.addNode("platform_community_exchange", this.runPlatformAgent.bind(this));
+    this.graph.addNode("platform", this.runPlatformAgent.bind(this));
 
     // Analytics Agents
     this.graph.addNode("analytics_portfolio", this.runAnalyticsAgentExtended.bind(this));
@@ -118,6 +119,15 @@ export class AgentOrchestrator {
     this.graph.addNode("analytics_word", this.runAnalyticsAgentExtended.bind(this));
     this.graph.addNode("analytics_cyberlab", this.runAnalyticsAgentExtended.bind(this));
     this.graph.addNode("analytics_banking", this.runAnalyticsAgentExtended.bind(this));
+
+    // NFT & Collectibles Agents
+    this.graph.addNode("nft_minting", this.runPublishingAgent.bind(this));
+    this.graph.addNode("collectibles", this.runPublishingAgent.bind(this));
+    this.graph.addNode("smart_contract", this.runBlockchainAgent.bind(this));
+
+    // Community & Social Agents
+    this.graph.addNode("community_exchange", this.runPlatformAgent.bind(this));
+    this.graph.addNode("multichain", this.runBlockchainAgent.bind(this));
 
     // Set entry point
     this.graph.setEntryPoint("router");
@@ -179,7 +189,7 @@ export class AgentOrchestrator {
       platform_advanced_services: "platform_advanced_services",
       platform_innovative: "platform_innovative",
       platform_address_book: "platform_address_book",
-      platform_community_exchange: "platform_community_exchange",
+      platform: "platform",
       // Analytics
       analytics_portfolio: "analytics_portfolio",
       analytics_transaction_history: "analytics_transaction_history",
@@ -187,6 +197,15 @@ export class AgentOrchestrator {
       analytics_word: "analytics_word",
       analytics_cyberlab: "analytics_cyberlab",
       analytics_banking: "analytics_banking",
+      // NFT & Collectibles
+      nft_minting: "nft_minting",
+      collectibles: "collectibles",
+      smart_contract: "smart_contract",
+      // Community & Social
+      community_exchange: "community_exchange",
+      multichain: "multichain",
+      // Web3
+      web3: "web3",
       end: END,
     };
 
