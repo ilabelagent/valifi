@@ -14,6 +14,7 @@ import Dashboard from "@/pages/dashboard";
 import TradingPage from "@/pages/trading";
 import TerminalPage from "@/pages/terminal";
 import BlockchainPage from "@/pages/blockchain";
+import AgentsPage from "@/pages/agents";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -55,7 +56,7 @@ function Router() {
               <Route path="/trading" component={TradingPage} />
               <Route path="/terminal" component={TerminalPage} />
               <Route path="/blockchain" component={BlockchainPage} />
-              <Route path="/agents" component={() => <div className="p-6">Agents coming soon...</div>} />
+              <Route path="/agents" component={AgentsPage} />
               <Route path="/publishing" component={() => <div className="p-6">Publishing coming soon...</div>} />
               <Route path="/security" component={() => <div className="p-6">Security coming soon...</div>} />
               <Route path="/payments" component={() => <div className="p-6">Payments coming soon...</div>} />
