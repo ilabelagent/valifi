@@ -302,6 +302,180 @@ export const mevEvents = pgTable("mev_events", {
   detectedAt: timestamp("detected_at").defaultNow(),
 });
 
+// Exchange platform for coin procurement
+export const orderTypeEnum = pgEnum("order_type", ["market", "limit", "stop_loss", "stop_limit"]);
+export const orderSideEnum = pgEnum("order_side", ["buy", "sell"]);
+export const orderStatusEnum = pgEnum("order_status", ["open", "partially_filled", "filled", "cancelled", "expired"]);
+
+export const exchangeOrders = pgTable("exchange_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  orderType: orderTypeEnum("order_type").notNull(),
+  orderSide: orderSideEnum("order_side").notNull(),
+  tradingPair: text("trading_pair").notNull(), // BTC/USDT, ETH/USDT
+  price: decimal("price", { precision: 36, scale: 18 }),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  filled: decimal("filled", { precision: 36, scale: 18 }).default("0"),
+  status: orderStatusEnum("status").default("open"),
+  total: decimal("total", { precision: 36, scale: 18 }),
+  fees: decimal("fees", { precision: 36, scale: 18 }),
+  network: networkEnum("network").notNull(),
+  externalOrderId: text("external_order_id"), // Exchange order ID
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const liquidityPools = pgTable("liquidity_pools", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  poolName: text("pool_name").notNull(),
+  tokenA: text("token_a").notNull(), // Token symbol
+  tokenB: text("token_b").notNull(),
+  reserveA: decimal("reserve_a", { precision: 36, scale: 18 }).default("0"),
+  reserveB: decimal("reserve_b", { precision: 36, scale: 18 }).default("0"),
+  lpTokens: decimal("lp_tokens", { precision: 36, scale: 18 }).default("0"),
+  apy: decimal("apy", { precision: 10, scale: 4 }), // Annual percentage yield
+  network: networkEnum("network").notNull(),
+  contractAddress: text("contract_address").notNull(),
+  totalValueLocked: decimal("total_value_locked", { precision: 36, scale: 18 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Coin mixing service for privacy
+export const mixingStatusEnum = pgEnum("mixing_status", ["pending", "mixing", "completed", "failed"]);
+
+export const mixingRequests = pgTable("mixing_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  inputAddress: text("input_address").notNull(),
+  outputAddress: text("output_address").notNull(),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  currency: text("currency").notNull(), // BTC, ETH, etc.
+  mixingFee: decimal("mixing_fee", { precision: 36, scale: 18 }),
+  delayMinutes: integer("delay_minutes").default(30), // Mixing delay for privacy
+  status: mixingStatusEnum("status").default("pending"),
+  inputTxHash: text("input_tx_hash"),
+  outputTxHash: text("output_tx_hash"),
+  mixingRounds: integer("mixing_rounds").default(3), // Number of mixing iterations
+  privacyScore: decimal("privacy_score", { precision: 5, scale: 2 }), // 0-100
+  network: networkEnum("network").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// VIP Community and Forum
+export const forumCategories = pgTable("forum_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  icon: text("icon"), // Lucide icon name
+  order: integer("order").default(0),
+  isVipOnly: boolean("is_vip_only").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const forumThreads = pgTable("forum_threads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").references(() => forumCategories.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isPinned: boolean("is_pinned").default(false),
+  isLocked: boolean("is_locked").default(false),
+  viewCount: integer("view_count").default(0),
+  replyCount: integer("reply_count").default(0),
+  lastReplyAt: timestamp("last_reply_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const forumReplies = pgTable("forum_replies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  threadId: varchar("thread_id").references(() => forumThreads.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Chat Automator
+export const chatSessions = pgTable("chat_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  agentType: text("agent_type"), // Which AI agent is handling this
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastMessageAt: timestamp("last_message_at"),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => chatSessions.id).notNull(),
+  role: text("role").notNull(), // user, assistant, system
+  content: text("content").notNull(),
+  agentName: text("agent_name"), // Which specific agent responded
+  metadata: jsonb("metadata"), // Citations, tool calls, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Metals and Gold Trading
+export const metalTypeEnum = pgEnum("metal_type", ["gold", "silver", "platinum", "palladium", "copper"]);
+export const metalTradeStatusEnum = pgEnum("metal_trade_status", ["pending", "confirmed", "shipped", "delivered", "cancelled"]);
+
+export const metalInventory = pgTable("metal_inventory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  metalType: metalTypeEnum("metal_type").notNull(),
+  weight: decimal("weight", { precision: 12, scale: 4 }).notNull(), // Troy ounces
+  purity: decimal("purity", { precision: 5, scale: 2 }).default("99.99"), // Percentage
+  pricePerOunce: decimal("price_per_ounce", { precision: 12, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 12, scale: 2 }),
+  supplier: text("supplier"),
+  vaultLocation: text("vault_location"),
+  certificateUrl: text("certificate_url"), // Authenticity certificate
+  isAvailable: boolean("is_available").default(true),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const metalTrades = pgTable("metal_trades", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  inventoryId: varchar("inventory_id").references(() => metalInventory.id).notNull(),
+  tradeType: text("trade_type").notNull(), // buy, sell
+  weight: decimal("weight", { precision: 12, scale: 4 }).notNull(),
+  pricePerOunce: decimal("price_per_ounce", { precision: 12, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 12, scale: 2 }).notNull(),
+  status: metalTradeStatusEnum("status").default("pending"),
+  paymentMethod: text("payment_method"), // crypto, fiat
+  deliveryAddress: text("delivery_address"),
+  trackingNumber: text("tracking_number"),
+  createdAt: timestamp("created_at").defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
+});
+
+// Blog and News Section
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  excerpt: text("excerpt"),
+  content: text("content").notNull(),
+  featuredImage: text("featured_image"),
+  category: text("category"), // exchange_update, platform_news, market_analysis, etc.
+  tags: jsonb("tags").array(),
+  isPublished: boolean("is_published").default(false),
+  viewCount: integer("view_count").default(0),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   wallets: many(wallets),
@@ -314,6 +488,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   tradingBots: many(tradingBots),
   armorWallets: many(armorWallets),
   mevEvents: many(mevEvents),
+  exchangeOrders: many(exchangeOrders),
+  liquidityPools: many(liquidityPools),
+  mixingRequests: many(mixingRequests),
+  forumThreads: many(forumThreads),
+  forumReplies: many(forumReplies),
+  chatSessions: many(chatSessions),
+  metalTrades: many(metalTrades),
+  blogPosts: many(blogPosts),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -438,6 +620,91 @@ export const armorWalletsRelations = relations(armorWallets, ({ one }) => ({
 export const mevEventsRelations = relations(mevEvents, ({ one }) => ({
   user: one(users, {
     fields: [mevEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const exchangeOrdersRelations = relations(exchangeOrders, ({ one }) => ({
+  user: one(users, {
+    fields: [exchangeOrders.userId],
+    references: [users.id],
+  }),
+}));
+
+export const liquidityPoolsRelations = relations(liquidityPools, ({ one }) => ({
+  user: one(users, {
+    fields: [liquidityPools.userId],
+    references: [users.id],
+  }),
+}));
+
+export const mixingRequestsRelations = relations(mixingRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [mixingRequests.userId],
+    references: [users.id],
+  }),
+}));
+
+export const forumThreadsRelations = relations(forumThreads, ({ one, many }) => ({
+  user: one(users, {
+    fields: [forumThreads.userId],
+    references: [users.id],
+  }),
+  category: one(forumCategories, {
+    fields: [forumThreads.categoryId],
+    references: [forumCategories.id],
+  }),
+  replies: many(forumReplies),
+}));
+
+export const forumRepliesRelations = relations(forumReplies, ({ one }) => ({
+  user: one(users, {
+    fields: [forumReplies.userId],
+    references: [users.id],
+  }),
+  thread: one(forumThreads, {
+    fields: [forumReplies.threadId],
+    references: [forumThreads.id],
+  }),
+}));
+
+export const forumCategoriesRelations = relations(forumCategories, ({ many }) => ({
+  threads: many(forumThreads),
+}));
+
+export const chatSessionsRelations = relations(chatSessions, ({ one, many }) => ({
+  user: one(users, {
+    fields: [chatSessions.userId],
+    references: [users.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  session: one(chatSessions, {
+    fields: [chatMessages.sessionId],
+    references: [chatSessions.id],
+  }),
+}));
+
+export const metalTradesRelations = relations(metalTrades, ({ one }) => ({
+  user: one(users, {
+    fields: [metalTrades.userId],
+    references: [users.id],
+  }),
+  inventory: one(metalInventory, {
+    fields: [metalTrades.inventoryId],
+    references: [metalInventory.id],
+  }),
+}));
+
+export const metalInventoryRelations = relations(metalInventory, ({ many }) => ({
+  trades: many(metalTrades),
+}));
+
+export const blogPostsRelations = relations(blogPosts, ({ one }) => ({
+  author: one(users, {
+    fields: [blogPosts.authorId],
     references: [users.id],
   }),
 }));
