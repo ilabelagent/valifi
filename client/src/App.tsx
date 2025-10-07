@@ -12,6 +12,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import TradingPage from "@/pages/trading";
+import TerminalPage from "@/pages/terminal";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -20,6 +21,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/terminal" component={TerminalPage} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -50,6 +52,7 @@ function Router() {
             <Switch>
               <Route path="/" component={Dashboard} />
               <Route path="/trading" component={TradingPage} />
+              <Route path="/terminal" component={TerminalPage} />
               <Route path="/blockchain" component={() => <div className="p-6">Blockchain coming soon...</div>} />
               <Route path="/agents" component={() => <div className="p-6">Agents coming soon...</div>} />
               <Route path="/publishing" component={() => <div className="p-6">Publishing coming soon...</div>} />
