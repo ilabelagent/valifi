@@ -67,22 +67,94 @@ Preferred communication style: Simple, everyday language.
 - Drizzle ORM for type-safe database operations
 - Schema-first approach with automated migrations
 
-**Database Schema Design**
+**Database Schema Design (2200+ lines, 50+ tables)**
+
+*Core Tables (Original)*
 - Users table with Replit Auth integration (OpenID claims)
 - Wallets: multi-chain support with encrypted private key storage
 - Transactions: blockchain transaction tracking with status enums
 - NFTs & Tokens: ERC-721/ERC-20 contract tracking
 - Songs: Jesus Cartel publishing pipeline metadata
-- Agents & Agent Logs: multi-agent execution tracking
-- Security Events: Guardian Angel threat monitoring
-- Payments: Stripe/PayPal/crypto payment records
-- KYC Records: Sumsub integration for compliance
-- Quantum Jobs: IBM Quantum API job tracking
-- Crypto Payments: multi-processor invoice tracking (BitPay, Binance Pay, Bybit, KuCoin, Luno)
-- Trading Bots: 7 active strategies with stateful execution
-- Bot Executions: trade history with P&L analytics
-- Armor Wallets: AI-powered MCP wallet custody
-- MEV Events: sandwich attack and frontrunning monitoring
+
+*Kingdom Transformation Tables (NEW - October 2025)*
+
+**Dynamic Dashboard System** (3 tables)
+- userDashboardConfigs: Personalized dashboard layouts per user
+- dashboardWidgets: Available widget catalog (system + custom)
+- userWidgetPreferences: Widget positioning with unique(userId, widgetId) constraint
+
+**Admin Panel Infrastructure** (3 tables)
+- adminUsers: Role-based admin access (super_admin, admin, moderator, support)
+- adminAuditLogs: Immutable admin action tracking
+- adminBroadcasts: System-wide announcement delivery
+
+**Individual & Ethereal Assets** (3 tables)
+- individualAssets: User-owned real-world asset tracking
+- etherealElements: Divine/spiritual collectibles catalog
+- etherealOwnership: Element ownership with unique(userId, elementId) constraint
+
+**Bot Marketplace & Learning** (7 tables)
+- botMarketplaceListings: Trading bot sales/rentals
+- botRentals: Time-based bot rental tracking
+- botSubscriptions: Recurring bot access subscriptions
+- botReviews: Marketplace rating system
+- botLearningSession: AI training sessions per bot
+- botTrainingData: Historical learning data
+- botSkills: Unlockable bot capabilities
+
+**Celebrity Fan Platform** (6 tables)
+- celebrityProfiles: Verified celebrity accounts
+- fanFollows: Fan-celebrity relationships with unique(fanId, celebrityId)
+- fanStakes: Financial staking on celebrity success
+- fanBets: Prediction betting on celebrity outcomes
+- predictionMarkets: Market-based celebrity predictions
+- celebrityContent: Exclusive celebrity posts/media
+
+**Analytics & User Journey** (2 tables)
+- hitAnalytics: Page view and interaction tracking
+- userJourneys: Multi-step user flow analysis
+
+**Help System** (2 tables)
+- helpArticles: Knowledge base content
+- guideSteps: Step-by-step interactive tutorials
+
+**Discord-Style Forum** (4 tables)
+- forumServers: Community server instances
+- forumChannels: Text/voice channels per server
+- channelMessages: Real-time chat messages
+- privateSessionRequests: Admin-approved private sessions
+
+**Account Management** (3 tables)
+- jointAccounts: Shared multi-user accounts
+- accountMerges: Account consolidation tracking
+- stakingPools: Community staking pools with unique(poolId, userId) participants
+
+**AI Chat Personas** (3 tables)
+- chatbotPersonas: AI personality templates
+- personaAssignments: User-session persona mapping with unique(userId, sessionId)
+- personaTraining: Persona behavior training data
+
+**Distribution & Music** (3 tables)
+- distributionTracks: Multi-platform music distribution
+- youtubeVideos: YouTube upload tracking
+- streamingAnalytics: Platform-specific streaming metrics
+
+**Guardian Angel Enhancement** (4 tables)
+- backgroundChecks: User verification requests
+- publicDirectory: Searchable user profiles
+- bankruptcyRecords: Financial history tracking
+- creditReports: Credit score monitoring
+
+**Trading Bot Arsenal** (3 tables)
+- tradingSystemMemory: Bot state persistence
+- tradingStrategies: Custom strategy definitions
+- botPerformanceMetrics: Historical performance analytics
+
+*Data Integrity Features*
+- Composite unique constraints on all join tables to prevent duplicate relationships
+- Foreign key relationships with cascade rules for data consistency
+- Timestamp tracking for audit trails (createdAt, updatedAt)
+- Status enums for workflow state management
 
 **Session Storage**
 - PostgreSQL sessions table for Replit Auth
