@@ -17,6 +17,7 @@ import {
   CreditCard,
   FileCheck,
   Zap,
+  TrendingUp,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -25,6 +26,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/",
     icon: Home,
+  },
+  {
+    title: "Trading Bots",
+    url: "/trading",
+    icon: TrendingUp,
   },
   {
     title: "Wallets & Blockchain",

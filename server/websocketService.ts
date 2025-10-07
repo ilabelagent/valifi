@@ -46,6 +46,11 @@ export class WebSocketService {
         console.log(`${socket.id} subscribed to quantum events`);
       });
 
+      socket.on("subscribe:trading", () => {
+        socket.join("trading");
+        console.log(`${socket.id} subscribed to trading events`);
+      });
+
       socket.on("disconnect", () => {
         console.log(`Client disconnected: ${socket.id}`);
       });
@@ -114,6 +119,19 @@ export class WebSocketService {
   }) {
     if (this.io) {
       this.io.to("quantum").emit("quantum:event", event);
+    }
+  }
+
+  /**
+   * Emit trading bot event
+   */
+  emitTradingEvent(event: {
+    type: "bot_started" | "bot_stopped" | "bot_paused" | "execution_complete" | "pnl_update";
+    botId: string;
+    data: any;
+  }) {
+    if (this.io) {
+      this.io.to("trading").emit("trading:event", event);
     }
   }
 

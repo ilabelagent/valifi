@@ -103,10 +103,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const wallet = await storage.createWallet({
         userId,
         address: walletData.address,
-        currency: currency || network.toUpperCase(),
         balance: "0",
         network,
-        encryptedPrivateKey,
+        privateKeyEncrypted: encryptedPrivateKey,
       });
 
       // SECURITY: Return mnemonic ONLY ONCE for user backup
@@ -114,7 +113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         id: wallet.id,
         address: wallet.address,
-        currency: wallet.currency,
         network: wallet.network,
         balance: wallet.balance,
         mnemonic: walletData.mnemonic,
@@ -164,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Decrypt private key securely
       const privateKey = encryptionService.decrypt(
-        wallet.encryptedPrivateKey || "",
+        wallet.privateKeyEncrypted || "",
         userId
       );
 
@@ -180,8 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createTransaction({
         walletId: wallet.id,
         type: "send",
-        amount,
-        toAddress: to,
+        from: wallet.address,
+        to,
+        value: amount,
         status: "confirmed",
         txHash: result.hash,
         network: wallet.network || "ethereum",
@@ -207,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Decrypt private key securely
       const privateKey = encryptionService.decrypt(
-        wallet.encryptedPrivateKey || "",
+        wallet.privateKeyEncrypted || "",
         userId
       );
 
@@ -226,9 +225,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contractAddress: deployment.address,
         name,
         symbol,
-        balance: initialSupply,
+        totalSupply: initialSupply,
         network,
-        tokenType: "ERC20",
       });
 
       res.json({ ...token, txHash: deployment.txHash });
@@ -251,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Decrypt private key securely
       const privateKey = encryptionService.decrypt(
-        wallet.encryptedPrivateKey || "",
+        wallet.privateKeyEncrypted || "",
         userId
       );
 
@@ -283,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Decrypt private key securely
       const privateKey = encryptionService.decrypt(
-        wallet.encryptedPrivateKey || "",
+        wallet.privateKeyEncrypted || "",
         userId
       );
 
@@ -971,6 +969,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating bot:", error);
       res.status(500).json({ message: "Failed to update bot" });
+    }
+  });
+
+  app.get("/api/bot-executions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bots = await storage.getUserBots(userId);
+      const botIds = bots.map(b => b.id);
+      
+      const allExecutions = await Promise.all(
+        botIds.map(id => storage.getBotExecutions(id))
+      );
+      
+      const executions = allExecutions.flat();
+      res.json(executions);
+    } catch (error) {
+      console.error("Error fetching all bot executions:", error);
+      res.status(500).json({ message: "Failed to fetch executions" });
     }
   });
 
