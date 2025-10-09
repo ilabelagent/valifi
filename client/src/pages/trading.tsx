@@ -16,9 +16,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { insertTradingBotSchema, type TradingBot, type BotExecution } from "@shared/schema";
-import { Bot, TrendingUp, TrendingDown, Play, Pause, Square, Plus, Activity, DollarSign, Target, BarChart3 } from "lucide-react";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { Bot, TrendingUp, TrendingDown, Play, Pause, Square, Plus, Activity, DollarSign, Target, BarChart3, RefreshCw, ArrowUpDown, Filter, ShoppingCart, Heart, BookOpen } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { io, Socket } from "socket.io-client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const strategies = [
   { value: "grid", label: "Grid Trading", description: "Buy low, sell high in a range" },
@@ -37,6 +41,40 @@ const exchanges = [
   { value: "okx", label: "OKX" },
   { value: "coinbase", label: "Coinbase" },
 ];
+
+const marketAssets = [
+  { symbol: "BTC/USDT", type: "crypto", name: "Bitcoin" },
+  { symbol: "ETH/USDT", type: "crypto", name: "Ethereum" },
+  { symbol: "AAPL", type: "stock", name: "Apple Inc." },
+  { symbol: "TSLA", type: "stock", name: "Tesla Inc." },
+  { symbol: "EUR/USD", type: "forex", name: "Euro/US Dollar" },
+  { symbol: "gold", type: "metal", name: "Gold" },
+  { symbol: "silver", type: "metal", name: "Silver" },
+];
+
+interface MarketData {
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  timestamp: string;
+}
+
+interface OrderBookEntry {
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+const tradeOrderSchema = z.object({
+  symbol: z.string().min(1, "Symbol is required"),
+  side: z.enum(["buy", "sell"]),
+  type: z.enum(["market", "limit"]),
+  quantity: z.string().min(1, "Quantity is required"),
+  price: z.string().optional(),
+});
+
+type TradeOrderFormValues = z.infer<typeof tradeOrderSchema>;
 
 const createBotFormSchema = insertTradingBotSchema.omit({ userId: true }).extend({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -63,6 +101,15 @@ export default function TradingPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [filterBot, setFilterBot] = useState<string>("all");
   const [filterStrategy, setFilterStrategy] = useState<string>("all");
+  const [selectedAsset, setSelectedAsset] = useState<string>("BTC/USDT");
+  const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [marketData, setMarketData] = useState<Record<string, MarketData>>({});
+  const [orderBook, setOrderBook] = useState<{ bids: OrderBookEntry[]; asks: OrderBookEntry[] }>({ bids: [], asks: [] });
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [prayerDialogOpen, setPrayerDialogOpen] = useState(false);
+  const [pendingTradeData, setPendingTradeData] = useState<TradeOrderFormValues | null>(null);
+  const [prayerText, setPrayerText] = useState("");
+  const [currentPrayerId, setCurrentPrayerId] = useState<string | null>(null);
 
   const { data: bots, isLoading: botsLoading } = useQuery<TradingBot[]>({
     queryKey: ["/api/trading-bots"],
@@ -70,6 +117,11 @@ export default function TradingPage() {
 
   const { data: allExecutions, isLoading: executionsLoading } = useQuery<BotExecution[]>({
     queryKey: ["/api/bot-executions"],
+  });
+
+  const { data: exchangeOrders } = useQuery({
+    queryKey: ["/api/exchange/orders"],
+    refetchInterval: autoRefresh ? 5000 : false,
   });
 
   const executions = allExecutions?.filter(ex => {
@@ -89,6 +141,17 @@ export default function TradingPage() {
       config: {},
       riskLimit: "100",
       dailyLimit: "500",
+    },
+  });
+
+  const tradeForm = useForm<TradeOrderFormValues>({
+    resolver: zodResolver(tradeOrderSchema),
+    defaultValues: {
+      symbol: selectedAsset,
+      side: "buy",
+      type: "market",
+      quantity: "",
+      price: "",
     },
   });
 
@@ -142,6 +205,35 @@ export default function TradingPage() {
     },
   });
 
+  const placeOrderMutation = useMutation({
+    mutationFn: async (data: TradeOrderFormValues) => {
+      const res = await apiRequest("POST", "/api/exchange/orders", {
+        symbol: data.symbol,
+        side: data.side.toUpperCase(),
+        type: data.type.toUpperCase(),
+        quantity: parseFloat(data.quantity),
+        price: data.price ? parseFloat(data.price) : undefined,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exchange/orders"] });
+      setTradeDialogOpen(false);
+      tradeForm.reset();
+      toast({
+        title: "Order Placed",
+        description: "Your order has been placed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to place order",
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     const newSocket = io({
       path: "/socket.io",
@@ -156,6 +248,11 @@ export default function TradingPage() {
       console.log("Trading event:", event);
       queryClient.invalidateQueries({ queryKey: ["/api/trading-bots"] });
       queryClient.invalidateQueries({ queryKey: ["/api/bot-executions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/exchange/orders"] });
+    });
+
+    newSocket.on("market:update", (data: MarketData) => {
+      setMarketData(prev => ({ ...prev, [data.symbol]: data }));
     });
 
     setSocket(newSocket);
@@ -164,6 +261,74 @@ export default function TradingPage() {
       newSocket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      for (const asset of marketAssets) {
+        try {
+          let endpoint = "";
+          if (asset.type === "stock") {
+            endpoint = `/api/market/stock/${asset.symbol}`;
+          } else if (asset.type === "forex") {
+            endpoint = `/api/market/forex/${asset.symbol}`;
+          } else if (asset.type === "metal") {
+            endpoint = `/api/market/metal/${asset.symbol}`;
+          } else if (asset.type === "crypto") {
+            endpoint = `/api/market/stock/BTC`;
+          }
+
+          if (endpoint) {
+            const res = await fetch(endpoint);
+            const data = await res.json();
+            setMarketData(prev => ({ ...prev, [asset.symbol]: data }));
+          }
+        } catch (error) {
+          console.error(`Error fetching ${asset.symbol}:`, error);
+        }
+      }
+    };
+
+    fetchMarketData();
+    const interval = autoRefresh ? setInterval(fetchMarketData, 10000) : null;
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh]);
+
+  useEffect(() => {
+    const generateOrderBook = () => {
+      const currentPrice = marketData[selectedAsset]?.price || 50000;
+      const bids: OrderBookEntry[] = [];
+      const asks: OrderBookEntry[] = [];
+
+      for (let i = 0; i < 15; i++) {
+        const bidPrice = currentPrice - (i + 1) * (currentPrice * 0.001);
+        const askPrice = currentPrice + (i + 1) * (currentPrice * 0.001);
+        const bidQty = Math.random() * 2 + 0.1;
+        const askQty = Math.random() * 2 + 0.1;
+
+        bids.push({
+          price: parseFloat(bidPrice.toFixed(2)),
+          quantity: parseFloat(bidQty.toFixed(4)),
+          total: parseFloat((bidPrice * bidQty).toFixed(2)),
+        });
+
+        asks.push({
+          price: parseFloat(askPrice.toFixed(2)),
+          quantity: parseFloat(askQty.toFixed(4)),
+          total: parseFloat((askPrice * askQty).toFixed(2)),
+        });
+      }
+
+      setOrderBook({ bids, asks });
+    };
+
+    generateOrderBook();
+    const interval = setInterval(generateOrderBook, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedAsset, marketData]);
 
   const activeBots = bots?.filter(bot => bot.isActive) || [];
   const totalProfit = bots?.reduce((sum, bot) => sum + parseFloat(bot.totalProfit || "0"), 0) || 0;
@@ -195,21 +360,384 @@ export default function TradingPage() {
     cumulative: executions.slice(0, idx + 1).reduce((sum, e) => sum + parseFloat(e.profit || "0"), 0),
   })) || [];
 
+  const onSubmitTrade = (data: TradeOrderFormValues) => {
+    setPendingTradeData(data);
+    setTradeDialogOpen(false);
+    setPrayerDialogOpen(true);
+  };
+
+  const logPrayerMutation = useMutation({
+    mutationFn: async (prayerData: { prayerText: string; category: string }) => {
+      const res = await apiRequest("POST", "/api/prayers", prayerData);
+      return res.json();
+    },
+    onSuccess: (prayer) => {
+      setCurrentPrayerId(prayer.id);
+    },
+  });
+
+  const executeTrade = async () => {
+    if (!pendingTradeData) return;
+
+    if (prayerText.trim()) {
+      const prayer = await logPrayerMutation.mutateAsync({
+        prayerText: prayerText.trim(),
+        category: "trade_guidance",
+      });
+      setCurrentPrayerId(prayer.id);
+    }
+
+    placeOrderMutation.mutate(pendingTradeData, {
+      onSuccess: async (order: any) => {
+        if (currentPrayerId && order?.id) {
+          await apiRequest("POST", "/api/prayers/correlate", {
+            prayerId: currentPrayerId,
+            tradeId: order.id,
+            outcome: "pending",
+          });
+        }
+        setPrayerDialogOpen(false);
+        setPendingTradeData(null);
+        setPrayerText("");
+        setCurrentPrayerId(null);
+      },
+    });
+  };
+
+  const skipPrayer = () => {
+    if (pendingTradeData) {
+      placeOrderMutation.mutate(pendingTradeData);
+      setPrayerDialogOpen(false);
+      setPendingTradeData(null);
+      setPrayerText("");
+    }
+  };
+
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Trading Bots</h2>
-          <p className="text-muted-foreground">Automated trading strategies across exchanges</p>
+          <h2 className="text-3xl font-bold">Trading Platform</h2>
+          <p className="text-muted-foreground">Live market data, automated bots, and advanced trading</p>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-bot">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Bot
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Auto-refresh</span>
+            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} data-testid="switch-auto-refresh" />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()} data-testid="button-refresh">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="hover-elevate">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Live Market Data</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-32">
+              <div className="space-y-2">
+                {marketAssets.map((asset) => {
+                  const data = marketData[asset.symbol];
+                  return (
+                    <button
+                      key={asset.symbol}
+                      onClick={() => setSelectedAsset(asset.symbol)}
+                      className={`w-full text-left p-2 rounded hover:bg-accent transition-colors ${
+                        selectedAsset === asset.symbol ? "bg-accent" : ""
+                      }`}
+                      data-testid={`button-select-${asset.symbol}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{asset.symbol}</p>
+                          <p className="text-xs text-muted-foreground">{asset.name}</p>
+                        </div>
+                        {data && (
+                          <div className="text-right">
+                            <p className="text-sm font-medium">${data.price.toFixed(2)}</p>
+                            <p className={`text-xs ${data.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                              {data.changePercent >= 0 ? "+" : ""}{data.changePercent.toFixed(2)}%
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-elevate">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${netPnL >= 0 ? 'text-green-500' : 'text-red-500'}`} data-testid="text-total-pnl">
+              {netPnL >= 0 ? '+' : ''}{netPnL.toFixed(2)} USDT
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-green-500">+{totalProfit.toFixed(2)}</span> / <span className="text-red-500">-{totalLoss.toFixed(2)}</span>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-elevate">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Bots</CardTitle>
+            <Bot className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-active-bots">
+              {activeBots.length}
+            </div>
+            <p className="text-xs text-muted-foreground">{bots?.length || 0} total bots</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-elevate">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-win-rate">
+              {avgWinRate.toFixed(1)}%
+            </div>
+            <p className="text-xs text-muted-foreground">Average across all bots</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-lg">Trading Interface</CardTitle>
+            <CardDescription>Execute trades manually</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={tradeDialogOpen} onOpenChange={setTradeDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full" data-testid="button-open-trade">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Place Order
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Place Trading Order</DialogTitle>
+                  <DialogDescription>Execute a buy or sell order</DialogDescription>
+                </DialogHeader>
+                <Form {...tradeForm}>
+                  <form onSubmit={tradeForm.handleSubmit(onSubmitTrade)} className="space-y-4">
+                    <FormField
+                      control={tradeForm.control}
+                      name="symbol"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Symbol</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-trade-symbol">
+                                <SelectValue placeholder="Select symbol" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {marketAssets.map((asset) => (
+                                <SelectItem key={asset.symbol} value={asset.symbol}>
+                                  {asset.symbol} - {asset.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={tradeForm.control}
+                      name="side"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Side</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex gap-4"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="buy" id="buy" data-testid="radio-buy" />
+                                <label htmlFor="buy" className="text-sm font-medium text-green-500">Buy</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="sell" id="sell" data-testid="radio-sell" />
+                                <label htmlFor="sell" className="text-sm font-medium text-red-500">Sell</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={tradeForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-order-type">
+                                <SelectValue placeholder="Select order type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="market">Market Order</SelectItem>
+                              <SelectItem value="limit">Limit Order</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={tradeForm.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input type="number" step="0.00000001" placeholder="0.00" {...field} data-testid="input-quantity" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {tradeForm.watch("type") === "limit" && (
+                      <FormField
+                        control={tradeForm.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Limit Price</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" placeholder="0.00" {...field} data-testid="input-price" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setTradeDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={placeOrderMutation.isPending} data-testid="button-submit-trade">
+                        {placeOrderMutation.isPending ? "Placing..." : "Place Order"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Selected:</span>
+                <span className="font-medium">{selectedAsset}</span>
+              </div>
+              {marketData[selectedAsset] && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Price:</span>
+                    <span className="font-medium">${marketData[selectedAsset].price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">24h Change:</span>
+                    <span className={`font-medium ${marketData[selectedAsset].changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {marketData[selectedAsset].changePercent >= 0 ? '+' : ''}{marketData[selectedAsset].changePercent.toFixed(2)}%
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Order Book</CardTitle>
+            <CardDescription>Live bid/ask spread for {selectedAsset}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-green-500">Bids (Buy Orders)</h4>
+                <ScrollArea className="h-64">
+                  <div className="space-y-1">
+                    {orderBook.bids.slice(0, 10).map((bid, idx) => (
+                      <div key={idx} className="flex justify-between text-xs" data-testid={`bid-${idx}`}>
+                        <span className="text-green-500">${bid.price}</span>
+                        <span className="text-muted-foreground">{bid.quantity}</span>
+                        <span className="font-medium">${bid.total}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2 text-red-500">Asks (Sell Orders)</h4>
+                <ScrollArea className="h-64">
+                  <div className="space-y-1">
+                    {orderBook.asks.slice(0, 10).map((ask, idx) => (
+                      <div key={idx} className="flex justify-between text-xs" data-testid={`ask-${idx}`}>
+                        <span className="text-red-500">${ask.price}</span>
+                        <span className="text-muted-foreground">{ask.quantity}</span>
+                        <span className="font-medium">${ask.total}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="bots" className="w-full">
+        <TabsList>
+          <TabsTrigger value="bots" data-testid="tab-bots">Trading Bots</TabsTrigger>
+          <TabsTrigger value="performance" data-testid="tab-performance">Performance</TabsTrigger>
+          <TabsTrigger value="executions" data-testid="tab-executions">Trade History</TabsTrigger>
+          <TabsTrigger value="orders" data-testid="tab-orders">My Orders</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="bots" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Manage your automated trading bots</p>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-bot">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Bot
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Trading Bot</DialogTitle>
               <DialogDescription>Configure a new automated trading bot</DialogDescription>
@@ -341,72 +869,8 @@ export default function TradingPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${netPnL >= 0 ? 'text-green-500' : 'text-red-500'}`} data-testid="text-total-pnl">
-              {netPnL >= 0 ? '+' : ''}{netPnL.toFixed(2)} USDT
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-500">+{totalProfit.toFixed(2)}</span> / <span className="text-red-500">-{totalLoss.toFixed(2)}</span>
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-win-rate">
-              {avgWinRate.toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground">Average across all bots</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Bots</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-active-bots">
-              {activeBots.length}
-            </div>
-            <p className="text-xs text-muted-foreground">{bots?.length || 0} total bots</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-trades">
-              {bots?.reduce((sum, bot) => sum + (bot.totalTrades || 0), 0) || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Executed orders</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="bots" className="w-full">
-        <TabsList>
-          <TabsTrigger value="bots" data-testid="tab-bots">My Bots</TabsTrigger>
-          <TabsTrigger value="executions" data-testid="tab-executions">Execution History</TabsTrigger>
-          <TabsTrigger value="performance" data-testid="tab-performance">Performance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="bots" className="space-y-4">
           {botsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -666,7 +1130,138 @@ export default function TradingPage() {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="orders" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Orders</CardTitle>
+              <CardDescription>Your recent trading orders</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {exchangeOrders && Array.isArray(exchangeOrders) && exchangeOrders.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead>Side</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {exchangeOrders.map((order: any) => (
+                      <TableRow key={order.id} data-testid={`row-order-${order.id}`}>
+                        <TableCell className="font-medium">{order.symbol}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.side === "BUY" ? "default" : "destructive"}>
+                            {order.side}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.type}</TableCell>
+                        <TableCell>{order.quantity}</TableCell>
+                        <TableCell>${order.price ? parseFloat(order.price).toFixed(2) : "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.status === "FILLED" ? "default" : "secondary"}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No orders yet. Place your first trade to see orders here.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <Dialog open={prayerDialogOpen} onOpenChange={setPrayerDialogOpen}>
+        <DialogContent className="sm:max-w-lg bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950 dark:to-amber-950" data-testid="dialog-pre-trade-prayer">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-yellow-600" />
+              Seek Divine Guidance
+            </DialogTitle>
+            <DialogDescription>
+              Pause and pray before executing your trade. Let wisdom guide your decisions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 border-l-4 border-yellow-500 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-r-lg">
+              <div className="flex items-start gap-2">
+                <BookOpen className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Scripture for Your Trade:</p>
+                  <blockquote className="text-sm italic">
+                    "The plans of the diligent lead to profit as surely as haste leads to poverty."
+                  </blockquote>
+                  <p className="text-xs text-muted-foreground">- Proverbs 21:5</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Your Prayer (Optional)</label>
+              <Textarea
+                value={prayerText}
+                onChange={(e) => setPrayerText(e.target.value)}
+                placeholder="Ask for wisdom, guidance, and protection in this trade..."
+                className="min-h-[100px]"
+                data-testid="textarea-pre-trade-prayer"
+              />
+              <p className="text-xs text-muted-foreground">
+                This prayer will be recorded and linked to your trade outcome for spiritual insights.
+              </p>
+            </div>
+
+            {pendingTradeData && (
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-semibold mb-1">Trade Summary:</p>
+                <div className="space-y-0.5 text-muted-foreground">
+                  <p>{pendingTradeData.side.toUpperCase()} {pendingTradeData.quantity} {pendingTradeData.symbol}</p>
+                  <p>Type: {pendingTradeData.type.toUpperCase()}</p>
+                  {pendingTradeData.price && <p>Price: ${pendingTradeData.price}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={skipPrayer}
+              disabled={placeOrderMutation.isPending}
+              data-testid="button-skip-prayer"
+            >
+              Skip Prayer
+            </Button>
+            <Button
+              onClick={executeTrade}
+              disabled={placeOrderMutation.isPending}
+              className="gap-2"
+              data-testid="button-execute-with-prayer"
+            >
+              {placeOrderMutation.isPending ? (
+                "Executing..."
+              ) : (
+                <>
+                  <Heart className="h-4 w-4" />
+                  {prayerText.trim() ? "Pray & Execute" : "Execute Trade"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={controlDialogOpen} onOpenChange={setControlDialogOpen}>
         <DialogContent data-testid="dialog-control-bot">

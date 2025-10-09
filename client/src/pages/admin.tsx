@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Bot, TrendingUp, MessageSquare, Shield, Activity, Zap, Trophy } from "lucide-react";
+import { Users, Bot, TrendingUp, MessageSquare, Shield, Activity, Zap, Trophy, Heart, Sparkles } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function AdminPage() {
@@ -23,6 +23,20 @@ export default function AdminPage() {
   const [selectedBot, setSelectedBot] = useState<any>(null);
   const [broadcastDialog, setBroadcastDialog] = useState(false);
   const [trainingDialog, setTrainingDialog] = useState(false);
+  const [charityDialog, setCharityDialog] = useState(false);
+  const [selectedCharity, setSelectedCharity] = useState<any>(null);
+  const [mintElementDialog, setMintElementDialog] = useState(false);
+  const [elementFormData, setElementFormData] = useState({
+    name: "",
+    description: "",
+    elementType: "spiritual",
+    power: 100,
+    rarity: "common",
+    totalSupply: 100,
+    imageUrl: "",
+    animationUrl: "",
+    attributes: "{}"
+  });
 
   const usersPerPage = 10;
   const botsPerPage = 10;
@@ -51,6 +65,11 @@ export default function AdminPage() {
   // Fetch audit logs
   const { data: auditLogs } = useQuery({
     queryKey: ["/api/admin/audit-logs", { limit: 20 }],
+  });
+
+  // Fetch charities
+  const { data: charities, isLoading: charitiesLoading } = useQuery({
+    queryKey: ["/api/charities"],
   });
 
   // Update user mutation
@@ -117,6 +136,86 @@ export default function AdminPage() {
     },
   });
 
+  // Create/Update charity mutation
+  const saveCharityMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (selectedCharity) {
+        return apiRequest("PUT", `/api/charities/${selectedCharity.id}`, data);
+      }
+      return apiRequest("POST", "/api/charities", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/charities"] });
+      setCharityDialog(false);
+      setSelectedCharity(null);
+      toast({
+        title: "Success",
+        description: selectedCharity ? "Charity updated successfully" : "Charity created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save charity",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete charity mutation
+  const deleteCharityMutation = useMutation({
+    mutationFn: async (charityId: string) => {
+      return apiRequest("DELETE", `/api/charities/${charityId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/charities"] });
+      toast({
+        title: "Success",
+        description: "Charity deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete charity",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mint ethereal element mutation
+  const mintElementMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/assets/ethereal/mint", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ethereal/marketplace"] });
+      setMintElementDialog(false);
+      setElementFormData({
+        name: "",
+        description: "",
+        elementType: "spiritual",
+        power: 100,
+        rarity: "common",
+        totalSupply: 100,
+        imageUrl: "",
+        animationUrl: "",
+        attributes: "{}"
+      });
+      toast({
+        title: "Success",
+        description: "Ethereal element minted successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mint element",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleBroadcast = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -135,6 +234,17 @@ export default function AdminPage() {
       botId: selectedBot.id,
       sessionType: formData.get("sessionType"),
       trainingDataset: formData.get("trainingDataset"),
+    });
+  };
+
+  const handleCharitySubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    saveCharityMutation.mutate({
+      name: formData.get("name"),
+      description: formData.get("description"),
+      walletAddress: formData.get("walletAddress"),
+      taxID: formData.get("taxID"),
     });
   };
 
@@ -275,6 +385,14 @@ export default function AdminPage() {
           <TabsTrigger value="activity" data-testid="tab-activity">
             <Activity className="mr-2 h-4 w-4" />
             Activity Logs
+          </TabsTrigger>
+          <TabsTrigger value="charities" data-testid="tab-charities">
+            <Heart className="mr-2 h-4 w-4" />
+            Charities
+          </TabsTrigger>
+          <TabsTrigger value="ethereal" data-testid="tab-ethereal">
+            <Sparkles className="mr-2 h-4 w-4" />
+            Ethereal Elements
           </TabsTrigger>
         </TabsList>
 
@@ -528,6 +646,336 @@ export default function AdminPage() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Charity Management */}
+        <TabsContent value="charities" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Charity Management</CardTitle>
+                <CardDescription>Manage approved charities for tithing</CardDescription>
+              </div>
+              <Dialog open={charityDialog} onOpenChange={(open) => {
+                setCharityDialog(open);
+                if (!open) setSelectedCharity(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-add-charity">
+                    <Heart className="mr-2 h-4 w-4" />
+                    Add Charity
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-testid="dialog-charity">
+                  <DialogHeader>
+                    <DialogTitle>{selectedCharity ? "Edit Charity" : "Add New Charity"}</DialogTitle>
+                    <DialogDescription>
+                      {selectedCharity ? "Update charity information" : "Add a new approved charity for tithing"}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCharitySubmit}>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Charity Name</label>
+                        <Input
+                          name="name"
+                          placeholder="e.g., World Vision"
+                          defaultValue={selectedCharity?.name}
+                          required
+                          data-testid="input-charity-name"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Description</label>
+                        <Textarea
+                          name="description"
+                          placeholder="Brief description of the charity's mission"
+                          defaultValue={selectedCharity?.description}
+                          required
+                          data-testid="input-charity-description"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Wallet Address</label>
+                        <Input
+                          name="walletAddress"
+                          placeholder="0x..."
+                          defaultValue={selectedCharity?.walletAddress}
+                          required
+                          data-testid="input-wallet-address"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Tax ID (EIN)</label>
+                        <Input
+                          name="taxID"
+                          placeholder="XX-XXXXXXX"
+                          defaultValue={selectedCharity?.taxID}
+                          required
+                          data-testid="input-tax-id"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="mt-6">
+                      <Button type="submit" disabled={saveCharityMutation.isPending} data-testid="button-save-charity">
+                        {saveCharityMutation.isPending ? "Saving..." : (selectedCharity ? "Update" : "Create")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {charitiesLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Wallet Address</TableHead>
+                      <TableHead>Tax ID</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {charities?.map((charity: any) => (
+                      <TableRow key={charity.id} data-testid={`row-charity-${charity.id}`}>
+                        <TableCell className="font-medium">{charity.name}</TableCell>
+                        <TableCell className="max-w-xs truncate">{charity.description}</TableCell>
+                        <TableCell className="font-mono text-xs">{charity.walletAddress?.slice(0, 10)}...</TableCell>
+                        <TableCell>{charity.taxID}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCharity(charity);
+                                setCharityDialog(true);
+                              }}
+                              data-testid={`button-edit-charity-${charity.id}`}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Delete ${charity.name}?`)) {
+                                  deleteCharityMutation.mutate(charity.id);
+                                }
+                              }}
+                              disabled={deleteCharityMutation.isPending}
+                              data-testid={`button-delete-charity-${charity.id}`}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              {charities?.length === 0 && !charitiesLoading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No charities added yet. Add your first approved charity to enable tithing.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Ethereal Elements */}
+        <TabsContent value="ethereal" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Ethereal Elements Minting</CardTitle>
+                <CardDescription>Create divine collectible elements for the marketplace</CardDescription>
+              </div>
+              <Dialog open={mintElementDialog} onOpenChange={setMintElementDialog}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-mint-element">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Mint New Element
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl" data-testid="dialog-mint-element">
+                  <DialogHeader>
+                    <DialogTitle>Mint Ethereal Element</DialogTitle>
+                    <DialogDescription>Create a new divine collectible element</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Name</label>
+                        <Input
+                          value={elementFormData.name}
+                          onChange={(e) => setElementFormData({...elementFormData, name: e.target.value})}
+                          placeholder="Divine Flame"
+                          data-testid="input-element-name"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Element Type</label>
+                        <Select
+                          value={elementFormData.elementType}
+                          onValueChange={(value) => setElementFormData({...elementFormData, elementType: value})}
+                        >
+                          <SelectTrigger data-testid="select-element-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="spiritual">Spiritual</SelectItem>
+                            <SelectItem value="divine">Divine</SelectItem>
+                            <SelectItem value="quantum">Quantum</SelectItem>
+                            <SelectItem value="dimensional">Dimensional</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Description</label>
+                      <Textarea
+                        value={elementFormData.description}
+                        onChange={(e) => setElementFormData({...elementFormData, description: e.target.value})}
+                        placeholder="A powerful divine element forged in the heavens..."
+                        rows={3}
+                        data-testid="textarea-element-description"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Rarity</label>
+                        <Select
+                          value={elementFormData.rarity}
+                          onValueChange={(value) => setElementFormData({...elementFormData, rarity: value})}
+                        >
+                          <SelectTrigger data-testid="select-element-rarity">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="common">Common</SelectItem>
+                            <SelectItem value="rare">Rare</SelectItem>
+                            <SelectItem value="epic">Epic</SelectItem>
+                            <SelectItem value="legendary">Legendary</SelectItem>
+                            <SelectItem value="divine">Divine</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Power (0-1000)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="1000"
+                          value={elementFormData.power}
+                          onChange={(e) => setElementFormData({...elementFormData, power: parseInt(e.target.value) || 0})}
+                          data-testid="input-element-power"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Total Supply (0 for unlimited)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={elementFormData.totalSupply}
+                          onChange={(e) => setElementFormData({...elementFormData, totalSupply: parseInt(e.target.value) || 0})}
+                          data-testid="input-element-supply"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Image URL</label>
+                        <Input
+                          value={elementFormData.imageUrl}
+                          onChange={(e) => setElementFormData({...elementFormData, imageUrl: e.target.value})}
+                          placeholder="https://example.com/image.png"
+                          data-testid="input-element-image"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Animation URL (optional)</label>
+                      <Input
+                        value={elementFormData.animationUrl}
+                        onChange={(e) => setElementFormData({...elementFormData, animationUrl: e.target.value})}
+                        placeholder="https://example.com/animation.mp4"
+                        data-testid="input-element-animation"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Attributes (JSON)</label>
+                      <Textarea
+                        value={elementFormData.attributes}
+                        onChange={(e) => setElementFormData({...elementFormData, attributes: e.target.value})}
+                        placeholder='{"element": "fire", "strength": 10}'
+                        rows={3}
+                        data-testid="textarea-element-attributes"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setMintElementDialog(false)} data-testid="button-cancel-mint">
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const data: any = {
+                          name: elementFormData.name,
+                          description: elementFormData.description,
+                          elementType: elementFormData.elementType,
+                          power: elementFormData.power,
+                          rarity: elementFormData.rarity,
+                          totalSupply: elementFormData.totalSupply || null,
+                          imageUrl: elementFormData.imageUrl || null,
+                          animationUrl: elementFormData.animationUrl || null,
+                        };
+                        try {
+                          if (elementFormData.attributes) {
+                            data.attributes = JSON.parse(elementFormData.attributes);
+                          }
+                        } catch (e) {
+                          toast({
+                            title: "Error",
+                            description: "Invalid JSON in attributes field",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        mintElementMutation.mutate(data);
+                      }}
+                      disabled={mintElementMutation.isPending || !elementFormData.name || !elementFormData.description}
+                      data-testid="button-confirm-mint"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {mintElementMutation.isPending ? "Minting..." : "Mint Element"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <Sparkles className="mx-auto h-12 w-12 text-purple-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Divine Element Minting</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create unique ethereal elements for users to collect and trade
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Elements will appear in the marketplace for users to purchase
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

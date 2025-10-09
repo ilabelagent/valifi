@@ -226,6 +226,78 @@ export class WalletConnectService {
       localStorage.removeItem("wallet_type");
     }
   }
+
+  /**
+   * Server-side method: Create a new WalletConnect session
+   */
+  static async createSession(
+    userId: string, 
+    walletAddress: string, 
+    chainId: number,
+    walletType: string = "unknown"
+  ): Promise<WalletSession> {
+    const networkMap: Record<number, string> = {
+      1: "ethereum",
+      137: "polygon",
+      56: "bsc",
+      42161: "arbitrum",
+      10: "optimism"
+    };
+
+    const network = networkMap[chainId] || "ethereum";
+    
+    return {
+      id: `wc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      walletAddress,
+      walletType,
+      chainId,
+      network,
+      isActive: true
+    };
+  }
+
+  /**
+   * Server-side method: Get session details
+   */
+  static async getSession(sessionId: string): Promise<WalletSession | null> {
+    // In a real implementation, this would query the database
+    // For now, we'll use localStorage on client side
+    if (typeof window !== "undefined") {
+      const sessionData = localStorage.getItem(`wallet_session_${sessionId}`);
+      if (sessionData) {
+        return JSON.parse(sessionData);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Server-side method: Disconnect a WalletConnect session
+   */
+  static async disconnectSession(sessionId: string): Promise<boolean> {
+    // Clear local storage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`wallet_session_${sessionId}`);
+      localStorage.removeItem("walletconnect_session");
+      localStorage.removeItem("wallet_address");
+      localStorage.removeItem("wallet_type");
+    }
+    return true;
+  }
+
+  /**
+   * Get network name from chain ID
+   */
+  static getNetworkFromChainId(chainId: number): string {
+    const networkMap: Record<number, string> = {
+      1: "ethereum",
+      137: "polygon",
+      56: "bsc",
+      42161: "arbitrum",
+      10: "optimism"
+    };
+    return networkMap[chainId] || "ethereum";
+  }
 }
 
 export const walletConnectService = WalletConnectService;

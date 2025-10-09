@@ -1,5 +1,8 @@
 import type { TradingBot, BotExecution, InsertBotExecution } from "@shared/schema";
 import { storage } from "./storage";
+import { brokerIntegrationService } from "./brokerIntegrationService";
+import { botLearningService } from "./botLearningService";
+import { tithingService } from "./tithingService";
 
 /**
  * Active Trading Bot Service
@@ -553,9 +556,90 @@ class TradingBotService {
 
     const createdExecution = await storage.createBotExecution(execution);
 
+    // Execute real order via broker if configured
+    if (result.action !== "hold" && bot.config?.brokerAccountId) {
+      try {
+        const brokerAccount = await storage.getBrokerAccount(bot.config.brokerAccountId);
+        
+        if (brokerAccount && brokerAccount.isActive) {
+          // Place real order via broker
+          const brokerOrder = await brokerIntegrationService.placeOrder(brokerAccount.id, {
+            symbol: marketData.symbol,
+            qty: result.amount.toString(),
+            side: result.action,
+            type: "market",
+            time_in_force: "gtc",
+          });
+
+          // Update execution with broker order details
+          await storage.updateBotExecution(createdExecution.id, {
+            status: "filled",
+            metadata: {
+              ...result.metadata,
+              brokerOrderId: brokerOrder.id,
+              externalOrderId: brokerOrder.externalOrderId,
+              filledPrice: brokerOrder.filledAvgPrice,
+              filledQty: brokerOrder.filledQty,
+            },
+          });
+
+          // Record training data for learning system
+          await botLearningService.recordTrainingData({
+            botId: bot.id,
+            trainingType: "real_execution",
+            inputData: {
+              strategy: bot.strategy,
+              marketData,
+              config: bot.config,
+            },
+            outputData: {
+              action: result.action,
+              amount: result.amount,
+              price: result.price,
+              brokerOrderId: brokerOrder.id,
+              filledPrice: brokerOrder.filledAvgPrice,
+            },
+            outcome: brokerOrder.status === "filled" ? "success" : "failure",
+            reward: brokerOrder.status === "filled" ? 1.0 : 0.0,
+            metadata: {
+              executionId: createdExecution.id,
+              brokerProvider: brokerAccount.provider,
+            },
+          });
+
+          console.log(`✅ Real order executed via ${brokerAccount.provider}:`, {
+            botId: bot.id,
+            strategy: bot.strategy,
+            orderId: brokerOrder.externalOrderId,
+            symbol: marketData.symbol,
+            side: result.action,
+            qty: result.amount,
+          });
+        }
+      } catch (error) {
+        console.error("Error executing real broker order:", error);
+        // Update execution status to show broker error
+        await storage.updateBotExecution(createdExecution.id, {
+          status: "error",
+          metadata: {
+            ...result.metadata,
+            brokerError: error instanceof Error ? error.message : "Unknown broker error",
+          },
+        });
+      }
+    }
+
     // Update bot stats
     if (result.action !== "hold") {
       await this.updateBotStats(bot, createdExecution);
+      
+      // Auto-tithe on profitable trades
+      const profit = parseFloat(createdExecution.profit || "0");
+      if (profit > 0) {
+        // Trigger auto-tithing in background (don't wait for it)
+        tithingService.autoExecuteTitheOnProfit(bot.userId, createdExecution.id, profit.toString())
+          .catch(err => console.error("Auto-tithe error (non-blocking):", err));
+      }
     }
 
     return createdExecution;

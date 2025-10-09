@@ -26,13 +26,28 @@ import MixerPage from "@/pages/mixer";
 import CommunityPage from "@/pages/community";
 import ChatPage from "@/pages/chat";
 import MetalsPage from "@/pages/metals";
+import PreciousMetalsPage from "@/pages/precious-metals";
 import NewsPage from "@/pages/news";
 import P2PPage from "@/pages/p2p";
 import FinancialServicesPage from "@/pages/financial-services";
+import StocksPage from "@/pages/stocks";
+import ForexPage from "@/pages/forex";
+import BondsPage from "@/pages/bonds";
+import RetirementPage from "@/pages/retirement";
 import AdvancedTradingPage from "@/pages/advanced-trading";
 import WalletSecurityPage from "@/pages/wallet-security";
 import AnalyticsIntelligencePage from "@/pages/analytics-intelligence";
 import AdminPage from "@/pages/admin";
+import WalletConnectPage from "@/pages/wallet-connect";
+import TWinnPage from "@/pages/twinn";
+import DashboardNewPage from "@/pages/dashboard-new";
+import BotMarketplace from "@/pages/bot-marketplace";
+import CelebrityPlatform from "@/pages/celebrity-platform";
+import SpectrumPlansPage from "@/pages/spectrum-plans";
+import AssetsPage from "@/pages/assets";
+import PrayerCenterPage from "@/pages/prayer-center";
+import TithingPage from "@/pages/tithing";
+import EtherealElementsPage from "@/pages/ethereal-elements";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -71,6 +86,7 @@ function Router() {
           <main className="flex-1 overflow-auto">
             <Switch>
               <Route path="/" component={Dashboard} />
+              <Route path="/dashboard-new" component={DashboardNewPage} />
               <Route path="/exchange" component={ExchangePage} />
               <Route path="/trading-bots" component={TradingBotsPage} />
               <Route path="/financial-services" component={FinancialServicesPage} />
@@ -81,6 +97,11 @@ function Router() {
               <Route path="/community" component={CommunityPage} />
               <Route path="/chat" component={ChatPage} />
               <Route path="/metals" component={MetalsPage} />
+              <Route path="/precious-metals" component={PreciousMetalsPage} />
+              <Route path="/stocks" component={StocksPage} />
+              <Route path="/forex" component={ForexPage} />
+              <Route path="/bonds" component={BondsPage} />
+              <Route path="/retirement" component={RetirementPage} />
               <Route path="/news" component={NewsPage} />
               <Route path="/trading" component={TradingPage} />
               <Route path="/terminal" component={TerminalPage} />
@@ -92,6 +113,15 @@ function Router() {
               <Route path="/p2p" component={P2PPage} />
               <Route path="/kyc" component={KycPage} />
               <Route path="/quantum" component={QuantumPage} />
+              <Route path="/wallet-connect" component={WalletConnectPage} />
+              <Route path="/twinn" component={TWinnPage} />
+              <Route path="/celebrity-platform" component={CelebrityPlatform} />
+              <Route path="/bot-marketplace" component={BotMarketplace} />
+              <Route path="/spectrum-plans" component={SpectrumPlansPage} />
+              <Route path="/assets" component={AssetsPage} />
+              <Route path="/prayer-center" component={PrayerCenterPage} />
+              <Route path="/tithing" component={TithingPage} />
+              <Route path="/ethereal-elements" component={EtherealElementsPage} />
               <Route path="/admin" component={AdminPage} />
               <Route component={NotFound} />
             </Switch>

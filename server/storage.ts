@@ -5,6 +5,9 @@ import {
   nfts,
   tokens,
   songs,
+  jesusCartelReleases,
+  jesusCartelEvents,
+  jesusCartelStreams,
   agents,
   agentLogs,
   securityEvents,
@@ -26,6 +29,8 @@ import {
   chatMessages,
   metalInventory,
   metalTrades,
+  metalProducts,
+  metalOwnership,
   blogPosts,
   userDashboardConfigs,
   dashboardWidgets,
@@ -48,6 +53,18 @@ import {
   p2pDisputes,
   p2pReviews,
   walletConnectSessions,
+  celebrityProfiles,
+  fanFollows,
+  fanStakes,
+  fanBets,
+  predictionMarkets,
+  celebrityContent,
+  brokerAccounts,
+  brokerOrders,
+  brokerPositions,
+  spectrumPlans,
+  userSpectrumSubscriptions,
+  spectrumEarnings,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -61,6 +78,12 @@ import {
   type InsertToken,
   type Song,
   type InsertSong,
+  type JesusCartelRelease,
+  type InsertJesusCartelRelease,
+  type JesusCartelEvent,
+  type InsertJesusCartelEvent,
+  type JesusCartelStream,
+  type InsertJesusCartelStream,
   type Agent,
   type InsertAgent,
   type AgentLog,
@@ -103,6 +126,10 @@ import {
   type InsertMetalInventory,
   type MetalTrade,
   type InsertMetalTrade,
+  type MetalProduct,
+  type InsertMetalProduct,
+  type MetalOwnership,
+  type InsertMetalOwnership,
   type BlogPost,
   type InsertBlogPost,
   type UserDashboardConfig,
@@ -147,6 +174,69 @@ import {
   type InsertP2PReview,
   type WalletConnectSession,
   type InsertWalletConnectSession,
+  type CelebrityProfile,
+  type InsertCelebrityProfile,
+  type FanFollow,
+  type InsertFanFollow,
+  type FanStake,
+  type InsertFanStake,
+  type FanBet,
+  type InsertFanBet,
+  type PredictionMarket,
+  type InsertPredictionMarket,
+  type CelebrityContent,
+  type InsertCelebrityContent,
+  financialOrders,
+  financialHoldings,
+  type FinancialOrder,
+  type InsertFinancialOrder,
+  type FinancialHolding,
+  type InsertFinancialHolding,
+  spectrumPlans,
+  userSpectrumSubscriptions,
+  spectrumEarnings,
+  type SpectrumPlan,
+  type InsertSpectrumPlan,
+  type UserSpectrumSubscription,
+  type InsertUserSpectrumSubscription,
+  type SpectrumEarning,
+  type InsertSpectrumEarning,
+  type BrokerAccount,
+  type InsertBrokerAccount,
+  type BrokerOrder,
+  type InsertBrokerOrder,
+  type BrokerPosition,
+  type InsertBrokerPosition,
+  individualAssets,
+  etherealElements,
+  etherealOwnership,
+  type IndividualAsset,
+  type InsertIndividualAsset,
+  type EtherealElement,
+  type InsertEtherealElement,
+  type EtherealOwnership,
+  type InsertEtherealOwnership,
+  prayers,
+  scriptures,
+  prayerTradeCorrelations,
+  userPrayerSettings,
+  type Prayer,
+  type InsertPrayer,
+  type Scripture,
+  type InsertScripture,
+  type PrayerTradeCorrelation,
+  type InsertPrayerTradeCorrelation,
+  type UserPrayerSettings,
+  type InsertUserPrayerSettings,
+  charities,
+  tithingConfigs,
+  tithingHistory,
+  type Charity,
+  type InsertCharity,
+  type TithingConfig,
+  type InsertTithingConfig,
+  type TithingHistory,
+  type InsertTithingHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -191,6 +281,29 @@ export interface IStorage {
   getSongsWithDetailsByUserId(userId: string): Promise<any[]>;
   createSong(song: InsertSong): Promise<Song>;
   updateSongPublication(id: string, nftId?: string, tokenId?: string): Promise<void>;
+  
+  // Jesus Cartel Releases
+  getLatestReleases(limit?: number): Promise<JesusCartelRelease[]>;
+  getFeaturedReleases(): Promise<JesusCartelRelease[]>;
+  getRelease(id: string): Promise<JesusCartelRelease | undefined>;
+  createRelease(release: InsertJesusCartelRelease): Promise<JesusCartelRelease>;
+  updateRelease(id: string, updates: Partial<InsertJesusCartelRelease>): Promise<void>;
+  deleteRelease(id: string): Promise<void>;
+  incrementStreamCount(releaseId: string): Promise<void>;
+  incrementLikeCount(releaseId: string): Promise<void>;
+  
+  // Jesus Cartel Events
+  getUpcomingEvents(limit?: number): Promise<JesusCartelEvent[]>;
+  getFeaturedEvents(): Promise<JesusCartelEvent[]>;
+  getEvent(id: string): Promise<JesusCartelEvent | undefined>;
+  createEvent(event: InsertJesusCartelEvent): Promise<JesusCartelEvent>;
+  updateEvent(id: string, updates: Partial<InsertJesusCartelEvent>): Promise<void>;
+  deleteEvent(id: string): Promise<void>;
+  
+  // Jesus Cartel Stream Tracking
+  trackStream(stream: InsertJesusCartelStream): Promise<JesusCartelStream>;
+  getReleaseStreams(releaseId: string): Promise<JesusCartelStream[]>;
+  getUserStreams(userId: string): Promise<JesusCartelStream[]>;
 
   // Agents
   getAgent(id: string): Promise<Agent | undefined>;
@@ -315,6 +428,15 @@ export interface IStorage {
   getMetalTradesByUserId(userId: string): Promise<MetalTrade[]>;
   createMetalTrade(trade: InsertMetalTrade): Promise<MetalTrade>;
 
+  // Precious Metals Exchange
+  getAllMetalProducts(): Promise<MetalProduct[]>;
+  getMetalProduct(id: string): Promise<MetalProduct | undefined>;
+  createMetalProduct(product: InsertMetalProduct): Promise<MetalProduct>;
+  getUserMetalOwnership(userId: string): Promise<MetalOwnership[]>;
+  getMetalOwnership(id: string): Promise<MetalOwnership | undefined>;
+  createMetalOwnership(ownership: InsertMetalOwnership): Promise<MetalOwnership>;
+  updateMetalOwnershipLocation(id: string, location: string, deliveryAddress?: string, trackingNumber?: string): Promise<void>;
+
   // Blog Posts
   getBlogPost(id: string): Promise<BlogPost | undefined>;
   getAllBlogPosts(): Promise<BlogPost[]>;
@@ -381,6 +503,22 @@ export interface IStorage {
   createTradingSystemMemory(memory: InsertTradingSystemMemory): Promise<TradingSystemMemory>;
   updateTradingSystemMemory(id: string, updates: Partial<InsertTradingSystemMemory>): Promise<boolean>;
 
+  // Broker Integration
+  getBrokerAccount(id: string): Promise<BrokerAccount | undefined>;
+  getUserBrokerAccounts(userId: string): Promise<BrokerAccount[]>;
+  createBrokerAccount(account: InsertBrokerAccount): Promise<BrokerAccount>;
+  updateBrokerAccount(id: string, updates: Partial<InsertBrokerAccount>): Promise<BrokerAccount | undefined>;
+  getBrokerOrder(id: string): Promise<BrokerOrder | undefined>;
+  getBrokerOrderByExternalId(externalOrderId: string): Promise<BrokerOrder | undefined>;
+  getBrokerOrdersByAccountId(brokerAccountId: string): Promise<BrokerOrder[]>;
+  createBrokerOrder(order: InsertBrokerOrder): Promise<BrokerOrder>;
+  updateBrokerOrder(id: string, updates: Partial<InsertBrokerOrder>): Promise<BrokerOrder | undefined>;
+  getBrokerPosition(id: string): Promise<BrokerPosition | undefined>;
+  getBrokerPositionBySymbol(brokerAccountId: string, symbol: string): Promise<BrokerPosition | undefined>;
+  getBrokerPositionsByAccountId(brokerAccountId: string): Promise<BrokerPosition[]>;
+  createBrokerPosition(position: InsertBrokerPosition): Promise<BrokerPosition>;
+  updateBrokerPosition(id: string, updates: Partial<InsertBrokerPosition>): Promise<BrokerPosition | undefined>;
+
   // P2P Trading
   getP2POffers(type?: string): Promise<P2POffer[]>;
   getP2POffer(id: string): Promise<P2POffer | undefined>;
@@ -412,6 +550,123 @@ export interface IStorage {
   createWalletConnectSession(session: InsertWalletConnectSession): Promise<WalletConnectSession>;
   updateWalletSessionStatus(id: string, status: string): Promise<boolean>;
   disconnectWalletSession(id: string): Promise<boolean>;
+
+  // Celebrity Fan Platform (TWinn System)
+  getCelebrityProfile(id: string): Promise<CelebrityProfile | undefined>;
+  getCelebrityProfileByUserId(userId: string): Promise<CelebrityProfile | undefined>;
+  getAllCelebrityProfiles(status?: string): Promise<CelebrityProfile[]>;
+  createCelebrityProfile(profile: InsertCelebrityProfile): Promise<CelebrityProfile>;
+  updateCelebrityProfile(id: string, updates: Partial<InsertCelebrityProfile>): Promise<boolean>;
+  updateCelebrityFollowerCount(id: string, count: number): Promise<void>;
+  updateCelebrityTotalStaked(id: string, amount: string): Promise<void>;
+  
+  getCelebrityFollows(celebrityId: string): Promise<FanFollow[]>;
+  getUserFollows(fanId: string): Promise<FanFollow[]>;
+  isFollowing(fanId: string, celebrityId: string): Promise<boolean>;
+  createFollow(follow: InsertFanFollow): Promise<FanFollow>;
+  deleteFollow(fanId: string, celebrityId: string): Promise<boolean>;
+  
+  getCelebrityStakes(celebrityId: string): Promise<FanStake[]>;
+  getUserStakes(fanId: string): Promise<FanStake[]>;
+  createStake(stake: InsertFanStake): Promise<FanStake>;
+  updateStakeStatus(id: string, status: string): Promise<void>;
+  
+  getCelebrityBets(celebrityId: string): Promise<FanBet[]>;
+  getUserBets(fanId: string): Promise<FanBet[]>;
+  createBet(bet: InsertFanBet): Promise<FanBet>;
+  updateBetStatus(id: string, status: string, payout?: string): Promise<void>;
+  
+  getPredictionMarkets(celebrityId?: string): Promise<PredictionMarket[]>;
+  getPredictionMarket(id: string): Promise<PredictionMarket | undefined>;
+  createPredictionMarket(market: InsertPredictionMarket): Promise<PredictionMarket>;
+  updatePredictionMarket(id: string, updates: Partial<InsertPredictionMarket>): Promise<boolean>;
+  
+  getCelebrityContent(celebrityId: string): Promise<CelebrityContent[]>;
+  getCelebrityContentItem(id: string): Promise<CelebrityContent | undefined>;
+  createCelebrityContent(content: InsertCelebrityContent): Promise<CelebrityContent>;
+  updateContentViews(id: string): Promise<void>;
+  updateContentLikes(id: string): Promise<void>;
+
+  // Financial Services
+  createFinancialOrder(order: InsertFinancialOrder): Promise<FinancialOrder>;
+  getFinancialOrdersByUserId(userId: string): Promise<FinancialOrder[]>;
+  getFinancialOrder(id: string): Promise<FinancialOrder | undefined>;
+  updateFinancialOrderStatus(id: string, status: string): Promise<void>;
+  
+  createFinancialHolding(holding: InsertFinancialHolding): Promise<FinancialHolding>;
+  getFinancialHoldingsByUserId(userId: string): Promise<FinancialHolding[]>;
+  getFinancialHoldingsByAssetType(userId: string, assetType: string): Promise<FinancialHolding[]>;
+  updateFinancialHolding(userId: string, assetType: string, symbol: string, updates: Partial<FinancialHolding>): Promise<void>;
+
+  // Spectrum Investment Plans
+  getAllSpectrumPlans(): Promise<SpectrumPlan[]>;
+  getSpectrumPlan(id: string): Promise<SpectrumPlan | undefined>;
+  getSpectrumPlanByTier(tier: string): Promise<SpectrumPlan | undefined>;
+  createSpectrumPlan(plan: InsertSpectrumPlan): Promise<SpectrumPlan>;
+  updateSpectrumPlan(id: string, updates: Partial<InsertSpectrumPlan>): Promise<void>;
+  
+  getUserSpectrumSubscription(userId: string): Promise<UserSpectrumSubscription | undefined>;
+  getUserSpectrumSubscriptionById(id: string): Promise<UserSpectrumSubscription | undefined>;
+  createSpectrumSubscription(subscription: InsertUserSpectrumSubscription): Promise<UserSpectrumSubscription>;
+  updateSpectrumSubscription(id: string, updates: Partial<InsertUserSpectrumSubscription>): Promise<void>;
+  cancelSpectrumSubscription(id: string): Promise<void>;
+  
+  getSpectrumEarnings(userId: string): Promise<SpectrumEarning[]>;
+  getSpectrumEarningsBySubscription(subscriptionId: string): Promise<SpectrumEarning[]>;
+  createSpectrumEarning(earning: InsertSpectrumEarning): Promise<SpectrumEarning>;
+  getAllActiveSpectrumSubscriptions(): Promise<UserSpectrumSubscription[]>;
+
+  // Individual Assets & Ethereal Elements
+  getAllEtherealElements(): Promise<EtherealElement[]>;
+  getEtherealElement(id: string): Promise<EtherealElement | undefined>;
+  createEtherealElement(element: InsertEtherealElement): Promise<EtherealElement>;
+  updateEtherealElementMintCount(id: string, mintedCount: number): Promise<void>;
+  
+  getEtherealOwnership(userId: string, elementId: string): Promise<EtherealOwnership | undefined>;
+  getUserEtherealOwnerships(userId: string): Promise<any[]>;
+  createEtherealOwnership(ownership: InsertEtherealOwnership): Promise<EtherealOwnership>;
+  updateEtherealOwnershipQuantity(userId: string, elementId: string, quantity: number): Promise<void>;
+  
+  getIndividualAsset(id: string): Promise<IndividualAsset | undefined>;
+  getUserIndividualAssets(userId: string): Promise<IndividualAsset[]>;
+  getUserAssetsByType(userId: string, assetType: string): Promise<IndividualAsset[]>;
+  createIndividualAsset(asset: InsertIndividualAsset): Promise<IndividualAsset>;
+  updateIndividualAssetValue(id: string, marketValue: string): Promise<void>;
+
+  // Prayer Integration System
+  createPrayer(prayer: InsertPrayer): Promise<Prayer>;
+  getUserPrayers(userId: string, limit?: number): Promise<Prayer[]>;
+  getPrayer(id: string): Promise<Prayer | undefined>;
+  
+  createScripture(scripture: InsertScripture): Promise<Scripture>;
+  getAllScriptures(): Promise<Scripture[]>;
+  getScripturesByCategory(category?: string): Promise<Scripture[]>;
+  getScripturesCount(): Promise<number>;
+  
+  createPrayerTradeCorrelation(correlation: InsertPrayerTradeCorrelation): Promise<PrayerTradeCorrelation>;
+  getUserPrayerCorrelations(userId: string): Promise<PrayerTradeCorrelation[]>;
+  getPrayerCorrelation(id: string): Promise<PrayerTradeCorrelation | undefined>;
+
+  getUserPrayerSettings(userId: string): Promise<UserPrayerSettings | undefined>;
+  upsertUserPrayerSettings(settings: InsertUserPrayerSettings): Promise<UserPrayerSettings>;
+  updateUserPrayerSettings(userId: string, updates: Partial<InsertUserPrayerSettings>): Promise<void>;
+
+  // Auto-Tithing System
+  getAllCharities(): Promise<Charity[]>;
+  getActiveCharities(): Promise<Charity[]>;
+  getCharity(id: string): Promise<Charity | undefined>;
+  createCharity(charity: InsertCharity): Promise<Charity>;
+  updateCharity(id: string, updates: Partial<InsertCharity>): Promise<void>;
+  updateCharityTotals(id: string, amount: string): Promise<void>;
+  
+  getTithingConfigByUserId(userId: string): Promise<TithingConfig | undefined>;
+  createTithingConfig(config: InsertTithingConfig): Promise<TithingConfig>;
+  updateTithingConfig(id: string, updates: Partial<InsertTithingConfig>): Promise<void>;
+  
+  getTithingHistory(userId: string, filters?: { startDate?: Date; endDate?: Date; status?: string }): Promise<TithingHistory[]>;
+  getTithingHistoryItem(id: string): Promise<TithingHistory | undefined>;
+  createTithingHistory(history: InsertTithingHistory): Promise<TithingHistory>;
+  updateTithingHistory(id: string, updates: Partial<InsertTithingHistory>): Promise<TithingHistory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -590,6 +845,137 @@ export class DatabaseStorage implements IStorage {
         publishedAt: new Date(),
       })
       .where(eq(songs.id, id));
+  }
+
+  // Jesus Cartel Releases
+  async getLatestReleases(limit: number = 10): Promise<JesusCartelRelease[]> {
+    return db
+      .select()
+      .from(jesusCartelReleases)
+      .orderBy(desc(jesusCartelReleases.releaseDate))
+      .limit(limit);
+  }
+
+  async getFeaturedReleases(): Promise<JesusCartelRelease[]> {
+    return db
+      .select()
+      .from(jesusCartelReleases)
+      .where(eq(jesusCartelReleases.isFeatured, true))
+      .orderBy(desc(jesusCartelReleases.releaseDate));
+  }
+
+  async getRelease(id: string): Promise<JesusCartelRelease | undefined> {
+    const [release] = await db
+      .select()
+      .from(jesusCartelReleases)
+      .where(eq(jesusCartelReleases.id, id));
+    return release || undefined;
+  }
+
+  async createRelease(release: InsertJesusCartelRelease): Promise<JesusCartelRelease> {
+    const [newRelease] = await db
+      .insert(jesusCartelReleases)
+      .values(release)
+      .returning();
+    return newRelease;
+  }
+
+  async updateRelease(id: string, updates: Partial<InsertJesusCartelRelease>): Promise<void> {
+    await db
+      .update(jesusCartelReleases)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jesusCartelReleases.id, id));
+  }
+
+  async deleteRelease(id: string): Promise<void> {
+    await db.delete(jesusCartelReleases).where(eq(jesusCartelReleases.id, id));
+  }
+
+  async incrementStreamCount(releaseId: string): Promise<void> {
+    await db
+      .update(jesusCartelReleases)
+      .set({ streamCount: sql`${jesusCartelReleases.streamCount} + 1` })
+      .where(eq(jesusCartelReleases.id, releaseId));
+  }
+
+  async incrementLikeCount(releaseId: string): Promise<void> {
+    await db
+      .update(jesusCartelReleases)
+      .set({ likeCount: sql`${jesusCartelReleases.likeCount} + 1` })
+      .where(eq(jesusCartelReleases.id, releaseId));
+  }
+
+  // Jesus Cartel Events
+  async getUpcomingEvents(limit: number = 10): Promise<JesusCartelEvent[]> {
+    return db
+      .select()
+      .from(jesusCartelEvents)
+      .where(eq(jesusCartelEvents.status, "upcoming"))
+      .orderBy(asc(jesusCartelEvents.date))
+      .limit(limit);
+  }
+
+  async getFeaturedEvents(): Promise<JesusCartelEvent[]> {
+    return db
+      .select()
+      .from(jesusCartelEvents)
+      .where(eq(jesusCartelEvents.isFeatured, true))
+      .orderBy(asc(jesusCartelEvents.date));
+  }
+
+  async getEvent(id: string): Promise<JesusCartelEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(jesusCartelEvents)
+      .where(eq(jesusCartelEvents.id, id));
+    return event || undefined;
+  }
+
+  async createEvent(event: InsertJesusCartelEvent): Promise<JesusCartelEvent> {
+    const [newEvent] = await db
+      .insert(jesusCartelEvents)
+      .values(event)
+      .returning();
+    return newEvent;
+  }
+
+  async updateEvent(id: string, updates: Partial<InsertJesusCartelEvent>): Promise<void> {
+    await db
+      .update(jesusCartelEvents)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jesusCartelEvents.id, id));
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    await db.delete(jesusCartelEvents).where(eq(jesusCartelEvents.id, id));
+  }
+
+  // Jesus Cartel Stream Tracking
+  async trackStream(stream: InsertJesusCartelStream): Promise<JesusCartelStream> {
+    const [newStream] = await db
+      .insert(jesusCartelStreams)
+      .values(stream)
+      .returning();
+    
+    await this.incrementStreamCount(stream.releaseId);
+    
+    return newStream;
+  }
+
+  async getReleaseStreams(releaseId: string): Promise<JesusCartelStream[]> {
+    return db
+      .select()
+      .from(jesusCartelStreams)
+      .where(eq(jesusCartelStreams.releaseId, releaseId))
+      .orderBy(desc(jesusCartelStreams.createdAt));
+  }
+
+  async getUserStreams(userId: string): Promise<JesusCartelStream[]> {
+    return db
+      .select()
+      .from(jesusCartelStreams)
+      .where(eq(jesusCartelStreams.userId, userId))
+      .orderBy(desc(jesusCartelStreams.createdAt));
   }
 
   // Agents
@@ -1069,6 +1455,46 @@ export class DatabaseStorage implements IStorage {
     return trade;
   }
 
+  // Precious Metals Exchange
+  async getAllMetalProducts(): Promise<MetalProduct[]> {
+    return db.select().from(metalProducts).orderBy(asc(metalProducts.metal));
+  }
+
+  async getMetalProduct(id: string): Promise<MetalProduct | undefined> {
+    const [product] = await db.select().from(metalProducts).where(eq(metalProducts.id, id));
+    return product || undefined;
+  }
+
+  async createMetalProduct(insertProduct: InsertMetalProduct): Promise<MetalProduct> {
+    const [product] = await db.insert(metalProducts).values(insertProduct).returning();
+    return product;
+  }
+
+  async getUserMetalOwnership(userId: string): Promise<MetalOwnership[]> {
+    return db.select().from(metalOwnership).where(eq(metalOwnership.userId, userId)).orderBy(desc(metalOwnership.purchasedAt));
+  }
+
+  async getMetalOwnership(id: string): Promise<MetalOwnership | undefined> {
+    const [ownership] = await db.select().from(metalOwnership).where(eq(metalOwnership.id, id));
+    return ownership || undefined;
+  }
+
+  async createMetalOwnership(insertOwnership: InsertMetalOwnership): Promise<MetalOwnership> {
+    const [ownership] = await db.insert(metalOwnership).values(insertOwnership).returning();
+    return ownership;
+  }
+
+  async updateMetalOwnershipLocation(id: string, location: string, deliveryAddress?: string, trackingNumber?: string): Promise<void> {
+    await db.update(metalOwnership)
+      .set({ 
+        location: location as any,
+        deliveryAddress,
+        trackingNumber,
+        deliveredAt: location === 'delivered' ? sql`NOW()` : undefined
+      })
+      .where(eq(metalOwnership.id, id));
+  }
+
   // Blog Posts
   async getBlogPost(id: string): Promise<BlogPost | undefined> {
     const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
@@ -1412,6 +1838,100 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
+  // Broker Integration
+  async getBrokerAccount(id: string) {
+    return await db.query.brokerAccounts.findFirst({
+      where: eq(brokerAccounts.id, id),
+    });
+  }
+
+  async getUserBrokerAccounts(userId: string) {
+    return await db.query.brokerAccounts.findMany({
+      where: eq(brokerAccounts.userId, userId),
+      orderBy: [desc(brokerAccounts.createdAt)],
+    });
+  }
+
+  async createBrokerAccount(account: InsertBrokerAccount) {
+    const [created] = await db.insert(brokerAccounts).values(account).returning();
+    return created;
+  }
+
+  async updateBrokerAccount(id: string, updates: Partial<InsertBrokerAccount>) {
+    const [updated] = await db.update(brokerAccounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(brokerAccounts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getBrokerOrder(id: string) {
+    return await db.query.brokerOrders.findFirst({
+      where: eq(brokerOrders.id, id),
+    });
+  }
+
+  async getBrokerOrderByExternalId(externalOrderId: string) {
+    return await db.query.brokerOrders.findFirst({
+      where: eq(brokerOrders.externalOrderId, externalOrderId),
+    });
+  }
+
+  async getBrokerOrdersByAccountId(brokerAccountId: string) {
+    return await db.query.brokerOrders.findMany({
+      where: eq(brokerOrders.brokerAccountId, brokerAccountId),
+      orderBy: [desc(brokerOrders.submittedAt)],
+    });
+  }
+
+  async createBrokerOrder(order: InsertBrokerOrder) {
+    const [created] = await db.insert(brokerOrders).values(order).returning();
+    return created;
+  }
+
+  async updateBrokerOrder(id: string, updates: Partial<InsertBrokerOrder>) {
+    const [updated] = await db.update(brokerOrders)
+      .set(updates)
+      .where(eq(brokerOrders.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getBrokerPosition(id: string) {
+    return await db.query.brokerPositions.findFirst({
+      where: eq(brokerPositions.id, id),
+    });
+  }
+
+  async getBrokerPositionBySymbol(brokerAccountId: string, symbol: string) {
+    return await db.query.brokerPositions.findFirst({
+      where: and(
+        eq(brokerPositions.brokerAccountId, brokerAccountId),
+        eq(brokerPositions.symbol, symbol)
+      ),
+    });
+  }
+
+  async getBrokerPositionsByAccountId(brokerAccountId: string) {
+    return await db.query.brokerPositions.findMany({
+      where: eq(brokerPositions.brokerAccountId, brokerAccountId),
+      orderBy: [desc(brokerPositions.lastUpdatedAt)],
+    });
+  }
+
+  async createBrokerPosition(position: InsertBrokerPosition) {
+    const [created] = await db.insert(brokerPositions).values(position).returning();
+    return created;
+  }
+
+  async updateBrokerPosition(id: string, updates: Partial<InsertBrokerPosition>) {
+    const [updated] = await db.update(brokerPositions)
+      .set({ ...updates, lastUpdatedAt: new Date() })
+      .where(eq(brokerPositions.id, id))
+      .returning();
+    return updated;
+  }
+
   // P2P Trading
   async getP2POffers(type?: string) {
     if (type) {
@@ -1607,6 +2127,629 @@ export class DatabaseStorage implements IStorage {
       .where(eq(walletConnectSessions.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  // Celebrity Fan Platform (TWinn System)
+  async getCelebrityProfile(id: string) {
+    return await db.query.celebrityProfiles.findFirst({
+      where: eq(celebrityProfiles.id, id),
+    });
+  }
+
+  async getCelebrityProfileByUserId(userId: string) {
+    return await db.query.celebrityProfiles.findFirst({
+      where: eq(celebrityProfiles.userId, userId),
+    });
+  }
+
+  async getAllCelebrityProfiles(status?: string) {
+    if (status) {
+      return await db.query.celebrityProfiles.findMany({
+        where: eq(celebrityProfiles.verificationStatus, status),
+        orderBy: [desc(celebrityProfiles.followerCount)],
+      });
+    }
+    return await db.query.celebrityProfiles.findMany({
+      orderBy: [desc(celebrityProfiles.followerCount)],
+    });
+  }
+
+  async createCelebrityProfile(profile: InsertCelebrityProfile) {
+    const [created] = await db.insert(celebrityProfiles).values(profile).returning();
+    return created;
+  }
+
+  async updateCelebrityProfile(id: string, updates: Partial<InsertCelebrityProfile>) {
+    const result = await db.update(celebrityProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(celebrityProfiles.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async updateCelebrityFollowerCount(id: string, count: number) {
+    await db.update(celebrityProfiles)
+      .set({ followerCount: count, updatedAt: new Date() })
+      .where(eq(celebrityProfiles.id, id));
+  }
+
+  async updateCelebrityTotalStaked(id: string, amount: string) {
+    await db.update(celebrityProfiles)
+      .set({ totalStaked: amount, updatedAt: new Date() })
+      .where(eq(celebrityProfiles.id, id));
+  }
+
+  async getCelebrityFollows(celebrityId: string) {
+    return await db.query.fanFollows.findMany({
+      where: eq(fanFollows.celebrityId, celebrityId),
+      orderBy: [desc(fanFollows.followedAt)],
+    });
+  }
+
+  async getUserFollows(fanId: string) {
+    return await db.query.fanFollows.findMany({
+      where: eq(fanFollows.fanId, fanId),
+      orderBy: [desc(fanFollows.followedAt)],
+    });
+  }
+
+  async isFollowing(fanId: string, celebrityId: string) {
+    const follow = await db.query.fanFollows.findFirst({
+      where: and(
+        eq(fanFollows.fanId, fanId),
+        eq(fanFollows.celebrityId, celebrityId)
+      ),
+    });
+    return !!follow;
+  }
+
+  async createFollow(follow: InsertFanFollow) {
+    const [created] = await db.insert(fanFollows).values(follow).returning();
+    return created;
+  }
+
+  async deleteFollow(fanId: string, celebrityId: string) {
+    const result = await db.delete(fanFollows)
+      .where(and(
+        eq(fanFollows.fanId, fanId),
+        eq(fanFollows.celebrityId, celebrityId)
+      ))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getCelebrityStakes(celebrityId: string) {
+    return await db.query.fanStakes.findMany({
+      where: eq(fanStakes.celebrityId, celebrityId),
+      orderBy: [desc(fanStakes.stakedAt)],
+    });
+  }
+
+  async getUserStakes(fanId: string) {
+    return await db.query.fanStakes.findMany({
+      where: eq(fanStakes.fanId, fanId),
+      orderBy: [desc(fanStakes.stakedAt)],
+    });
+  }
+
+  async createStake(stake: InsertFanStake) {
+    const [created] = await db.insert(fanStakes).values(stake).returning();
+    return created;
+  }
+
+  async updateStakeStatus(id: string, status: string) {
+    await db.update(fanStakes)
+      .set({ status, ...(status === "completed" ? { completedAt: new Date() } : {}) })
+      .where(eq(fanStakes.id, id));
+  }
+
+  async getCelebrityBets(celebrityId: string) {
+    return await db.query.fanBets.findMany({
+      where: eq(fanBets.celebrityId, celebrityId),
+      orderBy: [desc(fanBets.createdAt)],
+    });
+  }
+
+  async getUserBets(fanId: string) {
+    return await db.query.fanBets.findMany({
+      where: eq(fanBets.fanId, fanId),
+      orderBy: [desc(fanBets.createdAt)],
+    });
+  }
+
+  async createBet(bet: InsertFanBet) {
+    const [created] = await db.insert(fanBets).values(bet).returning();
+    return created;
+  }
+
+  async updateBetStatus(id: string, status: string, payout?: string) {
+    const updates: any = { status, resolvedAt: new Date() };
+    if (payout) updates.actualPayout = payout;
+    await db.update(fanBets).set(updates).where(eq(fanBets.id, id));
+  }
+
+  async getPredictionMarkets(celebrityId?: string) {
+    if (celebrityId) {
+      return await db.query.predictionMarkets.findMany({
+        where: eq(predictionMarkets.celebrityId, celebrityId),
+        orderBy: [desc(predictionMarkets.createdAt)],
+      });
+    }
+    return await db.query.predictionMarkets.findMany({
+      orderBy: [desc(predictionMarkets.createdAt)],
+    });
+  }
+
+  async getPredictionMarket(id: string) {
+    return await db.query.predictionMarkets.findFirst({
+      where: eq(predictionMarkets.id, id),
+    });
+  }
+
+  async createPredictionMarket(market: InsertPredictionMarket) {
+    const [created] = await db.insert(predictionMarkets).values(market).returning();
+    return created;
+  }
+
+  async updatePredictionMarket(id: string, updates: Partial<InsertPredictionMarket>) {
+    const result = await db.update(predictionMarkets)
+      .set(updates)
+      .where(eq(predictionMarkets.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getCelebrityContent(celebrityId: string) {
+    return await db.query.celebrityContent.findMany({
+      where: eq(celebrityContent.celebrityId, celebrityId),
+      orderBy: [desc(celebrityContent.publishedAt)],
+    });
+  }
+
+  async getCelebrityContentItem(id: string) {
+    return await db.query.celebrityContent.findFirst({
+      where: eq(celebrityContent.id, id),
+    });
+  }
+
+  async createCelebrityContent(content: InsertCelebrityContent) {
+    const [created] = await db.insert(celebrityContent).values(content).returning();
+    return created;
+  }
+
+  async updateContentViews(id: string) {
+    await db.update(celebrityContent)
+      .set({ viewCount: sql`${celebrityContent.viewCount} + 1` })
+      .where(eq(celebrityContent.id, id));
+  }
+
+  async updateContentLikes(id: string) {
+    await db.update(celebrityContent)
+      .set({ likeCount: sql`${celebrityContent.likeCount} + 1` })
+      .where(eq(celebrityContent.id, id));
+  }
+
+  // Financial Services
+  async createFinancialOrder(order: InsertFinancialOrder): Promise<FinancialOrder> {
+    const [created] = await db.insert(financialOrders).values(order).returning();
+    return created;
+  }
+
+  async getFinancialOrdersByUserId(userId: string): Promise<FinancialOrder[]> {
+    return db.select().from(financialOrders)
+      .where(eq(financialOrders.userId, userId))
+      .orderBy(desc(financialOrders.createdAt));
+  }
+
+  async getFinancialOrder(id: string): Promise<FinancialOrder | undefined> {
+    const [order] = await db.select().from(financialOrders).where(eq(financialOrders.id, id));
+    return order || undefined;
+  }
+
+  async updateFinancialOrderStatus(id: string, status: string): Promise<void> {
+    const updates: any = { status };
+    if (status === "executed") updates.executedAt = new Date();
+    await db.update(financialOrders).set(updates).where(eq(financialOrders.id, id));
+  }
+
+  async createFinancialHolding(holding: InsertFinancialHolding): Promise<FinancialHolding> {
+    const [created] = await db.insert(financialHoldings).values(holding).returning();
+    return created;
+  }
+
+  async getFinancialHoldingsByUserId(userId: string): Promise<FinancialHolding[]> {
+    return db.select().from(financialHoldings)
+      .where(eq(financialHoldings.userId, userId))
+      .orderBy(desc(financialHoldings.updatedAt));
+  }
+
+  async getFinancialHoldingsByAssetType(userId: string, assetType: string): Promise<FinancialHolding[]> {
+    return db.select().from(financialHoldings)
+      .where(and(
+        eq(financialHoldings.userId, userId),
+        eq(financialHoldings.assetType, assetType as any)
+      ));
+  }
+
+  async updateFinancialHolding(userId: string, assetType: string, symbol: string, updates: Partial<FinancialHolding>): Promise<void> {
+    await db.update(financialHoldings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(
+        eq(financialHoldings.userId, userId),
+        eq(financialHoldings.assetType, assetType as any),
+        eq(financialHoldings.symbol, symbol)
+      ));
+  }
+
+  // Spectrum Investment Plans
+  async getAllSpectrumPlans(): Promise<SpectrumPlan[]> {
+    return db.select().from(spectrumPlans)
+      .where(eq(spectrumPlans.isActive, true))
+      .orderBy(asc(spectrumPlans.displayOrder));
+  }
+
+  async getSpectrumPlan(id: string): Promise<SpectrumPlan | undefined> {
+    const [plan] = await db.select().from(spectrumPlans).where(eq(spectrumPlans.id, id));
+    return plan || undefined;
+  }
+
+  async getSpectrumPlanByTier(tier: string): Promise<SpectrumPlan | undefined> {
+    const [plan] = await db.select().from(spectrumPlans).where(eq(spectrumPlans.tier, tier as any));
+    return plan || undefined;
+  }
+
+  async createSpectrumPlan(plan: InsertSpectrumPlan): Promise<SpectrumPlan> {
+    const [created] = await db.insert(spectrumPlans).values(plan).returning();
+    return created;
+  }
+
+  async updateSpectrumPlan(id: string, updates: Partial<InsertSpectrumPlan>): Promise<void> {
+    await db.update(spectrumPlans)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(spectrumPlans.id, id));
+  }
+
+  async getUserSpectrumSubscription(userId: string): Promise<UserSpectrumSubscription | undefined> {
+    const [subscription] = await db.select().from(userSpectrumSubscriptions)
+      .where(and(
+        eq(userSpectrumSubscriptions.userId, userId),
+        eq(userSpectrumSubscriptions.status, "active" as any)
+      ))
+      .orderBy(desc(userSpectrumSubscriptions.subscribedAt));
+    return subscription || undefined;
+  }
+
+  async getUserSpectrumSubscriptionById(id: string): Promise<UserSpectrumSubscription | undefined> {
+    const [subscription] = await db.select().from(userSpectrumSubscriptions)
+      .where(eq(userSpectrumSubscriptions.id, id));
+    return subscription || undefined;
+  }
+
+  async createSpectrumSubscription(subscription: InsertUserSpectrumSubscription): Promise<UserSpectrumSubscription> {
+    const [created] = await db.insert(userSpectrumSubscriptions).values(subscription).returning();
+    return created;
+  }
+
+  async updateSpectrumSubscription(id: string, updates: Partial<InsertUserSpectrumSubscription>): Promise<void> {
+    await db.update(userSpectrumSubscriptions)
+      .set(updates)
+      .where(eq(userSpectrumSubscriptions.id, id));
+  }
+
+  async cancelSpectrumSubscription(id: string): Promise<void> {
+    await db.update(userSpectrumSubscriptions)
+      .set({ 
+        status: "cancelled" as any,
+        cancelledAt: new Date()
+      })
+      .where(eq(userSpectrumSubscriptions.id, id));
+  }
+
+  async getSpectrumEarnings(userId: string): Promise<SpectrumEarning[]> {
+    return db.select().from(spectrumEarnings)
+      .where(eq(spectrumEarnings.userId, userId))
+      .orderBy(desc(spectrumEarnings.distributedAt));
+  }
+
+  async getSpectrumEarningsBySubscription(subscriptionId: string): Promise<SpectrumEarning[]> {
+    return db.select().from(spectrumEarnings)
+      .where(eq(spectrumEarnings.subscriptionId, subscriptionId))
+      .orderBy(desc(spectrumEarnings.distributedAt));
+  }
+
+  async createSpectrumEarning(earning: InsertSpectrumEarning): Promise<SpectrumEarning> {
+    const [created] = await db.insert(spectrumEarnings).values(earning).returning();
+    return created;
+  }
+
+  async getAllActiveSpectrumSubscriptions(): Promise<UserSpectrumSubscription[]> {
+    return db.select().from(userSpectrumSubscriptions)
+      .where(eq(userSpectrumSubscriptions.status, "active" as any))
+      .orderBy(asc(userSpectrumSubscriptions.subscribedAt));
+  }
+
+  // Individual Assets & Ethereal Elements
+  async getAllEtherealElements(): Promise<EtherealElement[]> {
+    return db.select().from(etherealElements).orderBy(desc(etherealElements.createdAt));
+  }
+
+  async getEtherealElement(id: string): Promise<EtherealElement | undefined> {
+    const [element] = await db.select().from(etherealElements).where(eq(etherealElements.id, id));
+    return element || undefined;
+  }
+
+  async createEtherealElement(element: InsertEtherealElement): Promise<EtherealElement> {
+    const [created] = await db.insert(etherealElements).values(element).returning();
+    return created;
+  }
+
+  async updateEtherealElementMintCount(id: string, mintedCount: number): Promise<void> {
+    await db.update(etherealElements)
+      .set({ mintedCount })
+      .where(eq(etherealElements.id, id));
+  }
+
+  async getEtherealOwnership(userId: string, elementId: string): Promise<EtherealOwnership | undefined> {
+    const [ownership] = await db.select().from(etherealOwnership)
+      .where(and(
+        eq(etherealOwnership.userId, userId),
+        eq(etherealOwnership.elementId, elementId)
+      ));
+    return ownership || undefined;
+  }
+
+  async getUserEtherealOwnerships(userId: string): Promise<any[]> {
+    return db.select({
+      ownership: etherealOwnership,
+      element: etherealElements,
+    })
+    .from(etherealOwnership)
+    .leftJoin(etherealElements, eq(etherealOwnership.elementId, etherealElements.id))
+    .where(eq(etherealOwnership.userId, userId))
+    .orderBy(desc(etherealOwnership.acquiredAt));
+  }
+
+  async createEtherealOwnership(ownership: InsertEtherealOwnership): Promise<EtherealOwnership> {
+    const [created] = await db.insert(etherealOwnership).values(ownership).returning();
+    return created;
+  }
+
+  async updateEtherealOwnershipQuantity(userId: string, elementId: string, quantity: number): Promise<void> {
+    await db.update(etherealOwnership)
+      .set({ quantity })
+      .where(and(
+        eq(etherealOwnership.userId, userId),
+        eq(etherealOwnership.elementId, elementId)
+      ));
+  }
+
+  async getIndividualAsset(id: string): Promise<IndividualAsset | undefined> {
+    const [asset] = await db.select().from(individualAssets).where(eq(individualAssets.id, id));
+    return asset || undefined;
+  }
+
+  async getUserIndividualAssets(userId: string): Promise<IndividualAsset[]> {
+    return db.select().from(individualAssets)
+      .where(eq(individualAssets.userId, userId))
+      .orderBy(desc(individualAssets.createdAt));
+  }
+
+  async getUserAssetsByType(userId: string, assetType: string): Promise<IndividualAsset[]> {
+    return db.select().from(individualAssets)
+      .where(and(
+        eq(individualAssets.userId, userId),
+        eq(individualAssets.assetType, assetType as any)
+      ))
+      .orderBy(desc(individualAssets.createdAt));
+  }
+
+  async createIndividualAsset(asset: InsertIndividualAsset): Promise<IndividualAsset> {
+    const [created] = await db.insert(individualAssets).values(asset).returning();
+    return created;
+  }
+
+  async updateIndividualAssetValue(id: string, marketValue: string): Promise<void> {
+    await db.update(individualAssets)
+      .set({ marketValue, updatedAt: new Date() })
+      .where(eq(individualAssets.id, id));
+  }
+
+  // Prayer Integration System
+  async createPrayer(prayer: InsertPrayer): Promise<Prayer> {
+    const [created] = await db.insert(prayers).values(prayer).returning();
+    return created;
+  }
+
+  async getUserPrayers(userId: string, limit?: number): Promise<Prayer[]> {
+    const query = db.select().from(prayers)
+      .where(eq(prayers.userId, userId))
+      .orderBy(desc(prayers.createdAt));
+    
+    if (limit) {
+      return query.limit(limit);
+    }
+    return query;
+  }
+
+  async getPrayer(id: string): Promise<Prayer | undefined> {
+    const [prayer] = await db.select().from(prayers).where(eq(prayers.id, id));
+    return prayer || undefined;
+  }
+
+  async createScripture(scripture: InsertScripture): Promise<Scripture> {
+    const [created] = await db.insert(scriptures).values(scripture).returning();
+    return created;
+  }
+
+  async getAllScriptures(): Promise<Scripture[]> {
+    return db.select().from(scriptures).orderBy(desc(scriptures.createdAt));
+  }
+
+  async getScripturesByCategory(category?: string): Promise<Scripture[]> {
+    if (!category) {
+      return this.getAllScriptures();
+    }
+    return db.select().from(scriptures)
+      .where(eq(scriptures.category, category as any))
+      .orderBy(desc(scriptures.createdAt));
+  }
+
+  async getScripturesCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(scriptures);
+    return result[0]?.count || 0;
+  }
+
+  async createPrayerTradeCorrelation(correlation: InsertPrayerTradeCorrelation): Promise<PrayerTradeCorrelation> {
+    const [created] = await db.insert(prayerTradeCorrelations).values(correlation).returning();
+    return created;
+  }
+
+  async getUserPrayerCorrelations(userId: string): Promise<PrayerTradeCorrelation[]> {
+    return db.select({
+      correlation: prayerTradeCorrelations,
+    })
+    .from(prayerTradeCorrelations)
+    .innerJoin(prayers, eq(prayerTradeCorrelations.prayerId, prayers.id))
+    .where(eq(prayers.userId, userId))
+    .orderBy(desc(prayerTradeCorrelations.createdAt))
+    .then(results => results.map(r => r.correlation));
+  }
+
+  async getPrayerCorrelation(id: string): Promise<PrayerTradeCorrelation | undefined> {
+    const [correlation] = await db.select().from(prayerTradeCorrelations)
+      .where(eq(prayerTradeCorrelations.id, id));
+    return correlation || undefined;
+  }
+
+  async getUserPrayerSettings(userId: string): Promise<UserPrayerSettings | undefined> {
+    const [settings] = await db.select().from(userPrayerSettings)
+      .where(eq(userPrayerSettings.userId, userId));
+    return settings || undefined;
+  }
+
+  async upsertUserPrayerSettings(settings: InsertUserPrayerSettings): Promise<UserPrayerSettings> {
+    const [result] = await db.insert(userPrayerSettings)
+      .values(settings)
+      .onConflictDoUpdate({
+        target: userPrayerSettings.userId,
+        set: { ...settings, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async updateUserPrayerSettings(userId: string, updates: Partial<InsertUserPrayerSettings>): Promise<void> {
+    await db.update(userPrayerSettings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userPrayerSettings.userId, userId));
+  }
+
+  // Auto-Tithing System
+  async getAllCharities(): Promise<Charity[]> {
+    return db.select().from(charities).orderBy(asc(charities.name));
+  }
+
+  async getActiveCharities(): Promise<Charity[]> {
+    return db.select().from(charities)
+      .where(eq(charities.isActive, true))
+      .orderBy(asc(charities.name));
+  }
+
+  async getCharity(id: string): Promise<Charity | undefined> {
+    const [charity] = await db.select().from(charities).where(eq(charities.id, id));
+    return charity || undefined;
+  }
+
+  async createCharity(charity: InsertCharity): Promise<Charity> {
+    const [created] = await db.insert(charities).values(charity).returning();
+    return created;
+  }
+
+  async updateCharity(id: string, updates: Partial<InsertCharity>): Promise<void> {
+    await db.update(charities)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(charities.id, id));
+  }
+
+  async updateCharityTotals(id: string, amount: string): Promise<void> {
+    const charity = await this.getCharity(id);
+    if (!charity) return;
+    
+    const newTotal = (parseFloat(charity.totalReceived || "0") + parseFloat(amount)).toString();
+    const newDonorCount = (charity.donorCount || 0) + 1;
+    
+    await db.update(charities)
+      .set({ 
+        totalReceived: newTotal, 
+        donorCount: newDonorCount,
+        updatedAt: new Date() 
+      })
+      .where(eq(charities.id, id));
+  }
+
+  async getTithingConfigByUserId(userId: string): Promise<TithingConfig | undefined> {
+    const [config] = await db.select().from(tithingConfigs)
+      .where(eq(tithingConfigs.userId, userId));
+    return config || undefined;
+  }
+
+  async createTithingConfig(config: InsertTithingConfig): Promise<TithingConfig> {
+    const [created] = await db.insert(tithingConfigs).values(config).returning();
+    return created;
+  }
+
+  async updateTithingConfig(id: string, updates: Partial<InsertTithingConfig>): Promise<void> {
+    await db.update(tithingConfigs)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tithingConfigs.id, id));
+  }
+
+  async getTithingHistory(
+    userId: string, 
+    filters?: { startDate?: Date; endDate?: Date; status?: string }
+  ): Promise<TithingHistory[]> {
+    let query = db.select().from(tithingHistory)
+      .where(eq(tithingHistory.userId, userId));
+
+    if (filters?.startDate || filters?.endDate || filters?.status) {
+      const conditions = [eq(tithingHistory.userId, userId)];
+      
+      if (filters.startDate) {
+        conditions.push(sql`${tithingHistory.createdAt} >= ${filters.startDate}`);
+      }
+      if (filters.endDate) {
+        conditions.push(sql`${tithingHistory.createdAt} <= ${filters.endDate}`);
+      }
+      if (filters.status) {
+        conditions.push(eq(tithingHistory.status, filters.status as any));
+      }
+
+      return db.select().from(tithingHistory)
+        .where(and(...conditions))
+        .orderBy(desc(tithingHistory.createdAt));
+    }
+
+    return db.select().from(tithingHistory)
+      .where(eq(tithingHistory.userId, userId))
+      .orderBy(desc(tithingHistory.createdAt));
+  }
+
+  async getTithingHistoryItem(id: string): Promise<TithingHistory | undefined> {
+    const [item] = await db.select().from(tithingHistory).where(eq(tithingHistory.id, id));
+    return item || undefined;
+  }
+
+  async createTithingHistory(history: InsertTithingHistory): Promise<TithingHistory> {
+    const [created] = await db.insert(tithingHistory).values(history).returning();
+    return created;
+  }
+
+  async updateTithingHistory(id: string, updates: Partial<InsertTithingHistory>): Promise<TithingHistory> {
+    const [updated] = await db.update(tithingHistory)
+      .set(updates)
+      .where(eq(tithingHistory.id, id))
+      .returning();
+    return updated;
   }
 }
 

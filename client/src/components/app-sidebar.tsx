@@ -27,6 +27,15 @@ import {
   ArrowLeftRight,
   ArrowUpDown,
   Settings,
+  Link2,
+  Sparkles,
+  LayoutDashboard,
+  BarChart3,
+  Globe,
+  Landmark,
+  PiggyBank,
+  Gem,
+  Heart,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +50,30 @@ const tradingItems = [
     title: "Trading Bots Arsenal",
     url: "/trading-bots",
     icon: Bot,
+  },
+  {
+    title: "Bot Marketplace",
+    url: "/bot-marketplace",
+    icon: Sparkles,
+    testId: "link-bot-marketplace",
+  },
+  {
+    title: "Spectrum Investment Plans",
+    url: "/spectrum-plans",
+    icon: Gem,
+    testId: "link-spectrum-plans",
+  },
+  {
+    title: "Kingdom Assets",
+    url: "/assets",
+    icon: Sparkles,
+    testId: "link-assets",
+  },
+  {
+    title: "Ethereal Elements",
+    url: "/ethereal-elements",
+    icon: Sparkles,
+    testId: "link-ethereal-elements",
   },
   {
     title: "Financial Services",
@@ -58,6 +91,26 @@ const tradingItems = [
     icon: Crown,
   },
   {
+    title: "Stock Trading",
+    url: "/stocks",
+    icon: BarChart3,
+  },
+  {
+    title: "Forex Trading",
+    url: "/forex",
+    icon: Globe,
+  },
+  {
+    title: "Bond Marketplace",
+    url: "/bonds",
+    icon: Landmark,
+  },
+  {
+    title: "Retirement Planning",
+    url: "/retirement",
+    icon: PiggyBank,
+  },
+  {
     title: "Legacy Trading",
     url: "/trading",
     icon: TrendingUp,
@@ -69,6 +122,11 @@ const blockchainItems = [
     title: "Wallets & Blockchain",
     url: "/blockchain",
     icon: Wallet,
+  },
+  {
+    title: "WalletConnect",
+    url: "/wallet-connect",
+    icon: Link2,
   },
   {
     title: "Wallet Security",
@@ -83,6 +141,12 @@ const blockchainItems = [
 ];
 
 const communityItems = [
+  {
+    title: "TWinn Celebrity Platform",
+    url: "/twinn",
+    icon: Sparkles,
+    testId: "link-twinn",
+  },
   {
     title: "VIP Forum",
     url: "/community",
@@ -101,6 +165,12 @@ const communityItems = [
 ];
 
 const platformItems = [
+  {
+    title: "Prayer Center",
+    url: "/prayer-center",
+    icon: Heart,
+    testId: "link-prayer-center",
+  },
   {
     title: "Agent Orchestra",
     url: "/agents",
@@ -166,6 +236,19 @@ export function AppSidebar() {
                   <Link href="/">
                     <Home className="h-4 w-4" />
                     <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  data-active={location === "/dashboard-new"}
+                  className="data-[active=true]:bg-sidebar-accent"
+                  data-testid="link-dashboard-new"
+                >
+                  <Link href="/dashboard-new">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Custom Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

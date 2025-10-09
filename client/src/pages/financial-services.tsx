@@ -2,10 +2,144 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, DollarSign, PiggyBank, Building2, BarChart3, Bitcoin } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, DollarSign, PiggyBank, Building2, BarChart3, Bitcoin, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+
+interface MarketData {
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  timestamp: string;
+}
 
 export default function FinancialServices() {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [priceUpdates, setPriceUpdates] = useState<Record<string, MarketData>>({});
+
+  // Initialize WebSocket for real-time updates
+  useEffect(() => {
+    const newSocket = io();
+    newSocket.on("connect", () => {
+      console.log("Connected to WebSocket");
+      newSocket.emit("subscribe:trading");
+    });
+
+    newSocket.on("trading:event", (event: any) => {
+      if (event.type === "pnl_update" && event.data?.marketData) {
+        setPriceUpdates(prev => ({
+          ...prev,
+          [event.data.marketData.symbol]: event.data.marketData
+        }));
+      }
+    });
+
+    setSocket(newSocket);
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  // Fetch stock data with 30s auto-refresh
+  const { data: stocksData, isLoading: stocksLoading } = useQuery<MarketData[]>({
+    queryKey: ['/api/market/stocks'],
+    queryFn: async () => {
+      const symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'SPY'];
+      const results = await Promise.all(
+        symbols.map(async (symbol) => {
+          const res = await fetch(`/api/market/stock/${symbol}`);
+          return res.json();
+        })
+      );
+      return results;
+    },
+    refetchInterval: 30000, // 30 seconds
+  });
+
+  // Fetch forex data with 30s auto-refresh
+  const { data: forexData, isLoading: forexLoading } = useQuery<MarketData[]>({
+    queryKey: ['/api/market/forex'],
+    queryFn: async () => {
+      const pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY'];
+      const results = await Promise.all(
+        pairs.map(async (pair) => {
+          const res = await fetch(`/api/market/forex/${pair}`);
+          return res.json();
+        })
+      );
+      return results;
+    },
+    refetchInterval: 30000,
+  });
+
+  // Fetch metals data with 30s auto-refresh
+  const { data: metalsData, isLoading: metalsLoading } = useQuery<MarketData[]>({
+    queryKey: ['/api/market/metals'],
+    queryFn: async () => {
+      const metals = ['gold', 'silver', 'platinum'];
+      const results = await Promise.all(
+        metals.map(async (metal) => {
+          const res = await fetch(`/api/market/metal/${metal}`);
+          return res.json();
+        })
+      );
+      return results;
+    },
+    refetchInterval: 30000,
+  });
+
+  // Fetch bonds data with 30s auto-refresh
+  const { data: bondsData, isLoading: bondsLoading } = useQuery<MarketData[]>({
+    queryKey: ['/api/market/bonds'],
+    queryFn: async () => {
+      const res = await fetch('/api/market/bonds/treasury');
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  // Generate mock historical data for charts
+  const generateChartData = (currentPrice: number) => {
+    const data = [];
+    const now = Date.now();
+    for (let i = 23; i >= 0; i--) {
+      const variance = (Math.random() - 0.5) * (currentPrice * 0.02);
+      data.push({
+        time: new Date(now - i * 60 * 60 * 1000).toLocaleTimeString('en-US', { hour: '2-digit' }),
+        price: currentPrice + variance,
+      });
+    }
+    return data;
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatPercent = (value: number) => {
+    const formatted = value.toFixed(2);
+    return value >= 0 ? `+${formatted}%` : `${formatted}%`;
+  };
+
+  const PriceChangeIndicator = ({ change, changePercent }: { change: number; changePercent: number }) => {
+    const isPositive = change >= 0;
+    return (
+      <div className={`flex items-center gap-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+        <span className="text-xs font-medium">{formatPercent(changePercent)}</span>
+      </div>
+    );
+  };
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
@@ -132,8 +266,35 @@ export default function FinancialServices() {
 
           {/* Trading */}
           <TabsContent value="trading" className="space-y-4">
+            {/* Real-Time Price Ticker */}
+            <Card className="border-primary/20" data-testid="card-price-ticker">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  Live Market Prices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stocksLoading ? (
+                  <div className="flex gap-4 overflow-x-auto">
+                    {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-12 w-32 flex-shrink-0" />)}
+                  </div>
+                ) : (
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {stocksData?.map(stock => (
+                      <div key={stock.symbol} className="flex-shrink-0 bg-muted/50 rounded-lg p-3 min-w-[140px]" data-testid={`ticker-${stock.symbol.toLowerCase()}`}>
+                        <div className="text-xs text-muted-foreground">{stock.symbol}</div>
+                        <div className="text-lg font-bold">{formatCurrency(stock.price)}</div>
+                        <PriceChangeIndicator change={stock.change} changePercent={stock.changePercent} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {/* Stocks Bot */}
+              {/* Stocks Bot with Live Data */}
               <Card className="hover-elevate" data-testid="card-stocks">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-2">
@@ -141,30 +302,59 @@ export default function FinancialServices() {
                       <TrendingUp className="h-4 w-4 text-primary" />
                       Stock Trading
                     </CardTitle>
-                    <Badge variant="default" data-testid="badge-stocks-status">Active</Badge>
+                    <Badge variant="default" data-testid="badge-stocks-status">
+                      <span className="relative flex h-2 w-2 mr-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      Live
+                    </Badge>
                   </div>
                   <CardDescription>Automated stock trading</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Portfolio Value</span>
-                      <span className="font-semibold" data-testid="text-stocks-value">$0.00</span>
+                  {stocksLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-20 w-full" />
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Day Change</span>
-                      <span className="text-green-600" data-testid="text-stocks-change">+0.00%</span>
-                    </div>
-                    <Link href="/trading">
-                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-stocks">
-                        Trade Stocks
+                  ) : stocksData && stocksData[0] ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">SPY Price</span>
+                        <span className="font-semibold" data-testid="text-stocks-value">
+                          {formatCurrency(stocksData.find(s => s.symbol === 'SPY')?.price || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-muted-foreground">Day Change</span>
+                        <PriceChangeIndicator 
+                          change={stocksData.find(s => s.symbol === 'SPY')?.change || 0} 
+                          changePercent={stocksData.find(s => s.symbol === 'SPY')?.changePercent || 0} 
+                        />
+                      </div>
+                      <div className="h-24 mt-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={generateChartData(stocksData.find(s => s.symbol === 'SPY')?.price || 0)}>
+                            <defs>
+                              <linearGradient id="stockGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <Area type="monotone" dataKey="price" stroke="#22c55e" fillOpacity={1} fill="url(#stockGradient)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <Button size="sm" className="w-full" data-testid="button-trade-stocks">
+                        Quick Trade
                       </Button>
-                    </Link>
-                  </div>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
 
-              {/* Forex Bot */}
+              {/* Forex Bot with Live Data */}
               <Card className="hover-elevate" data-testid="card-forex">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-2">
@@ -172,26 +362,49 @@ export default function FinancialServices() {
                       <DollarSign className="h-4 w-4 text-primary" />
                       Forex Trading
                     </CardTitle>
-                    <Badge variant="default" data-testid="badge-forex-status">Active</Badge>
+                    <Badge variant="default" data-testid="badge-forex-status">
+                      <span className="relative flex h-2 w-2 mr-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      Live
+                    </Badge>
                   </div>
                   <CardDescription>Foreign exchange trading</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Active Pairs</span>
-                      <span data-testid="text-forex-pairs">0</span>
+                  {forexLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-20 w-full" />
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Daily P&L</span>
-                      <span data-testid="text-forex-pnl">$0.00</span>
-                    </div>
-                    <Link href="/trading">
-                      <Button size="sm" className="w-full mt-2" data-testid="button-trade-forex">
-                        Trade Forex
+                  ) : forexData && forexData[0] ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">EUR/USD</span>
+                        <span className="font-semibold" data-testid="text-forex-pairs">
+                          {forexData.find(f => f.symbol === 'EUR/USD')?.price.toFixed(4) || '0.0000'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-muted-foreground">24h Change</span>
+                        <PriceChangeIndicator 
+                          change={forexData.find(f => f.symbol === 'EUR/USD')?.change || 0} 
+                          changePercent={forexData.find(f => f.symbol === 'EUR/USD')?.changePercent || 0} 
+                        />
+                      </div>
+                      <div className="h-24 mt-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={generateChartData(forexData.find(f => f.symbol === 'EUR/USD')?.price || 1)}>
+                            <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <Button size="sm" className="w-full" data-testid="button-trade-forex">
+                        Quick Trade
                       </Button>
-                    </Link>
-                  </div>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
 

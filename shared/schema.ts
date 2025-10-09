@@ -93,6 +93,9 @@ export const networkEnum = pgEnum("network", ["ethereum", "polygon", "bsc", "arb
 export const cryptoProcessorEnum = pgEnum("crypto_processor", ["bitpay", "binance_pay", "bybit", "kucoin", "luno"]);
 export const tradingStrategyEnum = pgEnum("trading_strategy", ["grid", "dca", "arbitrage", "scalping", "market_making", "momentum_ai", "mev"]);
 export const botExecutionStatusEnum = pgEnum("bot_execution_status", ["pending", "running", "completed", "failed", "cancelled"]);
+export const forumChannelTypeEnum = pgEnum("forum_channel_type", ["text", "voice", "announcement"]);
+export const forumMemberRoleEnum = pgEnum("forum_member_role", ["owner", "admin", "moderator", "member", "muted", "banned"]);
+export const forumServerVisibilityEnum = pgEnum("forum_server_visibility", ["public", "private"]);
 
 // Session storage table - REQUIRED for Replit Auth
 export const sessions = pgTable(
@@ -178,6 +181,85 @@ export const tokens = pgTable("tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// NFT Collections
+export const nftCollections = pgTable("nft_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  symbol: text("symbol").notNull(),
+  description: text("description"),
+  contractAddress: text("contract_address").notNull().unique(),
+  network: networkEnum("network").notNull(),
+  collectionType: text("collection_type").notNull(), // ERC-721, ERC-1155, ERC-721A
+  totalSupply: integer("total_supply"),
+  maxSupply: integer("max_supply"),
+  floorPrice: decimal("floor_price", { precision: 36, scale: 18 }),
+  volumeTraded: decimal("volume_traded", { precision: 36, scale: 18 }).default("0"),
+  royaltyBps: integer("royalty_bps").default(0), // Basis points (500 = 5%)
+  royaltyRecipient: text("royalty_recipient"),
+  baseUri: text("base_uri"), // Base URI for metadata
+  coverImage: text("cover_image"),
+  deployTxHash: text("deploy_tx_hash"),
+  isVerified: boolean("is_verified").default(false),
+  isPublic: boolean("is_public").default(true),
+  metadata: jsonb("metadata"), // Collection-level metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// NFT Mint Records
+export const nftMints = pgTable("nft_mints", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").references(() => nftCollections.id),
+  walletId: varchar("wallet_id").references(() => wallets.id).notNull(),
+  nftId: varchar("nft_id").references(() => nfts.id),
+  tokenId: text("token_id").notNull(),
+  recipientAddress: text("recipient_address").notNull(),
+  mintType: text("mint_type").notNull(), // single, batch, lazy
+  quantity: integer("quantity").default(1),
+  mintPrice: decimal("mint_price", { precision: 36, scale: 18 }),
+  gasUsed: text("gas_used"),
+  mintTxHash: text("mint_tx_hash").unique(),
+  metadataUrl: text("metadata_url"), // IPFS URL
+  rarityScore: decimal("rarity_score", { precision: 10, scale: 4 }),
+  rarityRank: integer("rarity_rank"),
+  status: text("status").default("pending"), // pending, confirmed, failed
+  network: networkEnum("network").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
+});
+
+// Smart Contracts
+export const contractTypeEnum = pgEnum("contract_type", ["ERC20", "ERC721", "ERC1155", "ERC721A", "custom"]);
+export const contractStatusEnum = pgEnum("contract_status", ["deploying", "deployed", "verified", "failed"]);
+
+export const smartContracts = pgTable("smart_contracts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  contractType: contractTypeEnum("contract_type").notNull(),
+  contractAddress: text("contract_address").unique(),
+  network: networkEnum("network").notNull(),
+  abi: jsonb("abi"), // Contract ABI
+  bytecode: text("bytecode"), // Contract bytecode
+  sourceCode: text("source_code"), // Solidity source
+  compilerVersion: text("compiler_version"),
+  optimizationEnabled: boolean("optimization_enabled").default(true),
+  optimizationRuns: integer("optimization_runs").default(200),
+  constructorArgs: jsonb("constructor_args"), // Constructor arguments
+  deployTxHash: text("deploy_tx_hash").unique(),
+  deployedBy: text("deployed_by"), // Deployer address
+  gasUsed: text("gas_used"),
+  status: contractStatusEnum("status").default("deploying"),
+  isVerified: boolean("is_verified").default(false),
+  verificationTxHash: text("verification_tx_hash"),
+  etherscanUrl: text("etherscan_url"),
+  metadata: jsonb("metadata"), // Additional contract info
+  createdAt: timestamp("created_at").defaultNow(),
+  deployedAt: timestamp("deployed_at"),
+  verifiedAt: timestamp("verified_at"),
+});
+
 // Jesus Cartel songs (publishing pipeline)
 export const songs = pgTable("songs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -191,6 +273,58 @@ export const songs = pgTable("songs", {
   metadata: jsonb("metadata"),
   isPublished: boolean("is_published").default(false),
   publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Jesus Cartel Music Ministry - Releases
+export const jesusCartelReleases = pgTable("jesus_cartel_releases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  artist: text("artist").notNull(),
+  albumArt: text("album_art").notNull(),
+  streamUrl: text("stream_url").notNull(),
+  releaseDate: timestamp("release_date").notNull(),
+  genre: text("genre"),
+  duration: integer("duration"), // in seconds
+  isFeatured: boolean("is_featured").default(false),
+  streamCount: integer("stream_count").default(0),
+  likeCount: integer("like_count").default(0),
+  nftId: varchar("nft_id").references(() => nfts.id),
+  tokenId: varchar("token_id").references(() => tokens.id),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Jesus Cartel Music Ministry - Events
+export const jesusCartelEvents = pgTable("jesus_cartel_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  date: timestamp("date").notNull(),
+  venue: text("venue").notNull(),
+  location: text("location").notNull(),
+  ticketUrl: text("ticket_url"),
+  imageUrl: text("image_url"),
+  artistLineup: text("artist_lineup").array(),
+  ticketPrice: decimal("ticket_price", { precision: 10, scale: 2 }),
+  capacity: integer("capacity"),
+  attendeeCount: integer("attendee_count").default(0),
+  isFeatured: boolean("is_featured").default(false),
+  status: text("status").default("upcoming"), // upcoming, ongoing, completed, cancelled
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Jesus Cartel Stream Tracking
+export const jesusCartelStreams = pgTable("jesus_cartel_streams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  releaseId: varchar("release_id").references(() => jesusCartelReleases.id).notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  ipAddress: text("ip_address"),
+  duration: integer("duration"), // how long they listened in seconds
+  completionRate: decimal("completion_rate", { precision: 5, scale: 2 }), // percentage
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -625,6 +759,40 @@ export const metalTrades = pgTable("metal_trades", {
   deliveredAt: timestamp("delivered_at"),
 });
 
+// Precious Metals Exchange - Crypto to Physical conversion
+export const metalFormEnum = pgEnum("metal_form", ["bar", "coin", "round"]);
+export const ownershipLocationEnum = pgEnum("ownership_location", ["vault", "delivery_pending", "delivered"]);
+
+export const metalProducts = pgTable("metal_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  metal: metalTypeEnum("metal").notNull(),
+  weight: decimal("weight", { precision: 12, scale: 4 }).notNull(), // Troy ounces
+  form: metalFormEnum("form").notNull(),
+  productName: text("product_name").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  premium: decimal("premium", { precision: 5, scale: 2 }).default("5.00"), // Percentage over spot
+  inStock: boolean("in_stock").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const metalOwnership = pgTable("metal_ownership", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  productId: varchar("product_id").references(() => metalProducts.id).notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  location: ownershipLocationEnum("location").default("vault"),
+  purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
+  spotPriceAtPurchase: decimal("spot_price_at_purchase", { precision: 12, scale: 2 }).notNull(),
+  cryptoPaymentTx: text("crypto_payment_tx"), // Transaction hash of crypto payment
+  certificateUrl: text("certificate_url"),
+  deliveryAddress: text("delivery_address"),
+  trackingNumber: text("tracking_number"),
+  purchasedAt: timestamp("purchased_at").defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
+});
+
 // Blog and News Section
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -634,11 +802,23 @@ export const blogPosts = pgTable("blog_posts", {
   excerpt: text("excerpt"),
   content: text("content").notNull(),
   featuredImage: text("featured_image"),
-  category: text("category"), // exchange_update, platform_news, market_analysis, etc.
+  category: text("category"), // Trading, DeFi, Kingdom, Ministry, exchange_update, platform_news, market_analysis
   tags: jsonb("tags").array(),
   isPublished: boolean("is_published").default(false),
+  isFeatured: boolean("is_featured").default(false),
   viewCount: integer("view_count").default(0),
   publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const articleComments = pgTable("article_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: varchar("article_id").references(() => blogPosts.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  comment: text("comment").notNull(),
+  parentCommentId: varchar("parent_comment_id").references(() => articleComments.id),
+  isApproved: boolean("is_approved").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -858,6 +1038,75 @@ export const botSkills = pgTable("bot_skills", {
   unlockedAt: timestamp("unlocked_at").defaultNow(),
   lastUsedAt: timestamp("last_used_at"),
 });
+
+// Broker Integration System (Alpaca, etc.)
+export const brokerProviderEnum = pgEnum("broker_provider", ["alpaca", "interactive_brokers", "td_ameritrade", "binance", "bybit"]);
+export const brokerAccountStatusEnum = pgEnum("broker_account_status", ["active", "inactive", "suspended", "pending_verification"]);
+
+export const brokerAccounts = pgTable("broker_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  provider: brokerProviderEnum("provider").notNull(),
+  accountType: text("account_type").notNull(), // paper, live
+  apiKeyEncrypted: text("api_key_encrypted").notNull(),
+  apiSecretEncrypted: text("api_secret_encrypted").notNull(),
+  accountId: text("account_id"), // External broker account ID
+  status: brokerAccountStatusEnum("status").default("active"),
+  buyingPower: decimal("buying_power", { precision: 36, scale: 18 }).default("0"),
+  cashBalance: decimal("cash_balance", { precision: 36, scale: 18 }).default("0"),
+  portfolioValue: decimal("portfolio_value", { precision: 36, scale: 18 }).default("0"),
+  lastSyncAt: timestamp("last_sync_at"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const brokerOrderTypeEnum = pgEnum("broker_order_type", ["market", "limit", "stop", "stop_limit", "trailing_stop"]);
+export const brokerOrderSideEnum = pgEnum("broker_order_side", ["buy", "sell"]);
+export const brokerOrderStatusEnum = pgEnum("broker_order_status", ["pending", "submitted", "filled", "partially_filled", "cancelled", "rejected", "expired"]);
+export const brokerOrderTimeInForceEnum = pgEnum("broker_order_time_in_force", ["day", "gtc", "ioc", "fok"]);
+
+export const brokerOrders = pgTable("broker_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brokerAccountId: varchar("broker_account_id").references(() => brokerAccounts.id).notNull(),
+  botId: varchar("bot_id").references(() => tradingBots.id),
+  botExecutionId: varchar("bot_execution_id").references(() => botExecutions.id),
+  externalOrderId: text("external_order_id").unique(),
+  symbol: text("symbol").notNull(),
+  orderType: brokerOrderTypeEnum("order_type").notNull(),
+  orderSide: brokerOrderSideEnum("order_side").notNull(),
+  timeInForce: brokerOrderTimeInForceEnum("time_in_force").default("day"),
+  quantity: decimal("quantity", { precision: 36, scale: 8 }).notNull(),
+  limitPrice: decimal("limit_price", { precision: 36, scale: 8 }),
+  stopPrice: decimal("stop_price", { precision: 36, scale: 8 }),
+  filledQuantity: decimal("filled_quantity", { precision: 36, scale: 8 }).default("0"),
+  filledAvgPrice: decimal("filled_avg_price", { precision: 36, scale: 8 }),
+  status: brokerOrderStatusEnum("status").default("pending"),
+  fees: decimal("fees", { precision: 36, scale: 8 }),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  filledAt: timestamp("filled_at"),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export const brokerPositions = pgTable("broker_positions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brokerAccountId: varchar("broker_account_id").references(() => brokerAccounts.id).notNull(),
+  symbol: text("symbol").notNull(),
+  quantity: decimal("quantity", { precision: 36, scale: 8 }).notNull(),
+  averageEntryPrice: decimal("average_entry_price", { precision: 36, scale: 8 }).notNull(),
+  currentPrice: decimal("current_price", { precision: 36, scale: 8 }),
+  marketValue: decimal("market_value", { precision: 36, scale: 18 }),
+  unrealizedPL: decimal("unrealized_pl", { precision: 36, scale: 18 }),
+  unrealizedPLPercent: decimal("unrealized_pl_percent", { precision: 10, scale: 4 }),
+  costBasis: decimal("cost_basis", { precision: 36, scale: 18 }),
+  side: text("side").notNull(), // long, short
+  metadata: jsonb("metadata"),
+  lastUpdatedAt: timestamp("last_updated_at").defaultNow(),
+}, (table) => ({
+  brokerSymbolUnique: unique().on(table.brokerAccountId, table.symbol),
+}));
 
 // Celebrity Fan Platform (TWinn System)
 export const celebrityProfiles = pgTable("celebrity_profiles", {
@@ -2018,6 +2267,57 @@ export const botPerformanceMetricsRelations = relations(botPerformanceMetrics, (
   }),
 }));
 
+// Financial Services - Stocks, Forex, Bonds, Retirement
+export const financialAssetTypeEnum = pgEnum("financial_asset_type", ["stock", "forex", "bond", "retirement_401k", "retirement_ira", "retirement_pension"]);
+export const financialOrderTypeEnum = pgEnum("financial_order_type", ["buy", "sell"]);
+export const financialOrderStatusEnum = pgEnum("financial_order_status", ["pending", "executed", "cancelled", "failed"]);
+
+export const financialOrders = pgTable("financial_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  assetType: financialAssetTypeEnum("asset_type").notNull(),
+  symbol: text("symbol").notNull(), // Stock ticker, forex pair, bond CUSIP, etc.
+  orderType: financialOrderTypeEnum("order_type").notNull(),
+  quantity: decimal("quantity", { precision: 36, scale: 18 }).notNull(),
+  price: decimal("price", { precision: 36, scale: 18 }).notNull(),
+  totalValue: decimal("total_value", { precision: 36, scale: 18 }).notNull(),
+  status: financialOrderStatusEnum("status").default("pending"),
+  metadata: jsonb("metadata"), // Additional order details
+  createdAt: timestamp("created_at").defaultNow(),
+  executedAt: timestamp("executed_at"),
+});
+
+export const financialHoldings = pgTable("financial_holdings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  assetType: financialAssetTypeEnum("asset_type").notNull(),
+  symbol: text("symbol").notNull(),
+  quantity: decimal("quantity", { precision: 36, scale: 18 }).notNull(),
+  averagePurchasePrice: decimal("average_purchase_price", { precision: 36, scale: 18 }).notNull(),
+  currentValue: decimal("current_value", { precision: 36, scale: 18 }),
+  totalInvested: decimal("total_invested", { precision: 36, scale: 18 }),
+  profitLoss: decimal("profit_loss", { precision: 36, scale: 18 }),
+  metadata: jsonb("metadata"), // Additional holding details (maturity date for bonds, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userAssetUnique: unique().on(table.userId, table.assetType, table.symbol),
+}));
+
+export const financialOrdersRelations = relations(financialOrders, ({ one }) => ({
+  user: one(users, {
+    fields: [financialOrders.userId],
+    references: [users.id],
+  }),
+}));
+
+export const financialHoldingsRelations = relations(financialHoldings, ({ one }) => ({
+  user: one(users, {
+    fields: [financialHoldings.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas for forms
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -2046,12 +2346,48 @@ export const insertTokenSchema = createInsertSchema(tokens).omit({
   createdAt: true,
 });
 
+export const insertNftCollectionSchema = createInsertSchema(nftCollections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNftMintSchema = createInsertSchema(nftMints).omit({
+  id: true,
+  createdAt: true,
+  confirmedAt: true,
+});
+
+export const insertSmartContractSchema = createInsertSchema(smartContracts).omit({
+  id: true,
+  createdAt: true,
+  deployedAt: true,
+  verifiedAt: true,
+});
+
 export const insertSongSchema = createInsertSchema(songs).omit({
   id: true,
   nftId: true,
   tokenId: true,
   isPublished: true,
   publishedAt: true,
+  createdAt: true,
+});
+
+export const insertJesusCartelReleaseSchema = createInsertSchema(jesusCartelReleases).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJesusCartelEventSchema = createInsertSchema(jesusCartelEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJesusCartelStreamSchema = createInsertSchema(jesusCartelStreams).omit({
+  id: true,
   createdAt: true,
 });
 
@@ -2221,6 +2557,18 @@ export const insertMetalTradeSchema = createInsertSchema(metalTrades).omit({
   deliveredAt: true,
 });
 
+export const insertMetalProductSchema = createInsertSchema(metalProducts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMetalOwnershipSchema = createInsertSchema(metalOwnership).omit({
+  id: true,
+  purchasedAt: true,
+  deliveredAt: true,
+});
+
 export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
   id: true,
   createdAt: true,
@@ -2243,11 +2591,29 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertNft = z.infer<typeof insertNftSchema>;
 export type Nft = typeof nfts.$inferSelect;
 
+export type InsertNftCollection = z.infer<typeof insertNftCollectionSchema>;
+export type NftCollection = typeof nftCollections.$inferSelect;
+
+export type InsertNftMint = z.infer<typeof insertNftMintSchema>;
+export type NftMint = typeof nftMints.$inferSelect;
+
+export type InsertSmartContract = z.infer<typeof insertSmartContractSchema>;
+export type SmartContract = typeof smartContracts.$inferSelect;
+
 export type InsertToken = z.infer<typeof insertTokenSchema>;
 export type Token = typeof tokens.$inferSelect;
 
 export type InsertSong = z.infer<typeof insertSongSchema>;
 export type Song = typeof songs.$inferSelect;
+
+export type InsertJesusCartelRelease = z.infer<typeof insertJesusCartelReleaseSchema>;
+export type JesusCartelRelease = typeof jesusCartelReleases.$inferSelect;
+
+export type InsertJesusCartelEvent = z.infer<typeof insertJesusCartelEventSchema>;
+export type JesusCartelEvent = typeof jesusCartelEvents.$inferSelect;
+
+export type InsertJesusCartelStream = z.infer<typeof insertJesusCartelStreamSchema>;
+export type JesusCartelStream = typeof jesusCartelStreams.$inferSelect;
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agents.$inferSelect;
@@ -2329,6 +2695,12 @@ export type MetalInventory = typeof metalInventory.$inferSelect;
 
 export type InsertMetalTrade = z.infer<typeof insertMetalTradeSchema>;
 export type MetalTrade = typeof metalTrades.$inferSelect;
+
+export type InsertMetalProduct = z.infer<typeof insertMetalProductSchema>;
+export type MetalProduct = typeof metalProducts.$inferSelect;
+
+export type InsertMetalOwnership = z.infer<typeof insertMetalOwnershipSchema>;
+export type MetalOwnership = typeof metalOwnership.$inferSelect;
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
@@ -2525,3 +2897,232 @@ export type TradingStrategy = typeof tradingStrategies.$inferSelect;
 export const insertBotPerformanceMetricsSchema = createInsertSchema(botPerformanceMetrics).omit({ id: true, createdAt: true });
 export type InsertBotPerformanceMetrics = z.infer<typeof insertBotPerformanceMetricsSchema>;
 export type BotPerformanceMetrics = typeof botPerformanceMetrics.$inferSelect;
+
+export const insertFinancialOrderSchema = createInsertSchema(financialOrders).omit({ id: true, createdAt: true, executedAt: true });
+export type InsertFinancialOrder = z.infer<typeof insertFinancialOrderSchema>;
+export type FinancialOrder = typeof financialOrders.$inferSelect;
+
+export const insertFinancialHoldingSchema = createInsertSchema(financialHoldings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFinancialHolding = z.infer<typeof insertFinancialHoldingSchema>;
+export type FinancialHolding = typeof financialHoldings.$inferSelect;
+
+export const insertBrokerAccountSchema = createInsertSchema(brokerAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBrokerAccount = z.infer<typeof insertBrokerAccountSchema>;
+export type BrokerAccount = typeof brokerAccounts.$inferSelect;
+
+export const insertBrokerOrderSchema = createInsertSchema(brokerOrders).omit({ id: true, submittedAt: true });
+export type InsertBrokerOrder = z.infer<typeof insertBrokerOrderSchema>;
+export type BrokerOrder = typeof brokerOrders.$inferSelect;
+
+export const insertBrokerPositionSchema = createInsertSchema(brokerPositions).omit({ id: true, lastUpdatedAt: true });
+export type InsertBrokerPosition = z.infer<typeof insertBrokerPositionSchema>;
+export type BrokerPosition = typeof brokerPositions.$inferSelect;
+
+// Spectrum Investment Plans System
+export const spectrumTierEnum = pgEnum("spectrum_tier", [
+  "royal_bronze",
+  "royal_silver", 
+  "royal_gold",
+  "kings_court",
+  "king_david_circle"
+]);
+
+export const spectrumSubscriptionStatusEnum = pgEnum("spectrum_subscription_status", [
+  "active",
+  "paused",
+  "cancelled",
+  "completed"
+]);
+
+export const spectrumPlans = pgTable("spectrum_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tier: spectrumTierEnum("tier").notNull().unique(),
+  name: text("name").notNull(),
+  minimumStake: decimal("minimum_stake", { precision: 36, scale: 18 }).notNull(),
+  apy: decimal("apy", { precision: 5, scale: 2 }).notNull(), // Annual Percentage Yield
+  maxAllocation: decimal("max_allocation", { precision: 36, scale: 18 }), // Optional max stake limit
+  benefits: text("benefits").array().notNull(), // Array of benefit descriptions
+  features: jsonb("features").notNull(), // Detailed features object
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userSpectrumSubscriptions = pgTable("user_spectrum_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  planId: varchar("plan_id").references(() => spectrumPlans.id).notNull(),
+  tier: spectrumTierEnum("tier").notNull(),
+  stakedAmount: decimal("staked_amount", { precision: 36, scale: 18 }).notNull(),
+  currentApy: decimal("current_apy", { precision: 5, scale: 2 }).notNull(), // APY at time of subscription
+  status: spectrumSubscriptionStatusEnum("status").default("active"),
+  totalEarned: decimal("total_earned", { precision: 36, scale: 18 }).default("0"),
+  lastEarningsUpdate: timestamp("last_earnings_update").defaultNow(),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+  expiresAt: timestamp("expires_at"), // Optional expiration
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export const spectrumEarnings = pgTable("spectrum_earnings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriptionId: varchar("subscription_id").references(() => userSpectrumSubscriptions.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  apy: decimal("apy", { precision: 5, scale: 2 }).notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  distributedAt: timestamp("distributed_at").defaultNow(),
+});
+
+// Insert schemas for Spectrum system
+export const insertSpectrumPlanSchema = createInsertSchema(spectrumPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSpectrumPlan = z.infer<typeof insertSpectrumPlanSchema>;
+export type SpectrumPlan = typeof spectrumPlans.$inferSelect;
+
+export const insertUserSpectrumSubscriptionSchema = createInsertSchema(userSpectrumSubscriptions).omit({ id: true, subscribedAt: true });
+export type InsertUserSpectrumSubscription = z.infer<typeof insertUserSpectrumSubscriptionSchema>;
+export type UserSpectrumSubscription = typeof userSpectrumSubscriptions.$inferSelect;
+
+export const insertSpectrumEarningSchema = createInsertSchema(spectrumEarnings).omit({ id: true, distributedAt: true });
+export type InsertSpectrumEarning = z.infer<typeof insertSpectrumEarningSchema>;
+export type SpectrumEarning = typeof spectrumEarnings.$inferSelect;
+
+// Prayer Integration System
+export const prayerCategoryEnum = pgEnum("prayer_category", [
+  "trade_guidance",
+  "wisdom",
+  "gratitude",
+  "protection",
+  "prosperity",
+  "general"
+]);
+
+export const scriptureCategoryEnum = pgEnum("scripture_category", [
+  "trading",
+  "wisdom",
+  "prosperity",
+  "faith",
+  "protection",
+  "patience",
+  "discipline",
+  "general"
+]);
+
+export const prayers = pgTable("prayers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  prayerText: text("prayer_text").notNull(),
+  category: prayerCategoryEnum("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const scriptures = pgTable("scriptures", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  verse: text("verse").notNull(),
+  reference: text("reference").notNull(), // e.g., "Proverbs 3:5-6"
+  category: scriptureCategoryEnum("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const prayerTradeCorrelations = pgTable("prayer_trade_correlations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  prayerId: varchar("prayer_id").references(() => prayers.id).notNull(),
+  tradeId: varchar("trade_id"),
+  botExecutionId: varchar("bot_execution_id").references(() => botExecutions.id),
+  outcome: text("outcome"), // "profitable", "loss", "pending"
+  profitLoss: decimal("profit_loss", { precision: 36, scale: 18 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userPrayerSettings = pgTable("user_prayer_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  enablePreTrade: boolean("enable_pre_trade").default(true),
+  enablePostTrade: boolean("enable_post_trade").default(true),
+  preferredTime: text("preferred_time"), // "morning", "afternoon", "evening", "anytime"
+  categories: text("categories").array(), // Selected scripture categories
+  dailyReminder: boolean("daily_reminder").default(false),
+  meditationDuration: integer("meditation_duration").default(5), // in minutes
+  autoCorrelate: boolean("auto_correlate").default(true), // Auto-link prayers to trades
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert schemas for Prayer system
+export const insertPrayerSchema = createInsertSchema(prayers).omit({ id: true, createdAt: true });
+export type InsertPrayer = z.infer<typeof insertPrayerSchema>;
+export type Prayer = typeof prayers.$inferSelect;
+
+export const insertScriptureSchema = createInsertSchema(scriptures).omit({ id: true, createdAt: true });
+export type InsertScripture = z.infer<typeof insertScriptureSchema>;
+export type Scripture = typeof scriptures.$inferSelect;
+
+export const insertPrayerTradeCorrelationSchema = createInsertSchema(prayerTradeCorrelations).omit({ id: true, createdAt: true });
+export type InsertPrayerTradeCorrelation = z.infer<typeof insertPrayerTradeCorrelationSchema>;
+export type PrayerTradeCorrelation = typeof prayerTradeCorrelations.$inferSelect;
+
+export const insertUserPrayerSettingsSchema = createInsertSchema(userPrayerSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserPrayerSettings = z.infer<typeof insertUserPrayerSettingsSchema>;
+export type UserPrayerSettings = typeof userPrayerSettings.$inferSelect;
+
+// Auto-Tithing System - Christ-centered Charitable Giving
+export const tithingStatusEnum = pgEnum("tithing_status", ["pending", "processing", "completed", "failed"]);
+
+export const charities = pgTable("charities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  walletAddress: text("wallet_address").notNull().unique(),
+  taxId: text("tax_id").notNull(), // EIN or Tax ID for 501(c)(3)
+  website: text("website"),
+  category: text("category").notNull(), // missions, hunger_relief, education, etc.
+  logoUrl: text("logo_url"),
+  isActive: boolean("is_active").default(true),
+  isVerified: boolean("is_verified").default(false),
+  totalReceived: decimal("total_received", { precision: 36, scale: 18 }).default("0"),
+  donorCount: integer("donor_count").default(0),
+  metadata: jsonb("metadata"), // Additional charity info
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const tithingConfigs = pgTable("tithing_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  percentage: decimal("percentage", { precision: 5, scale: 2 }).notNull(), // 0-20%
+  charityId: varchar("charity_id").references(() => charities.id).notNull(),
+  enabled: boolean("enabled").default(true),
+  autoExecute: boolean("auto_execute").default(true), // Auto-tithe on profitable trades
+  minProfitThreshold: decimal("min_profit_threshold", { precision: 36, scale: 18 }).default("0"), // Min profit to trigger tithe
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const tithingHistory = pgTable("tithing_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  charityId: varchar("charity_id").references(() => charities.id).notNull(),
+  amount: decimal("amount", { precision: 36, scale: 18 }).notNull(),
+  percentage: decimal("percentage", { precision: 5, scale: 2 }).notNull(),
+  tradeId: varchar("trade_id").references(() => botExecutions.id), // Link to trade that triggered tithe
+  status: tithingStatusEnum("status").default("pending"),
+  txHash: text("tx_hash"), // Blockchain transaction hash
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Insert schemas for Tithing system
+export const insertCharitySchema = createInsertSchema(charities).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCharity = z.infer<typeof insertCharitySchema>;
+export type Charity = typeof charities.$inferSelect;
+
+export const insertTithingConfigSchema = createInsertSchema(tithingConfigs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTithingConfig = z.infer<typeof insertTithingConfigSchema>;
+export type TithingConfig = typeof tithingConfigs.$inferSelect;
+
+export const insertTithingHistorySchema = createInsertSchema(tithingHistory).omit({ id: true, createdAt: true });
+export type InsertTithingHistory = z.infer<typeof insertTithingHistorySchema>;
+export type TithingHistory = typeof tithingHistory.$inferSelect;
