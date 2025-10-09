@@ -1,4 +1,4 @@
-import { StateGraph, END } from "@langchain/langgraph";
+import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
 import { storage } from "./storage";
 import type { Agent } from "@shared/schema";
 import * as financialBots from "./financialServicesBot";
@@ -10,38 +10,33 @@ import * as nftBots from "./nftBot";
 import * as communityBots from "./communityBot";
 
 /**
- * Agent State for workflow orchestration
+ * Agent State Annotation for LangGraph
  */
-export interface AgentState {
-  task: string;
-  agentType?: string;
-  status: "pending" | "in_progress" | "completed" | "failed";
-  result?: any;
-  error?: string;
-  currentAgent?: string;
-  logs: string[];
-}
+const AgentStateAnnotation = Annotation.Root({
+  task: Annotation<string>,
+  agentType: Annotation<string | undefined>,
+  status: Annotation<"pending" | "in_progress" | "completed" | "failed">,
+  result: Annotation<any>,
+  error: Annotation<string | undefined>,
+  currentAgent: Annotation<string | undefined>,
+  logs: Annotation<string[]>({
+    reducer: (left, right) => [...left, ...right],
+    default: () => []
+  })
+});
+
+export type AgentState = typeof AgentStateAnnotation.State;
 
 /**
  * Multi-Agent Orchestrator using LangGraph
  * Coordinates 63+ specialized autonomous agents across different domains
  */
 export class AgentOrchestrator {
-  private graph: StateGraph<AgentState>;
+  private graph: StateGraph<typeof AgentStateAnnotation.State, Partial<typeof AgentStateAnnotation.State>>;
+  private compiledGraph: any;
 
   constructor() {
-    this.graph = new StateGraph<AgentState>({
-      channels: {
-        task: null,
-        agentType: null,
-        status: null,
-        result: null,
-        error: null,
-        currentAgent: null,
-        logs: null,
-      },
-    });
-
+    this.graph = new StateGraph(AgentStateAnnotation);
     this.buildGraph();
   }
 
@@ -131,8 +126,8 @@ export class AgentOrchestrator {
     this.graph.addNode("community_exchange", this.runCommunityAgent.bind(this));
     this.graph.addNode("multichain", this.runCommunityAgent.bind(this));
 
-    // Set entry point
-    this.graph.setEntryPoint("router");
+    // Set entry point - use START instead of setEntryPoint
+    this.graph.addEdge(START, "router");
 
     // Build conditional edges mapping
     const edgeMapping: Record<string, string> = {
@@ -221,7 +216,7 @@ export class AgentOrchestrator {
       }
     });
 
-    this.graph = this.graph.compile();
+    this.compiledGraph = this.graph.compile();
   }
 
   /**
@@ -815,7 +810,6 @@ export class AgentOrchestrator {
           agentId: agent.id,
           action: task,
           status: "success",
-          metadata: { timestamp: new Date().toISOString() },
         });
       }
     } catch (error) {
@@ -827,14 +821,17 @@ export class AgentOrchestrator {
    * Execute a task through the agent graph
    */
   async execute(task: string, agentType?: string): Promise<AgentState> {
-    const initialState: AgentState = {
+    const initialState: Partial<AgentState> = {
       task,
       agentType,
       status: "pending",
+      result: undefined,
+      error: undefined,
+      currentAgent: undefined,
       logs: ["Agent orchestration started"],
     };
 
-    const result = await this.graph.invoke(initialState);
+    const result = await this.compiledGraph.invoke(initialState);
     return result as AgentState;
   }
 }
