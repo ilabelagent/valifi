@@ -61,6 +61,7 @@ import { encryptionService } from "./encryptionService";
 import { cryptoProcessorService } from "./cryptoProcessorService";
 import { tradingBotService } from "./tradingBotService";
 import { armorWalletService } from "./armorWalletService";
+import { marketDataService } from "./marketDataService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth
@@ -2514,11 +2515,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: fromError(validation.error).toString() 
         });
       }
-      const order = await storage.createP2POrder(validation.data);
+      
+      // Create order with initial status
+      const order = await storage.createP2POrder({
+        ...validation.data,
+        status: "created",
+      });
+
+      // Note: In production, implement blockchain escrow here
+      // For now, we track escrow status in the database
+      // Future implementation would:
+      // 1. Deploy escrow smart contract
+      // 2. Lock seller's funds in escrow
+      // 3. Store escrow contract address and tx hash
+      
       res.status(201).json(order);
     } catch (error) {
       console.error("Error creating P2P order:", error);
       res.status(500).json({ message: "Failed to create P2P order" });
+    }
+  });
+
+  // Escrow endpoints
+  app.post("/api/p2p/orders/:id/escrow", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { txHash } = req.body;
+      
+      // Update order with escrow transaction hash
+      await storage.updateP2POrder(id, {
+        status: "escrowed",
+        escrowTxHash: txHash,
+      });
+      
+      websocketService.emitP2POrderUpdate(id, { status: "escrowed" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating escrow:", error);
+      res.status(500).json({ message: "Failed to update escrow" });
+    }
+  });
+
+  app.post("/api/p2p/orders/:id/release", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { txHash } = req.body;
+      
+      // Release funds from escrow
+      await storage.updateP2POrder(id, {
+        status: "completed",
+        releaseTxHash: txHash,
+        completedAt: new Date(),
+      });
+      
+      websocketService.emitP2POrderUpdate(id, { status: "completed" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error releasing funds:", error);
+      res.status(500).json({ message: "Failed to release funds" });
+    }
+  });
+
+  app.post("/api/p2p/orders/:id/mark-paid", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Buyer marks payment as sent
+      await storage.updateP2POrder(id, {
+        status: "paid",
+        paidAt: new Date(),
+      });
+      
+      websocketService.emitP2POrderUpdate(id, { status: "paid" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking as paid:", error);
+      res.status(500).json({ message: "Failed to mark as paid" });
     }
   });
 
@@ -2602,10 +2674,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validation.data,
         senderId: userId,
       });
+      
+      // Emit WebSocket event for real-time chat
+      websocketService.emitP2PChatMessage(message.orderId, message);
+      
       res.status(201).json(message);
     } catch (error) {
       console.error("Error creating chat message:", error);
       res.status(500).json({ message: "Failed to create chat message" });
+    }
+  });
+
+  // P2P Messages (aliases for chat endpoints)
+  app.get("/api/p2p/messages/:orderId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { orderId } = req.params;
+      const messages = await storage.getOrderChatMessages(orderId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/p2p/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = insertP2PChatMessageSchema.omit({ senderId: true }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid message data", 
+          error: fromError(validation.error).toString() 
+        });
+      }
+      const message = await storage.createP2PChatMessage({
+        ...validation.data,
+        senderId: userId,
+      });
+      
+      // Emit WebSocket event for real-time chat
+      websocketService.emitP2PChatMessage(message.orderId, message);
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error creating message:", error);
+      res.status(500).json({ message: "Failed to create message" });
     }
   });
 
@@ -2769,6 +2882,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error disconnecting session:", error);
       res.status(500).json({ message: "Failed to disconnect session" });
+    }
+  });
+
+  // Market Data Routes - Real-time financial data integration
+  app.get("/api/market/stocks/:symbol", isAuthenticated, async (req: any, res) => {
+    try {
+      const { symbol } = req.params;
+      const data = await marketDataService.getStockPrice(symbol);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching stock price:", error);
+      res.status(500).json({ message: "Failed to fetch stock price" });
+    }
+  });
+
+  app.get("/api/market/forex/:pair", isAuthenticated, async (req: any, res) => {
+    try {
+      const { pair } = req.params;
+      const data = await marketDataService.getForexRate(pair);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching forex rate:", error);
+      res.status(500).json({ message: "Failed to fetch forex rate" });
+    }
+  });
+
+  app.get("/api/market/metals/:metal", isAuthenticated, async (req: any, res) => {
+    try {
+      const { metal } = req.params;
+      const data = await marketDataService.getMetalPrice(metal);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching metal price:", error);
+      res.status(500).json({ message: "Failed to fetch metal price" });
+    }
+  });
+
+  app.get("/api/market/bonds/treasury", isAuthenticated, async (req: any, res) => {
+    try {
+      const data = await marketDataService.getTreasuryYields();
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching treasury yields:", error);
+      res.status(500).json({ message: "Failed to fetch treasury yields" });
+    }
+  });
+
+  // Market data cache management (admin only)
+  app.post("/api/market/cache/clear", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      marketDataService.clearCache();
+      res.json({ success: true, message: "Market data cache cleared" });
+    } catch (error) {
+      console.error("Error clearing cache:", error);
+      res.status(500).json({ message: "Failed to clear cache" });
+    }
+  });
+
+  app.get("/api/market/cache/stats", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const stats = marketDataService.getCacheStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching cache stats:", error);
+      res.status(500).json({ message: "Failed to fetch cache stats" });
+    }
+  });
+
+  // ============================================
+  // ADMIN CONTROL PANEL ROUTES
+  // ============================================
+
+  // Get all users with pagination
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const users = await storage.getAllUsers(limit, offset);
+      const total = await storage.getTotalUsersCount();
+      
+      res.json({ users, total, limit, offset });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Update user status (suspend/activate/make admin)
+  app.patch("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { isAdmin: makeAdmin } = req.body;
+      
+      await storage.updateUserStatus(id, makeAdmin);
+      
+      // Log admin action
+      await storage.createAdminAuditLog({
+        adminId: req.adminUser.id,
+        action: makeAdmin ? "user_promoted_to_admin" : "user_demoted_from_admin",
+        targetType: "user",
+        targetId: id,
+        details: { isAdmin: makeAdmin },
+        ipAddress: req.ip,
+      });
+      
+      res.json({ success: true, message: "User status updated" });
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      res.status(500).json({ message: "Failed to update user status" });
+    }
+  });
+
+  // Get all bots with training stats
+  app.get("/api/admin/bots", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const bots = await storage.getAllBots(limit, offset);
+      const total = await storage.getTotalBotsCount();
+      
+      res.json({ bots, total, limit, offset });
+    } catch (error) {
+      console.error("Error fetching bots:", error);
+      res.status(500).json({ message: "Failed to fetch bots" });
+    }
+  });
+
+  // Get bot training details
+  app.get("/api/admin/bots/:id/training", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const sessions = await storage.getBotLearningSessions(id);
+      const skills = await storage.getBotSkills(id);
+      const trainingData = await storage.getBotTrainingData(id);
+      
+      res.json({ sessions, skills, trainingData });
+    } catch (error) {
+      console.error("Error fetching bot training details:", error);
+      res.status(500).json({ message: "Failed to fetch bot training details" });
+    }
+  });
+
+  // Start training session for a bot
+  app.post("/api/admin/bots/:id/train", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { sessionType, trainingDataset } = req.body;
+      
+      const bot = await storage.getBot(id);
+      if (!bot) {
+        return res.status(404).json({ message: "Bot not found" });
+      }
+      
+      // Create learning session
+      const performanceBefore = {
+        winRate: parseFloat(bot.winRate || "0"),
+        totalProfit: parseFloat(bot.totalProfit || "0"),
+        totalLoss: parseFloat(bot.totalLoss || "0"),
+        totalTrades: bot.totalTrades || 0,
+        timestamp: new Date().toISOString(),
+      };
+      
+      const session = await storage.createBotLearningSession({
+        botId: id,
+        sessionType: sessionType || "supervised",
+        trainingDataset,
+        status: "training",
+        performanceBefore,
+        performanceAfter: null,
+        improvementRate: null,
+        completedAt: null,
+      });
+      
+      // Log admin action
+      await storage.createAdminAuditLog({
+        adminId: req.adminUser.id,
+        action: "bot_training_started",
+        targetType: "bot",
+        targetId: id,
+        details: { sessionType, sessionId: session.id },
+        ipAddress: req.ip,
+      });
+      
+      res.json({ success: true, session });
+    } catch (error) {
+      console.error("Error starting training session:", error);
+      res.status(500).json({ message: "Failed to start training session" });
+    }
+  });
+
+  // Send message to users (broadcast)
+  app.post("/api/admin/chat/send", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { recipientType, recipientIds, message, title, priority } = req.body;
+      
+      const broadcast = await storage.createAdminBroadcast({
+        adminId: req.adminUser.id,
+        recipientType,
+        recipientIds: recipientIds || [],
+        message,
+        title,
+        priority: priority || "normal",
+      });
+      
+      // Log admin action
+      await storage.createAdminAuditLog({
+        adminId: req.adminUser.id,
+        action: "message_broadcast",
+        targetType: "broadcast",
+        targetId: broadcast.id,
+        details: { recipientType, recipientCount: recipientIds?.length || 0 },
+        ipAddress: req.ip,
+      });
+      
+      // TODO: Send via WebSocket to online users
+      // websocketService.sendBroadcast(recipientIds, message);
+      
+      res.json({ success: true, broadcast });
+    } catch (error) {
+      console.error("Error sending broadcast message:", error);
+      res.status(500).json({ message: "Failed to send broadcast message" });
+    }
+  });
+
+  // Get system analytics
+  app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const totalUsers = await storage.getTotalUsersCount();
+      const totalBots = await storage.getTotalBotsCount();
+      
+      // Get active bots (isActive = true)
+      const allBots = await storage.getAllBots(1000, 0);
+      const activeBots = allBots.filter(b => b.isActive).length;
+      
+      // Get learning sessions count
+      const recentBots = await storage.getAllBots(100, 0);
+      const learningSessions = await Promise.all(
+        recentBots.map(b => storage.getBotLearningSessions(b.id))
+      );
+      const totalLearningSessions = learningSessions.reduce((sum, sessions) => sum + sessions.length, 0);
+      
+      // Performance metrics
+      const avgWinRate = allBots.reduce((sum, b) => sum + parseFloat(b.winRate || "0"), 0) / (allBots.length || 1);
+      const avgSkillLevel = allBots.reduce((sum, b) => sum + (b.avgSkillLevel || 0), 0) / (allBots.length || 1);
+      
+      res.json({
+        totalUsers,
+        totalBots,
+        activeBots,
+        totalLearningSessions,
+        avgWinRate: avgWinRate.toFixed(2),
+        avgSkillLevel: avgSkillLevel.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Get admin audit logs
+  app.get("/api/admin/audit-logs", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await storage.getAdminAuditLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
     }
   });
 

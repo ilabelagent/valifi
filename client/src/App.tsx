@@ -32,6 +32,7 @@ import FinancialServicesPage from "@/pages/financial-services";
 import AdvancedTradingPage from "@/pages/advanced-trading";
 import WalletSecurityPage from "@/pages/wallet-security";
 import AnalyticsIntelligencePage from "@/pages/analytics-intelligence";
+import AdminPage from "@/pages/admin";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -91,6 +92,7 @@ function Router() {
               <Route path="/p2p" component={P2PPage} />
               <Route path="/kyc" component={KycPage} />
               <Route path="/quantum" component={QuantumPage} />
+              <Route path="/admin" component={AdminPage} />
               <Route component={NotFound} />
             </Switch>
           </main>

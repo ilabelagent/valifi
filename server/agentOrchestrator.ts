@@ -8,6 +8,7 @@ import * as platformBots from "./platformServicesBot";
 import * as analyticsBots from "./analyticsBot";
 import * as nftBots from "./nftBot";
 import * as communityBots from "./communityBot";
+import { botLearningService } from "./botLearningService";
 
 /**
  * Agent State Annotation for LangGraph
@@ -283,14 +284,13 @@ export class AgentOrchestrator {
     const logs = [...state.logs, "Orchestrator agent executing"];
 
     try {
-      // Log agent activity
-      await this.logAgentActivity("orchestrator", state.task, "active");
-
       const result = {
         agent: "orchestrator",
         message: "Multi-agent workflow coordinated",
         task: state.task,
       };
+
+      await this.logAgentActivity("orchestrator", state.task, "active", result, true);
 
       return {
         status: "completed",
@@ -298,6 +298,7 @@ export class AgentOrchestrator {
         logs: [...logs, "Orchestrator completed successfully"],
       };
     } catch (error: any) {
+      await this.logAgentActivity("orchestrator", state.task, "failed", { error: error.message }, false);
       return {
         status: "failed",
         error: error.message,
@@ -313,13 +314,13 @@ export class AgentOrchestrator {
     const logs = [...state.logs, "Blockchain agent executing"];
 
     try {
-      await this.logAgentActivity("blockchain", state.task, "active");
-
       const result = {
         agent: "blockchain",
         message: "Blockchain operation executed",
         task: state.task,
       };
+
+      await this.logAgentActivity("blockchain", state.task, "active", result, true);
 
       return {
         status: "completed",
@@ -327,6 +328,7 @@ export class AgentOrchestrator {
         logs: [...logs, "Blockchain agent completed"],
       };
     } catch (error: any) {
+      await this.logAgentActivity("blockchain", state.task, "failed", { error: error.message }, false);
       return {
         status: "failed",
         error: error.message,
@@ -342,13 +344,13 @@ export class AgentOrchestrator {
     const logs = [...state.logs, "Payment agent executing"];
 
     try {
-      await this.logAgentActivity("payment", state.task, "active");
-
       const result = {
         agent: "payment",
         message: "Payment processed",
         task: state.task,
       };
+
+      await this.logAgentActivity("payment", state.task, "active", result, true);
 
       return {
         status: "completed",
@@ -356,6 +358,7 @@ export class AgentOrchestrator {
         logs: [...logs, "Payment agent completed"],
       };
     } catch (error: any) {
+      await this.logAgentActivity("payment", state.task, "failed", { error: error.message }, false);
       return {
         status: "failed",
         error: error.message,
@@ -792,12 +795,14 @@ export class AgentOrchestrator {
   }
 
   /**
-   * Log agent activity to database
+   * Log agent activity to database and trigger learning
    */
   private async logAgentActivity(
     agentType: string,
     task: string,
-    status: string
+    status: string,
+    result?: any,
+    success: boolean = true
   ): Promise<void> {
     try {
       const agents = await storage.getAgentsByType(agentType);
@@ -809,8 +814,23 @@ export class AgentOrchestrator {
         await storage.createAgentLog({
           agentId: agent.id,
           action: task,
-          status: "success",
+          status: success ? "success" : "failed",
+          input: { task },
+          output: result,
         });
+
+        // Trigger learning from this execution
+        const tradingBot = await storage.getUserBots(agent.id);
+        if (tradingBot.length > 0) {
+          await botLearningService.learnFromExecution(
+            tradingBot[0].id,
+            agentType,
+            { task },
+            result,
+            success,
+            0
+          );
+        }
       }
     } catch (error) {
       console.error(`Failed to log ${agentType} agent activity:`, error);
