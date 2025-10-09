@@ -27,7 +27,7 @@ import {
   Crown,
   Sparkles
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const tradeFormSchema = insertMetalTradeSchema.omit({ userId: true }).extend({
   metalType: z.enum(["gold", "silver", "platinum", "palladium"]),
@@ -38,10 +38,24 @@ const tradeFormSchema = insertMetalTradeSchema.omit({ userId: true }).extend({
 
 type TradeForm = z.infer<typeof tradeFormSchema>;
 
+interface MetalPrice {
+  metal: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  unit: string;
+}
+
 export default function MetalsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [metalPrices, setMetalPrices] = useState<Record<string, number>>({
+    gold: 2050,
+    silver: 24.5,
+    platinum: 950,
+    palladium: 1100,
+  });
 
   const { data: inventory, isLoading: inventoryLoading } = useQuery<MetalInventory[]>({
     queryKey: ["/api/metals/inventory"],
@@ -103,12 +117,38 @@ export default function MetalsPage() {
   const buyTrades = trades?.filter(t => t.tradeType === "buy").length || 0;
   const sellTrades = trades?.filter(t => t.tradeType === "sell").length || 0;
 
-  const metalPrices = {
-    gold: 2050,
-    silver: 24.5,
-    platinum: 950,
-    palladium: 1100,
-  };
+  // Fetch real-time metal prices
+  useEffect(() => {
+    const fetchMetalPrices = async () => {
+      try {
+        const metals = ["gold", "silver", "platinum", "palladium"];
+        const pricePromises = metals.map(async (metal) => {
+          const response = await fetch(`/api/market/metal/${metal}`);
+          if (response.ok) {
+            const data = await response.json();
+            return { metal, price: data.price };
+          }
+          return null;
+        });
+        
+        const results = await Promise.all(pricePromises);
+        const prices: Record<string, number> = {};
+        results.forEach(result => {
+          if (result) prices[result.metal] = result.price;
+        });
+        
+        if (Object.keys(prices).length > 0) {
+          setMetalPrices(prices);
+        }
+      } catch (error) {
+        console.error("Error fetching metal prices:", error);
+      }
+    };
+
+    fetchMetalPrices();
+    const interval = setInterval(fetchMetalPrices, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="container mx-auto p-6 space-y-6">

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { spectrumService } from "./spectrumService";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,15 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize Spectrum Investment Plans system
+  try {
+    await spectrumService.seedPlans();
+    spectrumService.startDailyCompoundingSchedule();
+    log("✓ Spectrum Investment Plans system initialized");
+  } catch (error) {
+    log("⚠ Warning: Failed to initialize Spectrum system:", error);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

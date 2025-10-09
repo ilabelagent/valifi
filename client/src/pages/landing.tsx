@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { 
   Shield, 
   Sparkles, 
@@ -18,8 +19,19 @@ import {
   Church,
   Crown,
   Gem,
-  Scale
+  Scale,
+  Wallet,
+  Image,
+  Users,
+  ArrowRightLeft,
+  Music,
+  Play,
+  Calendar,
+  MapPin,
+  Headphones,
+  Mic2
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -35,7 +47,217 @@ const staggerContainer = {
   }
 };
 
+// Jesus Cartel Releases Component
+function JesusCartelReleases() {
+  const { data: releases, isLoading } = useQuery({
+    queryKey: ["/api/jesus-cartel/releases"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="border-[#FFD700]/20">
+            <CardContent className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="w-full aspect-square bg-muted rounded-lg" />
+                <div className="h-4 bg-muted rounded w-3/4" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!releases || releases.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Music className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No releases available yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {releases.map((release: any) => (
+        <motion.div
+          key={release.id}
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="group border-[#FFD700]/20 hover:border-[#FFD700]/40 transition-all overflow-hidden" data-testid={`release-${release.id}`}>
+            <div className="relative aspect-square overflow-hidden">
+              <img 
+                src={release.albumArt || "/placeholder-album.jpg"} 
+                alt={release.title}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Button 
+                  size="lg" 
+                  className="bg-[#FFD700] text-black hover:bg-[#FFA500] rounded-full"
+                  onClick={() => window.open(release.streamUrl, '_blank')}
+                  data-testid={`play-${release.id}`}
+                >
+                  <Play className="w-6 h-6 mr-2" />
+                  Play Now
+                </Button>
+              </div>
+            </div>
+            <CardContent className="p-4">
+              <h3 className="font-bold text-lg mb-1 truncate">{release.title}</h3>
+              <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
+                <Mic2 className="w-4 h-4" />
+                {release.artist}
+              </p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <Headphones className="w-3 h-3" />
+                    {release.streamCount || 0}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-3 h-3" />
+                    {release.likeCount || 0}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// Jesus Cartel Events Component
+function JesusCartelEvents() {
+  const { data: events, isLoading } = useQuery({
+    queryKey: ["/api/jesus-cartel/events"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="border-[#FFD700]/20">
+            <CardContent className="p-6">
+              <div className="animate-pulse flex gap-4">
+                <div className="w-24 h-24 bg-muted rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!events || events.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Calendar className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No upcoming events</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {events.map((event: any) => (
+        <motion.div
+          key={event.id}
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="border-[#FFD700]/20 hover:border-[#FFD700]/40 transition-all" data-testid={`event-${event.id}`}>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-shrink-0">
+                  {event.imageUrl ? (
+                    <img 
+                      src={event.imageUrl} 
+                      alt={event.name}
+                      className="w-full md:w-32 h-32 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full md:w-32 h-32 bg-gradient-to-br from-[#FFD700]/20 to-[#FFA500]/20 rounded-lg flex items-center justify-center">
+                      <Music className="w-12 h-12 text-[#FFD700]" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl mb-2">{event.name}</h3>
+                  <div className="space-y-2 mb-4">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(event.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {event.venue}, {event.location}
+                    </p>
+                    {event.artistLineup && event.artistLineup.length > 0 && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Mic2 className="w-4 h-4" />
+                        {event.artistLineup.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                  {event.ticketUrl && (
+                    <Button 
+                      className="bg-[#FFD700] text-black hover:bg-[#FFA500]"
+                      onClick={() => window.open(event.ticketUrl, '_blank')}
+                      data-testid={`tickets-${event.id}`}
+                    >
+                      Get Tickets
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export default function Landing() {
+  const [, setLocation] = useLocation();
+
+  const handleEnterKingdom = () => {
+    window.location.href = "/api/login";
+  };
+
+  const handleLearnMore = () => {
+    const featuresSection = document.getElementById("features");
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleExplorePlatform = () => {
+    setLocation("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -87,7 +309,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               className="bg-[#FFD700] text-black hover:bg-[#FFA500] font-semibold text-lg px-8 py-6"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={handleEnterKingdom}
               data-testid="button-enter-kingdom"
             >
               <Crown className="mr-2 h-5 w-5" />
@@ -97,6 +319,7 @@ export default function Landing() {
               size="lg" 
               variant="outline"
               className="border-[#FFD700]/50 text-foreground hover:bg-[#FFD700]/10 text-lg px-8 py-6"
+              onClick={handleLearnMore}
               data-testid="button-learn-more"
             >
               Learn More
@@ -106,7 +329,7 @@ export default function Landing() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 px-8 bg-gradient-to-b from-background to-blue-950/10 dark:to-blue-950/5">
+      <section id="features" className="py-20 px-8 bg-gradient-to-b from-background to-blue-950/10 dark:to-blue-950/5">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -235,11 +458,21 @@ export default function Landing() {
                     <CardTitle className="text-2xl text-center">Royal Bronze</CardTitle>
                     <CardDescription className="text-center">Entry Level</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm">✓ Entry-level gold purchases</p>
-                    <p className="text-sm">✓ Digital NFT certificates</p>
-                    <p className="text-sm">✓ Optional insured vault storage</p>
-                    <p className="text-sm">✓ Basic platform access</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">✓ Entry-level gold purchases</p>
+                      <p className="text-sm">✓ Digital NFT certificates</p>
+                      <p className="text-sm">✓ Optional insured vault storage</p>
+                      <p className="text-sm">✓ Basic platform access</p>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => setLocation("/spectrum-plans")}
+                      data-testid="button-select-royal-bronze"
+                    >
+                      Select Plan
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -251,11 +484,21 @@ export default function Landing() {
                     <CardTitle className="text-2xl text-center">Royal Silver</CardTitle>
                     <CardDescription className="text-center">$50k+ Holdings</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm">✓ Free global shipping</p>
-                    <p className="text-sm">✓ Priority support access</p>
-                    <p className="text-sm">✓ Early access to limited drops</p>
-                    <p className="text-sm">✓ Advanced trading features</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">✓ Free global shipping</p>
+                      <p className="text-sm">✓ Priority support access</p>
+                      <p className="text-sm">✓ Early access to limited drops</p>
+                      <p className="text-sm">✓ Advanced trading features</p>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => setLocation("/spectrum-plans")}
+                      data-testid="button-select-royal-silver"
+                    >
+                      Select Plan
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -267,11 +510,20 @@ export default function Landing() {
                     <CardTitle className="text-2xl text-center text-[#FFD700]">Royal Gold</CardTitle>
                     <CardDescription className="text-center">$500k+ Holdings</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm">✓ Dedicated concierge service</p>
-                    <p className="text-sm">✓ Annual VIP events access</p>
-                    <p className="text-sm">✓ Reduced spreads on purchases</p>
-                    <p className="text-sm">✓ Premium analytics dashboard</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">✓ Dedicated concierge service</p>
+                      <p className="text-sm">✓ Annual VIP events access</p>
+                      <p className="text-sm">✓ Reduced spreads on purchases</p>
+                      <p className="text-sm">✓ Premium analytics dashboard</p>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black hover:from-[#FFA500] hover:to-[#FFD700]"
+                      onClick={() => setLocation("/spectrum-plans")}
+                      data-testid="button-select-royal-gold"
+                    >
+                      Select Plan
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
@@ -287,11 +539,20 @@ export default function Landing() {
                     <CardTitle className="text-2xl text-center text-purple-400">King's Court</CardTitle>
                     <CardDescription className="text-center">$5M+ Holdings</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm">✓ Private jet perks & travel</p>
-                    <p className="text-sm">✓ Exclusive supplier meetings</p>
-                    <p className="text-sm">✓ Custom minted gold pieces</p>
-                    <p className="text-sm">✓ Direct C-level access</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">✓ Private jet perks & travel</p>
+                      <p className="text-sm">✓ Exclusive supplier meetings</p>
+                      <p className="text-sm">✓ Custom minted gold pieces</p>
+                      <p className="text-sm">✓ Direct C-level access</p>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900"
+                      onClick={() => setLocation("/spectrum-plans")}
+                      data-testid="button-select-kings-court"
+                    >
+                      Select Plan
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -303,11 +564,20 @@ export default function Landing() {
                     <CardTitle className="text-2xl text-center text-red-400">King David Circle</CardTitle>
                     <CardDescription className="text-center">$10B+ Visionary</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm">✓ Sovereign lifestyle concierge</p>
-                    <p className="text-sm">✓ Platform governance influence</p>
-                    <p className="text-sm">✓ Treasury decision-making</p>
-                    <p className="text-sm">✓ Bespoke financial instruments</p>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm">✓ Sovereign lifestyle concierge</p>
+                      <p className="text-sm">✓ Platform governance influence</p>
+                      <p className="text-sm">✓ Treasury decision-making</p>
+                      <p className="text-sm">✓ Bespoke financial instruments</p>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900"
+                      onClick={() => setLocation("/spectrum-plans")}
+                      data-testid="button-select-king-david"
+                    >
+                      Select Plan
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
@@ -391,6 +661,118 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Quick Actions */}
+      <section className="py-20 px-8 bg-gradient-to-b from-background to-blue-950/10 dark:to-blue-950/5">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] bg-clip-text text-transparent">
+                Quick Actions
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Get started with the most popular features
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/blockchain")}
+              data-testid="button-quick-create-wallet"
+            >
+              <Wallet className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Create Wallet</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/trading")}
+              data-testid="button-quick-trade"
+            >
+              <TrendingUp className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Quick Trade</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/blockchain")}
+              data-testid="button-quick-mint-nft"
+            >
+              <Image className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Mint NFT</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/spectrum-plans")}
+              data-testid="button-quick-stake"
+            >
+              <Coins className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Stake Now</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/metals")}
+              data-testid="button-quick-buy-gold"
+            >
+              <Gem className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Buy Gold</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/p2p")}
+              data-testid="button-quick-p2p"
+            >
+              <Users className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">P2P Trade</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/trading-bots")}
+              data-testid="button-quick-deploy-bot"
+            >
+              <Bot className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Deploy Bot</span>
+            </Button>
+
+            <Button 
+              size="lg"
+              variant="outline"
+              className="h-auto flex-col gap-2 py-6 border-[#FFD700]/30 hover:border-[#FFD700] hover:bg-[#FFD700]/10"
+              onClick={() => setLocation("/exchange")}
+              data-testid="button-quick-exchange"
+            >
+              <ArrowRightLeft className="w-8 h-8 text-[#FFD700]" />
+              <span className="font-semibold">Exchange</span>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Investment Options Showcase */}
       <section className="py-20 px-8">
         <div className="max-w-7xl mx-auto">
@@ -440,6 +822,13 @@ export default function Landing() {
                     <span className="font-semibold">Promotional:</span> +25% boost until Oct 31, 2025
                   </p>
                 </div>
+                <Button 
+                  className="w-full bg-blue-500 hover:bg-blue-600"
+                  onClick={() => setLocation("/exchange")}
+                  data-testid="button-start-eth-staking"
+                >
+                  Start Staking ETH
+                </Button>
               </CardContent>
             </Card>
 
@@ -471,9 +860,62 @@ export default function Landing() {
                     <span className="font-semibold">Fixed Program:</span> 8% APY guaranteed
                   </p>
                 </div>
+                <Button 
+                  className="w-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black hover:from-[#FFA500] hover:to-[#FFD700]"
+                  onClick={() => setLocation("/metals")}
+                  data-testid="button-buy-precious-metals"
+                >
+                  Buy Precious Metals
+                </Button>
               </CardContent>
             </Card>
           </div>
+        </div>
+      </section>
+
+      {/* Jesus Cartel Music Ministry */}
+      <section className="py-20 px-8 bg-gradient-to-b from-blue-950/10 to-background dark:from-blue-950/5">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Music className="w-12 h-12 text-[#FFD700]" />
+              <h2 className="text-4xl md:text-5xl font-bold">
+                <span className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] bg-clip-text text-transparent">
+                  Jesus Cartel Music Ministry
+                </span>
+              </h2>
+            </div>
+            <p className="text-xl text-muted-foreground">
+              Kingdom worship music with NFT & blockchain integration
+            </p>
+          </motion.div>
+
+          <Tabs defaultValue="releases" className="w-full">
+            <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-2 mb-8" data-testid="tabs-jesus-cartel">
+              <TabsTrigger value="releases" data-testid="tab-releases">
+                <Headphones className="w-4 h-4 mr-2" />
+                Latest Releases
+              </TabsTrigger>
+              <TabsTrigger value="events" data-testid="tab-events">
+                <Calendar className="w-4 h-4 mr-2" />
+                Upcoming Events
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="releases" className="mt-8">
+              <JesusCartelReleases />
+            </TabsContent>
+
+            <TabsContent value="events" className="mt-8">
+              <JesusCartelEvents />
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
 
@@ -500,7 +942,7 @@ export default function Landing() {
             <Button 
               size="lg"
               className="bg-[#FFD700] text-black hover:bg-[#FFA500] font-semibold text-lg px-10 py-6"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={handleEnterKingdom}
               data-testid="button-final-cta"
             >
               <Crown className="mr-2 h-5 w-5" />
@@ -510,10 +952,10 @@ export default function Landing() {
               size="lg"
               variant="outline"
               className="border-[#FFD700]/50 text-foreground hover:bg-[#FFD700]/10 text-lg px-10 py-6"
-              data-testid="button-view-dashboard"
-              onClick={() => window.location.href = "/dashboard"}
+              onClick={handleExplorePlatform}
+              data-testid="button-explore-platform"
             >
-              View Dashboard
+              Explore Platform
             </Button>
           </div>
         </motion.div>

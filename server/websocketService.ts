@@ -51,6 +51,11 @@ export class WebSocketService {
         console.log(`${socket.id} subscribed to trading events`);
       });
 
+      socket.on("subscribe:market", () => {
+        socket.join("market");
+        console.log(`${socket.id} subscribed to market data`);
+      });
+
       socket.on("subscribe:p2p", (orderId: string) => {
         socket.join(`p2p:${orderId}`);
         console.log(`${socket.id} subscribed to P2P order ${orderId}`);
@@ -164,12 +169,66 @@ export class WebSocketService {
   }
 
   /**
+   * Emit market data update
+   */
+  emitMarketUpdate(prices: any[]) {
+    if (this.io) {
+      this.io.to("market").emit("market:update", { type: 'market_update', prices });
+    }
+  }
+
+  /**
+   * Emit dashboard update
+   */
+  emitDashboardUpdate(data: any) {
+    if (this.io) {
+      this.io.emit("dashboard:update", data);
+    }
+  }
+
+  /**
    * Broadcast message to all connected clients
    */
   broadcast(event: string, data: any) {
     if (this.io) {
       this.io.emit(event, data);
     }
+  }
+
+  /**
+   * Start broadcasting market data updates
+   */
+  startMarketDataBroadcast() {
+    setInterval(() => {
+      const mockPrices = [
+        { 
+          symbol: "BTC/USD", 
+          price: 43000 + Math.random() * 1000,
+          change: (Math.random() - 0.5) * 200,
+          changePercent: (Math.random() - 0.5) * 5 
+        },
+        { 
+          symbol: "ETH/USD", 
+          price: 2200 + Math.random() * 200,
+          change: (Math.random() - 0.5) * 50,
+          changePercent: (Math.random() - 0.5) * 4 
+        },
+        { 
+          symbol: "AAPL", 
+          price: 180 + Math.random() * 10,
+          change: (Math.random() - 0.5) * 5,
+          changePercent: (Math.random() - 0.5) * 2 
+        },
+        { 
+          symbol: "GOLD", 
+          price: 2040 + Math.random() * 20,
+          change: (Math.random() - 0.5) * 15,
+          changePercent: (Math.random() - 0.5) * 1 
+        },
+      ];
+      
+      this.emitMarketUpdate(mockPrices);
+    }, 3000);
   }
 }
 

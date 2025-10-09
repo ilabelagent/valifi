@@ -211,6 +211,67 @@ export class JesusCartelService {
   }
 
   /**
+   * Get latest music releases
+   */
+  async getLatestReleases(limit: number = 10) {
+    return await storage.getLatestReleases(limit);
+  }
+
+  /**
+   * Get featured releases
+   */
+  async getFeaturedReleases() {
+    return await storage.getFeaturedReleases();
+  }
+
+  /**
+   * Get upcoming events
+   */
+  async getUpcomingEvents(limit: number = 10) {
+    return await storage.getUpcomingEvents(limit);
+  }
+
+  /**
+   * Get featured events
+   */
+  async getFeaturedEvents() {
+    return await storage.getFeaturedEvents();
+  }
+
+  /**
+   * Track a stream/play of a release
+   */
+  async trackStreams(releaseId: string, userId?: string, duration?: number, completionRate?: number) {
+    return await storage.trackStream({
+      releaseId,
+      userId,
+      duration,
+      completionRate: completionRate?.toString(),
+    });
+  }
+
+  /**
+   * Increment like count for a release
+   */
+  async likeRelease(releaseId: string) {
+    await storage.incrementLikeCount(releaseId);
+  }
+
+  /**
+   * Get a specific release
+   */
+  async getRelease(releaseId: string) {
+    return await storage.getRelease(releaseId);
+  }
+
+  /**
+   * Get a specific event
+   */
+  async getEvent(eventId: string) {
+    return await storage.getEvent(eventId);
+  }
+
+  /**
    * Generate token symbol from song title
    * Example: "Blessed Be" → "BLESS", "Hallelujah" → "HALLE"
    */

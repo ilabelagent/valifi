@@ -36,6 +36,7 @@ import {
   Swords
 } from "lucide-react";
 import { useState } from "react";
+import AlpacaConfig from "@/components/AlpacaConfig";
 
 const botFormSchema = insertTradingBotSchema.omit({ userId: true }).extend({
   strategy: z.enum(["grid_trading", "dca", "arbitrage", "scalping", "market_making", "momentum_ai", "mev_protection"]),
@@ -150,7 +151,7 @@ export default function TradingBotsPage() {
   });
 
   const toggleBotMutation = useMutation({
-    mutationFn: async ({ botId, isActive }: { botId: number; isActive: boolean }) => {
+    mutationFn: async ({ botId, isActive }: { botId: string | number; isActive: boolean }) => {
       const response = await fetch(`/api/trading/bots/${botId}/toggle`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -377,9 +378,10 @@ export default function TradingBotsPage() {
       </div>
 
       <Tabs defaultValue="bots" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="bots" data-testid="tab-bots">Active Bots</TabsTrigger>
           <TabsTrigger value="executions" data-testid="tab-executions">Trade History</TabsTrigger>
+          <TabsTrigger value="broker" data-testid="tab-broker">Broker Setup</TabsTrigger>
         </TabsList>
 
         <TabsContent value="bots" className="space-y-4">
@@ -472,7 +474,7 @@ export default function TradingBotsPage() {
                         <div className="p-3 bg-muted rounded-lg">
                           <p className="text-xs text-muted-foreground mb-1">Configuration</p>
                           <code className="text-xs font-mono" data-testid={`text-config-${bot.id}`}>
-                            {JSON.stringify(bot.config)}
+                            {typeof bot.config === 'string' ? bot.config : JSON.stringify(bot.config)}
                           </code>
                         </div>
                       )}
@@ -546,6 +548,10 @@ export default function TradingBotsPage() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="broker" className="space-y-4">
+          <AlpacaConfig />
         </TabsContent>
       </Tabs>
     </div>
