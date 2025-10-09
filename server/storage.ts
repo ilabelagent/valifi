@@ -40,6 +40,7 @@ import {
   botLearningSession,
   botTrainingData,
   botSkills,
+  tradingSystemMemory,
   p2pOffers,
   p2pOrders,
   p2pPaymentMethods,
@@ -130,6 +131,8 @@ import {
   type InsertBotTrainingData,
   type BotSkill,
   type InsertBotSkill,
+  type TradingSystemMemory,
+  type InsertTradingSystemMemory,
   type P2POffer,
   type InsertP2POffer,
   type P2POrder,
@@ -152,6 +155,9 @@ export interface IStorage {
   // Users (Replit Auth compatible)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getAllUsers(limit?: number, offset?: number): Promise<User[]>;
+  getTotalUsersCount(): Promise<number>;
+  updateUserStatus(userId: string, isAdmin: boolean): Promise<void>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserKycStatus(userId: string, status: string, kycUserId?: string): Promise<void>;
 
@@ -234,6 +240,8 @@ export interface IStorage {
   // Trading Bots
   getBot(id: string): Promise<TradingBot | undefined>;
   getUserBots(userId: string): Promise<TradingBot[]>;
+  getAllBots(limit?: number, offset?: number): Promise<any[]>;
+  getTotalBotsCount(): Promise<number>;
   createBot(bot: InsertTradingBot): Promise<TradingBot>;
   updateBot(id: string, updates: Partial<TradingBot>): Promise<void>;
   deleteBot(id: string): Promise<void>;
@@ -367,6 +375,12 @@ export interface IStorage {
   createBotSkill(skill: InsertBotSkill): Promise<BotSkill>;
   updateBotSkill(id: string, updates: Partial<InsertBotSkill>): Promise<boolean>;
 
+  // Trading System Memory
+  getTradingSystemMemory(botId: string): Promise<TradingSystemMemory[]>;
+  getTradingSystemMemoryByKey(botId: string, memoryType: string, memoryKey: string): Promise<TradingSystemMemory | undefined>;
+  createTradingSystemMemory(memory: InsertTradingSystemMemory): Promise<TradingSystemMemory>;
+  updateTradingSystemMemory(id: string, updates: Partial<InsertTradingSystemMemory>): Promise<boolean>;
+
   // P2P Trading
   getP2POffers(type?: string): Promise<P2POffer[]>;
   getP2POffer(id: string): Promise<P2POffer | undefined>;
@@ -432,6 +446,19 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ kycStatus: status as any, kycUserId })
       .where(eq(users.id, userId));
+  }
+
+  async getAllUsers(limit: number = 50, offset: number = 0): Promise<User[]> {
+    return db.select().from(users).limit(limit).offset(offset).orderBy(desc(users.createdAt));
+  }
+
+  async getTotalUsersCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    return result[0]?.count || 0;
+  }
+
+  async updateUserStatus(userId: string, isAdmin: boolean): Promise<void> {
+    await db.update(users).set({ isAdmin }).where(eq(users.id, userId));
   }
 
   // Wallets
@@ -772,6 +799,35 @@ export class DatabaseStorage implements IStorage {
 
   async getUserBots(userId: string): Promise<TradingBot[]> {
     return db.select().from(tradingBots).where(eq(tradingBots.userId, userId)).orderBy(desc(tradingBots.createdAt));
+  }
+
+  async getAllBots(limit: number = 50, offset: number = 0): Promise<any[]> {
+    const botsWithStats = await db
+      .select({
+        bot: tradingBots,
+        user: users,
+        skillsCount: sql<number>`(SELECT COUNT(*) FROM ${botSkills} WHERE ${botSkills.botId} = ${tradingBots.id})`,
+        sessionsCount: sql<number>`(SELECT COUNT(*) FROM ${botLearningSession} WHERE ${botLearningSession.botId} = ${tradingBots.id})`,
+        avgSkillLevel: sql<number>`(SELECT AVG(${botSkills.skillLevel}) FROM ${botSkills} WHERE ${botSkills.botId} = ${tradingBots.id})`,
+      })
+      .from(tradingBots)
+      .leftJoin(users, eq(tradingBots.userId, users.id))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(tradingBots.createdAt));
+    
+    return botsWithStats.map(row => ({
+      ...row.bot,
+      user: row.user,
+      skillsCount: row.skillsCount || 0,
+      sessionsCount: row.sessionsCount || 0,
+      avgSkillLevel: row.avgSkillLevel || 0,
+    }));
+  }
+
+  async getTotalBotsCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(tradingBots);
+    return result[0]?.count || 0;
   }
 
   async createBot(insertBot: InsertTradingBot): Promise<TradingBot> {
@@ -1320,6 +1376,38 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(botSkills)
       .set(updates)
       .where(eq(botSkills.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Trading System Memory
+  async getTradingSystemMemory(botId: string) {
+    return await db.query.tradingSystemMemory.findMany({
+      where: eq(tradingSystemMemory.botId, botId),
+      orderBy: [desc(tradingSystemMemory.lastAccessed)],
+    });
+  }
+
+  async getTradingSystemMemoryByKey(botId: string, memoryType: string, memoryKey: string) {
+    const result = await db.query.tradingSystemMemory.findFirst({
+      where: and(
+        eq(tradingSystemMemory.botId, botId),
+        eq(tradingSystemMemory.memoryType, memoryType),
+        eq(tradingSystemMemory.memoryKey, memoryKey)
+      ),
+    });
+    return result || undefined;
+  }
+
+  async createTradingSystemMemory(memory: InsertTradingSystemMemory) {
+    const [created] = await db.insert(tradingSystemMemory).values(memory).returning();
+    return created;
+  }
+
+  async updateTradingSystemMemory(id: string, updates: Partial<InsertTradingSystemMemory>) {
+    const result = await db.update(tradingSystemMemory)
+      .set({ ...updates, lastAccessed: new Date() })
+      .where(eq(tradingSystemMemory.id, id))
       .returning();
     return result.length > 0;
   }

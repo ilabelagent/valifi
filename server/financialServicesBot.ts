@@ -1,8 +1,10 @@
 import { storage } from "./storage";
+import { marketDataService } from "./marketDataService";
 
 /**
  * Financial Services Bot System
  * Handles traditional finance: 401k, IRA, Pension, Bonds, Stocks, Options, Forex, etc.
+ * Now powered by REAL market data from Alpha Vantage, Twelve Data, and Metals-API
  */
 
 export interface FinancialAccount {
@@ -95,6 +97,10 @@ export class BotPension {
  * Bonds Bot - Bond Trading & Management
  */
 export class BotBonds {
+  async getTreasuryYields(): Promise<any[]> {
+    return await marketDataService.getTreasuryYields();
+  }
+
   async searchBonds(filters: {
     maturity?: string;
     rating?: string;
@@ -128,12 +134,13 @@ export class BotBonds {
  */
 export class BotStocks {
   async getQuote(symbol: string): Promise<any> {
-    // Real-time stock quote via Alpaca/IEX
+    const data = await marketDataService.getStockPrice(symbol);
     return {
-      symbol,
-      price: 0,
-      change: 0,
-      volume: 0,
+      symbol: data.symbol,
+      price: data.price,
+      change: data.change,
+      changePercent: data.changePercent,
+      timestamp: data.timestamp,
     };
   }
 
@@ -195,8 +202,9 @@ export class BotOptions {
  */
 export class BotForex {
   async getForexRate(from: string, to: string): Promise<number> {
-    // Real-time forex rates
-    return 1.0;
+    const pair = `${from}/${to}`;
+    const data = await marketDataService.getForexRate(pair);
+    return data.price;
   }
 
   async executeTrade(userId: string, pair: string, action: "buy" | "sell", lots: number): Promise<string> {
@@ -214,8 +222,8 @@ export class BotForex {
  */
 export class BotMetals {
   async getMetalPrice(metal: "gold" | "silver" | "platinum" | "palladium"): Promise<number> {
-    // Spot price per troy ounce
-    return 0;
+    const data = await marketDataService.getMetalPrice(metal);
+    return data.price;
   }
 
   async buyPhysicalMetal(userId: string, metal: string, ounces: number, delivery: boolean): Promise<string> {

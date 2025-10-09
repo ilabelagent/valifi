@@ -26,8 +26,10 @@ import {
   Newspaper,
   ArrowLeftRight,
   ArrowUpDown,
+  Settings,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 const tradingItems = [
   {
@@ -144,6 +146,7 @@ const platformItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <Sidebar>
@@ -257,6 +260,28 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user?.isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    data-active={location === "/admin"}
+                    className="data-[active=true]:bg-sidebar-accent"
+                  >
+                    <Link href="/admin" data-testid="link-admin">
+                      <Settings className="h-4 w-4" />
+                      <span>Admin Control Panel</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

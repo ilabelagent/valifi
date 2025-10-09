@@ -51,6 +51,16 @@ export class WebSocketService {
         console.log(`${socket.id} subscribed to trading events`);
       });
 
+      socket.on("subscribe:p2p", (orderId: string) => {
+        socket.join(`p2p:${orderId}`);
+        console.log(`${socket.id} subscribed to P2P order ${orderId}`);
+      });
+
+      socket.on("unsubscribe:p2p", (orderId: string) => {
+        socket.leave(`p2p:${orderId}`);
+        console.log(`${socket.id} unsubscribed from P2P order ${orderId}`);
+      });
+
       socket.on("disconnect", () => {
         console.log(`Client disconnected: ${socket.id}`);
       });
@@ -132,6 +142,24 @@ export class WebSocketService {
   }) {
     if (this.io) {
       this.io.to("trading").emit("trading:event", event);
+    }
+  }
+
+  /**
+   * Emit P2P chat message
+   */
+  emitP2PChatMessage(orderId: string, message: any) {
+    if (this.io) {
+      this.io.to(`p2p:${orderId}`).emit("p2p:message", message);
+    }
+  }
+
+  /**
+   * Emit P2P order update
+   */
+  emitP2POrderUpdate(orderId: string, update: any) {
+    if (this.io) {
+      this.io.to(`p2p:${orderId}`).emit("p2p:order_update", update);
     }
   }
 
