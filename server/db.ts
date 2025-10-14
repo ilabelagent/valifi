@@ -3,7 +3,18 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Configure WebSocket for Neon
+// In Replit development environment, handle self-signed certificates
+if (process.env.NODE_ENV === 'development') {
+  neonConfig.webSocketConstructor = function(url, protocols) {
+    return new ws(url, protocols, {
+      rejectUnauthorized: false,
+      handshakeTimeout: 10000
+    });
+  };
+} else {
+  neonConfig.webSocketConstructor = ws;
+}
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
