@@ -375,7 +375,7 @@ ${JSON.stringify(categorizedEnv, null, 2)
   console.log('   3. Store in secure location only');
   console.log('   4. Rotate keys if accidentally exposed');
 
-} catch (error)
+} catch (error) {
   console.error('❌ Error saving files:', error);
   process.exit(1);
 }
