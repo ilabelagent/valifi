@@ -580,15 +580,51 @@ export class AgentOrchestrator {
    */
   private async runFinancialAgent(state: AgentState): Promise<Partial<AgentState>> {
     const logs = [...state.logs, `Financial agent (${state.currentAgent}) executing`];
+    const task = state.task.toLowerCase();
 
     try {
       await this.logAgentActivity(state.currentAgent || "financial", state.task, "active");
 
-      const result = {
-        agent: state.currentAgent,
-        message: `Financial services task completed: ${state.task}`,
-        task: state.task,
-      };
+      let result: any;
+
+      // Simple routing for financial tasks
+      if (task.includes('buy') || task.includes('purchase')) {
+        const match = task.match(/(\d+)\s+(shares? of)?\s+([a-z]+)/);
+        if (match) {
+          const quantity = parseInt(match[1], 10);
+          const symbol = match[3].toUpperCase();
+          result = await financialBots.botStocks.placeOrder('user-id', { // Replace 'user-id' with actual user ID
+            symbol,
+            quantity,
+            action: 'buy',
+            orderType: 'market',
+          });
+        }
+      } else if (task.includes('sell')) {
+        const match = task.match(/(\d+)\s+(shares? of)?\s+([a-z]+)/);
+        if (match) {
+          const quantity = parseInt(match[1], 10);
+          const symbol = match[3].toUpperCase();
+          result = await financialBots.botStocks.placeOrder('user-id', { // Replace 'user-id' with actual user ID
+            symbol,
+            quantity,
+            action: 'sell',
+            orderType: 'market',
+          });
+        }
+      } else if (task.includes('quote') || task.includes('price of')) {
+        const match = task.match(/([a-z]+)/);
+        if (match) {
+          const symbol = match[1].toUpperCase();
+          result = await financialBots.botStocks.getQuote(symbol);
+        }
+      } else {
+        result = {
+          agent: state.currentAgent,
+          message: `Financial task not understood: ${state.task}`,
+          task: state.task,
+        };
+      }
 
       return {
         status: "completed",

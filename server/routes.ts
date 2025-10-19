@@ -965,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent orchestration endpoint
-  app.post("/api/agents/execute", isAuthenticated, async (req: any, res) => {
+  app.post("/api/agents/execute", async (req: any, res) => {
     try {
       const { task, agentType } = req.body;
 
