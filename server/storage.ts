@@ -237,6 +237,21 @@ import {
   type InsertTithingConfig,
   type TithingHistory,
   type InsertTithingHistory,
+  conversationSessions,
+  conversationMemories,
+  conversationMessages,
+  conversationContext,
+  conversationTasks,
+  type ConversationSession,
+  type InsertConversationSession,
+  type ConversationMemory,
+  type InsertConversationMemory,
+  type ConversationMessage,
+  type InsertConversationMessage,
+  type ConversationContext,
+  type InsertConversationContext,
+  type ConversationTask,
+  type InsertConversationTask,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -667,6 +682,34 @@ export interface IStorage {
   getTithingHistoryItem(id: string): Promise<TithingHistory | undefined>;
   createTithingHistory(history: InsertTithingHistory): Promise<TithingHistory>;
   updateTithingHistory(id: string, updates: Partial<InsertTithingHistory>): Promise<TithingHistory>;
+
+  // Conversation Memory System
+  getConversationSession(id: string): Promise<ConversationSession | undefined>;
+  getConversationSessionByIdentifier(identifier: string): Promise<ConversationSession | undefined>;
+  createConversationSession(session: InsertConversationSession): Promise<ConversationSession>;
+  updateConversationSession(id: string, updates: Partial<InsertConversationSession>): Promise<void>;
+
+  getConversationMemories(sessionId: string): Promise<ConversationMemory[]>;
+  getConversationMemoryByKey(sessionId: string, memoryType: string, memoryKey: string): Promise<ConversationMemory | undefined>;
+  getConversationMemoriesByType(sessionId: string, memoryType: string): Promise<ConversationMemory[]>;
+  createConversationMemory(memory: InsertConversationMemory): Promise<ConversationMemory>;
+  updateConversationMemory(id: string, updates: Partial<InsertConversationMemory>): Promise<ConversationMemory>;
+  deleteConversationMemory(id: string): Promise<void>;
+
+  getConversationMessages(sessionId: string): Promise<ConversationMessage[]>;
+  createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
+
+  getConversationContexts(sessionId: string): Promise<ConversationContext[]>;
+  getConversationContextByKey(sessionId: string, contextType: string, contextKey: string): Promise<ConversationContext | undefined>;
+  getConversationContextsByType(sessionId: string, contextType: string): Promise<ConversationContext[]>;
+  createConversationContext(context: InsertConversationContext): Promise<ConversationContext>;
+  updateConversationContext(id: string, updates: Partial<InsertConversationContext>): Promise<ConversationContext>;
+  deleteConversationContext(id: string): Promise<void>;
+
+  getConversationTasks(sessionId: string): Promise<ConversationTask[]>;
+  getConversationTask(id: string): Promise<ConversationTask | undefined>;
+  createConversationTask(task: InsertConversationTask): Promise<ConversationTask>;
+  updateConversationTask(id: string, updates: Partial<InsertConversationTask>): Promise<ConversationTask>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2748,6 +2791,148 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(tithingHistory)
       .set(updates)
       .where(eq(tithingHistory.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Conversation Memory System
+  async getConversationSession(id: string): Promise<ConversationSession | undefined> {
+    const [session] = await db.select().from(conversationSessions).where(eq(conversationSessions.id, id));
+    return session || undefined;
+  }
+
+  async getConversationSessionByIdentifier(identifier: string): Promise<ConversationSession | undefined> {
+    const [session] = await db.select().from(conversationSessions)
+      .where(eq(conversationSessions.sessionIdentifier, identifier));
+    return session || undefined;
+  }
+
+  async createConversationSession(session: InsertConversationSession): Promise<ConversationSession> {
+    const [created] = await db.insert(conversationSessions).values(session).returning();
+    return created;
+  }
+
+  async updateConversationSession(id: string, updates: Partial<InsertConversationSession>): Promise<void> {
+    await db.update(conversationSessions)
+      .set(updates)
+      .where(eq(conversationSessions.id, id));
+  }
+
+  async getConversationMemories(sessionId: string): Promise<ConversationMemory[]> {
+    return db.select().from(conversationMemories)
+      .where(eq(conversationMemories.sessionId, sessionId))
+      .orderBy(desc(conversationMemories.updatedAt));
+  }
+
+  async getConversationMemoryByKey(sessionId: string, memoryType: string, memoryKey: string): Promise<ConversationMemory | undefined> {
+    const [memory] = await db.select().from(conversationMemories)
+      .where(and(
+        eq(conversationMemories.sessionId, sessionId),
+        eq(conversationMemories.memoryType, memoryType as any),
+        eq(conversationMemories.memoryKey, memoryKey)
+      ));
+    return memory || undefined;
+  }
+
+  async getConversationMemoriesByType(sessionId: string, memoryType: string): Promise<ConversationMemory[]> {
+    return db.select().from(conversationMemories)
+      .where(and(
+        eq(conversationMemories.sessionId, sessionId),
+        eq(conversationMemories.memoryType, memoryType as any)
+      ))
+      .orderBy(desc(conversationMemories.importance), desc(conversationMemories.updatedAt));
+  }
+
+  async createConversationMemory(memory: InsertConversationMemory): Promise<ConversationMemory> {
+    const [created] = await db.insert(conversationMemories).values(memory).returning();
+    return created;
+  }
+
+  async updateConversationMemory(id: string, updates: Partial<InsertConversationMemory>): Promise<ConversationMemory> {
+    const [updated] = await db.update(conversationMemories)
+      .set(updates)
+      .where(eq(conversationMemories.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteConversationMemory(id: string): Promise<void> {
+    await db.delete(conversationMemories).where(eq(conversationMemories.id, id));
+  }
+
+  async getConversationMessages(sessionId: string): Promise<ConversationMessage[]> {
+    return db.select().from(conversationMessages)
+      .where(eq(conversationMessages.sessionId, sessionId))
+      .orderBy(asc(conversationMessages.createdAt));
+  }
+
+  async createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage> {
+    const [created] = await db.insert(conversationMessages).values(message).returning();
+    return created;
+  }
+
+  async getConversationContexts(sessionId: string): Promise<ConversationContext[]> {
+    return db.select().from(conversationContext)
+      .where(eq(conversationContext.sessionId, sessionId))
+      .orderBy(desc(conversationContext.relevanceScore), desc(conversationContext.updatedAt));
+  }
+
+  async getConversationContextByKey(sessionId: string, contextType: string, contextKey: string): Promise<ConversationContext | undefined> {
+    const [context] = await db.select().from(conversationContext)
+      .where(and(
+        eq(conversationContext.sessionId, sessionId),
+        eq(conversationContext.contextType, contextType),
+        eq(conversationContext.contextKey, contextKey)
+      ));
+    return context || undefined;
+  }
+
+  async getConversationContextsByType(sessionId: string, contextType: string): Promise<ConversationContext[]> {
+    return db.select().from(conversationContext)
+      .where(and(
+        eq(conversationContext.sessionId, sessionId),
+        eq(conversationContext.contextType, contextType)
+      ))
+      .orderBy(desc(conversationContext.relevanceScore), desc(conversationContext.updatedAt));
+  }
+
+  async createConversationContext(context: InsertConversationContext): Promise<ConversationContext> {
+    const [created] = await db.insert(conversationContext).values(context).returning();
+    return created;
+  }
+
+  async updateConversationContext(id: string, updates: Partial<InsertConversationContext>): Promise<ConversationContext> {
+    const [updated] = await db.update(conversationContext)
+      .set(updates)
+      .where(eq(conversationContext.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteConversationContext(id: string): Promise<void> {
+    await db.delete(conversationContext).where(eq(conversationContext.id, id));
+  }
+
+  async getConversationTasks(sessionId: string): Promise<ConversationTask[]> {
+    return db.select().from(conversationTasks)
+      .where(eq(conversationTasks.sessionId, sessionId))
+      .orderBy(desc(conversationTasks.priority), asc(conversationTasks.createdAt));
+  }
+
+  async getConversationTask(id: string): Promise<ConversationTask | undefined> {
+    const [task] = await db.select().from(conversationTasks).where(eq(conversationTasks.id, id));
+    return task || undefined;
+  }
+
+  async createConversationTask(task: InsertConversationTask): Promise<ConversationTask> {
+    const [created] = await db.insert(conversationTasks).values(task).returning();
+    return created;
+  }
+
+  async updateConversationTask(id: string, updates: Partial<InsertConversationTask>): Promise<ConversationTask> {
+    const [updated] = await db.update(conversationTasks)
+      .set(updates)
+      .where(eq(conversationTasks.id, id))
       .returning();
     return updated;
   }

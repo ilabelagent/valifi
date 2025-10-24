@@ -1,7 +1,10 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import { setupAuth } from "./authService";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { spectrumService } from "./spectrumService";
+import { initializeMemorySystem, cleanupMemories, decayContext } from "./memoryIntegrationHook";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +41,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await setupAuth(app);
   const server = await registerRoutes(app);
 
   // Initialize Spectrum Investment Plans system
@@ -47,6 +51,27 @@ app.use((req, res, next) => {
     log("✓ Spectrum Investment Plans system initialized");
   } catch (error) {
     log("⚠ Warning: Failed to initialize Spectrum system:", error);
+  }
+
+  // Initialize Conversation Memory System
+  try {
+    // Use environment variable or generate session ID
+    const sessionId = process.env.SESSION_ID || `valifi-${Date.now()}`;
+    await initializeMemorySystem(sessionId);
+
+    // Setup periodic maintenance (every hour)
+    setInterval(async () => {
+      await decayContext(0.95); // 5% decay per hour
+    }, 60 * 60 * 1000);
+
+    // Setup daily cleanup (every 24 hours)
+    setInterval(async () => {
+      await cleanupMemories();
+    }, 24 * 60 * 60 * 1000);
+
+    log("✓ Conversation Memory System initialized");
+  } catch (error) {
+    log("⚠ Warning: Failed to initialize Memory system:", error);
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

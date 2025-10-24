@@ -1,8 +1,8 @@
 // Valifi Kingdom Platform API Routes - blueprint: javascript_log_in_with_replit
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { authenticateToken as isAuthenticated } from "./authService";
+
 import {
   insertWalletSchema,
   insertTransactionSchema,
@@ -87,10 +87,10 @@ import { prayerService } from "./prayerService";
 import { insertPrayerSchema, insertScriptureSchema, insertPrayerTradeCorrelationSchema, insertCharitySchema, insertTithingConfigSchema, insertTithingHistorySchema } from "@shared/schema";
 import { tithingService } from "./tithingService";
 import { etherealService } from "./etherealService";
+import { conversationMemoryService } from "./conversationMemoryService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Replit Auth
-  await setupAuth(app);
+
 
   // Admin check middleware with role attachment
   const isAdmin = async (req: any, res: any, next: any) => {
@@ -6358,6 +6358,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating charity:", error);
       res.status(500).json({ message: "Failed to update charity" });
+    }
+  });
+
+  // =====================================
+  // CONVERSATION MEMORY API ENDPOINTS
+  // =====================================
+
+  // GET /api/memory/session/:identifier/summary - Get comprehensive session summary
+  app.get("/api/memory/session/:identifier/summary", async (req: any, res) => {
+    try {
+      const { identifier } = req.params;
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user?.id);
+      const summary = await conversationMemoryService.generateSessionSummary(session.id);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching session summary:", error);
+      res.status(500).json({ message: "Failed to fetch session summary" });
+    }
+  });
+
+  // POST /api/memory/session/:identifier/memory - Store a memory
+  app.post("/api/memory/session/:identifier/memory", async (req: any, res) => {
+    try {
+      const { identifier } = req.params;
+      const { memoryType, memoryKey, memoryValue, importance, confidence, tags, expiresAt } = req.body;
+
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user?.id);
+
+      const memory = await conversationMemoryService.storeMemory(
+        session.id,
+        memoryType,
+        memoryKey,
+        memoryValue,
+        {
+          userId: req.user?.id,
+          importance,
+          confidence,
+          tags,
+          expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+        }
+      );
+
+      res.json(memory);
+    } catch (error) {
+      console.error("Error storing memory:", error);
+      res.status(500).json({ message: "Failed to store memory" });
+    }
+  });
+
+  // GET /api/memory/session/:identifier/memories/:type - Get memories by type
+  app.get("/api/memory/session/:identifier/memories/:type", async (req: any, res) => {
+    try {
+      const { identifier, type } = req.params;
+      const { minImportance, limit } = req.query;
+
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user?.id);
+
+      const memories = await conversationMemoryService.getMemoriesByType(
+        session.id,
+        type,
+        {
+          minImportance: minImportance ? parseInt(minImportance as string) : undefined,
+          limit: limit ? parseInt(limit as string) : undefined,
+        }
+      );
+
+      res.json(memories);
+    } catch (error) {
+      console.error("Error fetching memories:", error);
+      res.status(500).json({ message: "Failed to fetch memories" });
+    }
+  });
+
+  // POST /api/memory/session/:identifier/context - Store context
+  app.post("/api/memory/session/:identifier/context", async (req: any, res) => {
+    try {
+      const { identifier } = req.params;
+      const { contextType, contextKey, contextValue, relevanceScore, pinnedUntil } = req.body;
+
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user?.id);
+
+      const context = await conversationMemoryService.storeContext(
+        session.id,
+        contextType,
+        contextKey,
+        contextValue,
+        {
+          userId: req.user?.id,
+          relevanceScore,
+          pinnedUntil: pinnedUntil ? new Date(pinnedUntil) : undefined,
+        }
+      );
+
+      res.json(context);
+    } catch (error) {
+      console.error("Error storing context:", error);
+      res.status(500).json({ message: "Failed to store context" });
+    }
+  });
+
+  // GET /api/memory/session/:identifier/tasks - Get tasks
+  app.get("/api/memory/session/:identifier/tasks", async (req: any, res) => {
+    try {
+      const { identifier } = req.params;
+      const { status, minPriority } = req.query;
+
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user?.id);
+
+      const tasks = await conversationMemoryService.getTasks(
+        session.id,
+        {
+          status: status as string | undefined,
+          minPriority: minPriority ? parseInt(minPriority as string) : undefined,
+        }
+      );
+
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
+  // POST /api/memory/session/:identifier/task - Create or update task
+  app.post("/api/memory/session/:identifier/task", async (req: any, res) => {
+    try {
+      const { identifier } = req.params;
+      const {
+        taskId,
+        taskDescription,
+        status,
+        priority,
+        completionPercentage,
+        filesModified,
+        agentsUsed,
+      } = req.body;
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const session = await conversationMemoryService.getOrCreateSession(identifier, req.user.id);
+
+      const task = await conversationMemoryService.upsertTask(
+        session.id,
+        req.user.id,
+        taskDescription,
+        {
+          taskId,
+          status,
+          priority,
+          completionPercentage,
+          filesModified,
+          agentsUsed,
+        }
+      );
+
+      res.json(task);
+    } catch (error) {
+      console.error("Error upserting task:", error);
+      res.status(500).json({ message: "Failed to upsert task" });
     }
   });
 

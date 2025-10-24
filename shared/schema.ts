@@ -1039,6 +1039,94 @@ export const botSkills = pgTable("bot_skills", {
   lastUsedAt: timestamp("last_used_at"),
 });
 
+// Conversation Memory & Context System
+export const conversationMemoryTypeEnum = pgEnum("conversation_memory_type", [
+  "task_context",          // What task we're working on
+  "project_state",         // Current project state
+  "user_preferences",      // User preferences and patterns
+  "technical_decisions",   // Architectural decisions made
+  "active_problems",       // Current bugs/issues being solved
+  "conversation_history",  // Recent conversation summaries
+  "file_context",          // Files we're working with
+  "entity_knowledge"       // Facts about entities (users, bots, agents, etc.)
+]);
+
+export const conversationSessions = pgTable("conversation_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionIdentifier: text("session_identifier").notNull().unique(), // External session ID or conversation thread
+  title: text("title"), // Auto-generated title for the conversation
+  summary: text("summary"), // High-level summary of what was discussed
+  startedAt: timestamp("started_at").defaultNow(),
+  lastActiveAt: timestamp("last_active_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  messageCount: integer("message_count").default(0),
+  metadata: jsonb("metadata"), // Additional session data
+});
+
+export const conversationMemories = pgTable("conversation_memories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => conversationSessions.id),
+  userId: varchar("user_id").references(() => users.id),
+  memoryType: conversationMemoryTypeEnum("memory_type").notNull(),
+  memoryKey: text("memory_key").notNull(), // Unique key for this memory (e.g., "current_task", "file:server/routes.ts")
+  memoryValue: jsonb("memory_value").notNull(), // The actual memory content
+  importance: integer("importance").default(50), // 0-100, higher = more important to recall
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).default("100"), // How confident we are in this memory
+  accessCount: integer("access_count").default(0), // How many times this memory was accessed
+  lastAccessedAt: timestamp("last_accessed_at"),
+  expiresAt: timestamp("expires_at"), // Optional expiration for temporary context
+  tags: jsonb("tags"), // Array of tags for categorization
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const conversationMessages = pgTable("conversation_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => conversationSessions.id).notNull(),
+  role: text("role").notNull(), // user, assistant, system
+  content: text("content").notNull(),
+  toolCalls: jsonb("tool_calls"), // Array of tool calls made
+  toolResults: jsonb("tool_results"), // Results from tool calls
+  embedding: jsonb("embedding"), // Vector embedding for semantic search (future)
+  tokens: integer("tokens"), // Token count for this message
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const conversationContext = pgTable("conversation_context", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => conversationSessions.id),
+  userId: varchar("user_id").references(() => users.id),
+  contextType: text("context_type").notNull(), // file, git, task, agent, etc.
+  contextKey: text("context_key").notNull(), // Specific identifier
+  contextValue: jsonb("context_value").notNull(), // The context data
+  relevanceScore: integer("relevance_score").default(100), // 0-100, decays over time
+  pinnedUntil: timestamp("pinned_until"), // Keep this context until this time
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const conversationTasks = pgTable("conversation_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => conversationSessions.id),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  taskDescription: text("task_description").notNull(),
+  taskStatus: text("task_status").default("pending"), // pending, in_progress, completed, blocked, cancelled
+  priority: integer("priority").default(50), // 0-100
+  completionPercentage: integer("completion_percentage").default(0),
+  dependencies: jsonb("dependencies"), // Array of task IDs this depends on
+  blockers: jsonb("blockers"), // Array of issues blocking this task
+  subtasks: jsonb("subtasks"), // Array of subtask objects
+  filesModified: jsonb("files_modified"), // Array of file paths touched
+  agentsUsed: jsonb("agents_used"), // Array of agent types used
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  estimatedDuration: integer("estimated_duration"), // Minutes
+  actualDuration: integer("actual_duration"), // Minutes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Broker Integration System (Alpaca, etc.)
 export const brokerProviderEnum = pgEnum("broker_provider", ["alpaca", "interactive_brokers", "td_ameritrade", "binance", "bybit"]);
 export const brokerAccountStatusEnum = pgEnum("broker_account_status", ["active", "inactive", "suspended", "pending_verification"]);
@@ -1609,6 +1697,10 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   p2pReviewsGiven: many(p2pReviews),
   p2pReviewsReceived: many(p2pReviews),
   walletConnectSessions: many(walletConnectSessions),
+  conversationSessions: many(conversationSessions),
+  conversationMemories: many(conversationMemories),
+  conversationContexts: many(conversationContext),
+  conversationTasks: many(conversationTasks),
 }));
 
 export const walletsRelations = relations(wallets, ({ one, many }) => ({
@@ -2028,6 +2120,57 @@ export const botSkillsRelations = relations(botSkills, ({ one }) => ({
   bot: one(tradingBots, {
     fields: [botSkills.botId],
     references: [tradingBots.id],
+  }),
+}));
+
+export const conversationSessionsRelations = relations(conversationSessions, ({ one, many }) => ({
+  user: one(users, {
+    fields: [conversationSessions.userId],
+    references: [users.id],
+  }),
+  memories: many(conversationMemories),
+  messages: many(conversationMessages),
+  contexts: many(conversationContext),
+  tasks: many(conversationTasks),
+}));
+
+export const conversationMemoriesRelations = relations(conversationMemories, ({ one }) => ({
+  session: one(conversationSessions, {
+    fields: [conversationMemories.sessionId],
+    references: [conversationSessions.id],
+  }),
+  user: one(users, {
+    fields: [conversationMemories.userId],
+    references: [users.id],
+  }),
+}));
+
+export const conversationMessagesRelations = relations(conversationMessages, ({ one }) => ({
+  session: one(conversationSessions, {
+    fields: [conversationMessages.sessionId],
+    references: [conversationSessions.id],
+  }),
+}));
+
+export const conversationContextRelations = relations(conversationContext, ({ one }) => ({
+  session: one(conversationSessions, {
+    fields: [conversationContext.sessionId],
+    references: [conversationSessions.id],
+  }),
+  user: one(users, {
+    fields: [conversationContext.userId],
+    references: [users.id],
+  }),
+}));
+
+export const conversationTasksRelations = relations(conversationTasks, ({ one }) => ({
+  session: one(conversationSessions, {
+    fields: [conversationTasks.sessionId],
+    references: [conversationSessions.id],
+  }),
+  user: one(users, {
+    fields: [conversationTasks.userId],
+    references: [users.id],
   }),
 }));
 
@@ -2769,6 +2912,26 @@ export type BotTrainingData = typeof botTrainingData.$inferSelect;
 export const insertBotSkillSchema = createInsertSchema(botSkills).omit({ id: true, unlockedAt: true });
 export type InsertBotSkill = z.infer<typeof insertBotSkillSchema>;
 export type BotSkill = typeof botSkills.$inferSelect;
+
+export const insertConversationSessionSchema = createInsertSchema(conversationSessions).omit({ id: true, startedAt: true, lastActiveAt: true });
+export type InsertConversationSession = z.infer<typeof insertConversationSessionSchema>;
+export type ConversationSession = typeof conversationSessions.$inferSelect;
+
+export const insertConversationMemorySchema = createInsertSchema(conversationMemories).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConversationMemory = z.infer<typeof insertConversationMemorySchema>;
+export type ConversationMemory = typeof conversationMemories.$inferSelect;
+
+export const insertConversationMessageSchema = createInsertSchema(conversationMessages).omit({ id: true, createdAt: true });
+export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
+
+export const insertConversationContextSchema = createInsertSchema(conversationContext).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConversationContext = z.infer<typeof insertConversationContextSchema>;
+export type ConversationContext = typeof conversationContext.$inferSelect;
+
+export const insertConversationTaskSchema = createInsertSchema(conversationTasks).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConversationTask = z.infer<typeof insertConversationTaskSchema>;
+export type ConversationTask = typeof conversationTasks.$inferSelect;
 
 export const insertCelebrityProfileSchema = createInsertSchema(celebrityProfiles).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCelebrityProfile = z.infer<typeof insertCelebrityProfileSchema>;

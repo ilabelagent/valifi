@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//teamspace/studios/this_studio/valifi/exports/**)",
+      "Read(//teamspace/studios/this_studio/valifi/**)",
+      "Bash(curl -s -X POST http://localhost:8003/predict -H \"Content-Type: application/json\" -d '{\"\"\"\"message\"\"\"\": \"\"\"\"help\"\"\"\", \"\"\"\"session_id\"\"\"\": \"\"\"\"test\"\"\"\"}')",
+      "Bash(ss:*)",
+      "Bash(curl -s -X POST http://localhost:8001/predict -H \"Content-Type: application/json\" -d '{\"\"message\"\": \"\"list all python files in the agents directory\"\", \"\"session_id\"\": \"\"test_session_1\"\"}')",
+      "Bash(curl -s -X POST http://localhost:8001/predict -H \"Content-Type: application/json\" -d '{\"\"message\"\": \"\"show me the git status\"\", \"\"session_id\"\": \"\"test_session_1\"\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/chat -H \"Content-Type: application/json\" -d '{\"\"\"\"message\"\"\"\": \"\"\"\"list all python files in agents directory\"\"\"\", \"\"\"\"session_id\"\"\"\": \"\"\"\"web_test\"\"\"\"}')",
+      "Bash(python3:*)",
+      "Bash(pkill:*)",
+      "Bash(killall:*)",
+      "Bash(fuser:*)",
+      "Bash(gcloud compute firewall-rules create:*)",
+      "Bash(curl -v http://localhost:8000/)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

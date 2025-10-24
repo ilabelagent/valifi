@@ -4,26 +4,3 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
-
-# Environment variables and secrets
-.env
-.env.*
-!.env.example
-
-# Sensitive credential exports
-exports/env-backup-*
-exports/credentials-*
-exports/secrets-*
-
-# Private keys and certificates
-*.pem
-*.key
-*.p12
-*.pfx
-
-# Database backups with sensitive data
-exports/db-backup-*
-
-# API key files
-*_api_key.txt
-*_secret.txt
