@@ -86,7 +86,7 @@ export default function AgentsPage() {
 
   const updateStatusForm = useForm({
     resolver: zodResolver(updateStatusSchema),
-    defaultValues: { agentId: "", status: "idle" as const, currentTask: "" },
+    defaultValues: { agentId: "", status: "idle" as "active" | "idle" | "error" | "maintenance", currentTask: "" },
   });
 
   const createAgentMutation = useMutation({
@@ -506,9 +506,9 @@ export default function AgentsPage() {
                               variant="outline"
                               onClick={() => {
                                 updateStatusForm.setValue("agentId", agent.id);
-                                const status: "active" | "idle" | "error" | "maintenance" = 
-                                  (agent.status === "active" || agent.status === "idle" || agent.status === "error" || agent.status === "maintenance") 
-                                    ? agent.status 
+                                const status: "active" | "idle" | "error" | "maintenance" =
+                                  (agent.status === "active" || agent.status === "idle" || agent.status === "error" || agent.status === "maintenance")
+                                    ? (agent.status as "active" | "idle" | "error" | "maintenance")
                                     : "idle";
                                 updateStatusForm.setValue("status", status);
                               }}
@@ -659,18 +659,24 @@ export default function AgentsPage() {
                       </CardContent>
                     </Card>
                   )}
-                  {selectedAgentData.config && typeof selectedAgentData.config === 'object' && Object.keys(selectedAgentData.config as Record<string, any>).length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-sm" data-testid="label-info-config">Configuration</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <pre className="text-sm bg-muted p-3 rounded-lg overflow-auto" data-testid="text-info-config">
-                          {JSON.stringify(selectedAgentData.config as any, null, 2)}
-                        </pre>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {(() => {
+                    const config = selectedAgentData.config as Record<string, any> | undefined;
+                    if (config && typeof config === 'object' && Object.keys(config).length > 0) {
+                      return (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-sm" data-testid="label-info-config">Configuration</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <pre className="text-sm bg-muted p-3 rounded-lg overflow-auto" data-testid="text-info-config">
+                              {JSON.stringify(config, null, 2)}
+                            </pre>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="text-sm text-muted-foreground" data-testid="text-info-last-active">
                     Last active: {selectedAgentData.lastActiveAt ? new Date(selectedAgentData.lastActiveAt as string | number | Date).toLocaleString() : "Never"}
                   </div>

@@ -4,3 +4,26 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Next.js build cache
+.next/
+blue_elites/.next/
+
+# Python ML checkpoints
+agents/training/checkpoints/
+*.ckpt
+
+# Logs and session files
+*.log
+logs/
+.pids/
+.ai-session-memory.json
+.claude-session
+.r.py.swp
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment files
+.env

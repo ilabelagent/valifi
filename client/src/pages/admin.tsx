@@ -326,7 +326,7 @@ export default function AdminPage() {
             {analyticsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="text-total-users">{analytics?.totalUsers || 0}</div>
+              <div className="text-2xl font-bold" data-testid="text-total-users">{(analytics as any)?.totalUsers || 0}</div>
             )}
           </CardContent>
         </Card>
@@ -339,7 +339,7 @@ export default function AdminPage() {
             {analyticsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="text-active-bots">{analytics?.activeBots || 0}</div>
+              <div className="text-2xl font-bold" data-testid="text-active-bots">{(analytics as any)?.activeBots || 0}</div>
             )}
           </CardContent>
         </Card>
@@ -352,7 +352,7 @@ export default function AdminPage() {
             {analyticsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="text-learning-sessions">{analytics?.totalLearningSessions || 0}</div>
+              <div className="text-2xl font-bold" data-testid="text-learning-sessions">{(analytics as any)?.totalLearningSessions || 0}</div>
             )}
           </CardContent>
         </Card>
@@ -365,7 +365,7 @@ export default function AdminPage() {
             {analyticsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="text-avg-win-rate">{analytics?.avgWinRate || 0}%</div>
+              <div className="text-2xl font-bold" data-testid="text-avg-win-rate">{(analytics as any)?.avgWinRate || 0}%</div>
             )}
           </CardContent>
         </Card>
@@ -424,7 +424,7 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {usersData?.users?.map((user: any) => (
+                      {(usersData as any)?.users?.map((user: any) => (
                         <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                           <TableCell className="font-medium">
                             {user.firstName} {user.lastName}
@@ -466,12 +466,12 @@ export default function AdminPage() {
                       Previous
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                      Page {userPage + 1} of {Math.ceil((usersData?.total || 0) / usersPerPage)}
+                      Page {userPage + 1} of {Math.ceil(((usersData as any)?.total || 0) / usersPerPage)}
                     </span>
                     <Button
                       variant="outline"
                       onClick={() => setUserPage(p => p + 1)}
-                      disabled={userPage >= Math.ceil((usersData?.total || 0) / usersPerPage) - 1}
+                      disabled={userPage >= Math.ceil(((usersData as any)?.total || 0) / usersPerPage) - 1}
                       data-testid="button-next-users"
                     >
                       Next
@@ -513,7 +513,7 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {botsData?.bots?.map((bot: any) => (
+                      {(botsData as any)?.bots?.map((bot: any) => (
                         <TableRow key={bot.id} data-testid={`row-bot-${bot.id}`}>
                           <TableCell className="font-medium">{bot.name}</TableCell>
                           <TableCell>{bot.user?.email}</TableCell>
@@ -556,12 +556,12 @@ export default function AdminPage() {
                       Previous
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                      Page {botPage + 1} of {Math.ceil((botsData?.total || 0) / botsPerPage)}
+                      Page {botPage + 1} of {Math.ceil(((botsData as any)?.total || 0) / botsPerPage)}
                     </span>
                     <Button
                       variant="outline"
                       onClick={() => setBotPage(p => p + 1)}
-                      disabled={botPage >= Math.ceil((botsData?.total || 0) / botsPerPage) - 1}
+                      disabled={botPage >= Math.ceil(((botsData as any)?.total || 0) / botsPerPage) - 1}
                       data-testid="button-next-bots"
                     >
                       Next
@@ -584,7 +584,7 @@ export default function AdminPage() {
                   <div>
                     <h3 className="text-sm font-medium mb-2">Skills</h3>
                     <div className="space-y-2">
-                      {trainingData?.skills?.map((skill: any) => (
+                      {(trainingData as any)?.skills?.map((skill: any) => (
                         <div key={skill.id} className="flex items-center justify-between">
                           <span className="text-sm">{skill.skillName}</span>
                           <div className="flex items-center gap-2">
@@ -598,7 +598,7 @@ export default function AdminPage() {
                   <div>
                     <h3 className="text-sm font-medium mb-2">Recent Sessions</h3>
                     <div className="space-y-2">
-                      {trainingData?.sessions?.slice(0, 5).map((session: any) => (
+                      {(trainingData as any)?.sessions?.slice(0, 5).map((session: any) => (
                         <div key={session.id} className="flex items-center justify-between text-sm">
                           <Badge variant={session.status === "completed" ? "default" : "secondary"}>
                             {session.sessionType}
@@ -634,7 +634,7 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditLogs?.map((log: any) => (
+                  {(auditLogs as any)?.map((log: any) => (
                     <TableRow key={log.id}>
                       <TableCell>{log.admin?.user?.email}</TableCell>
                       <TableCell>
@@ -746,7 +746,7 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {charities?.map((charity: any) => (
+                    {(charities as any)?.map((charity: any) => (
                       <TableRow key={charity.id} data-testid={`row-charity-${charity.id}`}>
                         <TableCell className="font-medium">{charity.name}</TableCell>
                         <TableCell className="max-w-xs truncate">{charity.description}</TableCell>
@@ -785,7 +785,7 @@ export default function AdminPage() {
                   </TableBody>
                 </Table>
               )}
-              {charities?.length === 0 && !charitiesLoading && (
+              {(charities as any)?.length === 0 && !charitiesLoading && (
                 <div className="text-center py-8 text-muted-foreground">
                   No charities added yet. Add your first approved charity to enable tithing.
                 </div>

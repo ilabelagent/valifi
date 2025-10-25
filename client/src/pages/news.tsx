@@ -51,7 +51,7 @@ export default function NewsPage() {
       title: "",
       content: "",
       category: "announcement",
-      published: false,
+      isPublished: false,
     },
   });
 
@@ -89,8 +89,8 @@ export default function NewsPage() {
 
   // Calculate stats
   const totalPosts = posts?.length || 0;
-  const publishedPosts = posts?.filter(p => p.published).length || 0;
-  const totalViews = posts?.reduce((sum, p) => sum + (p.views || 0), 0) || 0;
+  const publishedPosts = posts?.filter(p => p.isPublished).length || 0;
+  const totalViews = posts?.reduce((sum, p) => sum + (p.viewCount || 0), 0) || 0;
 
   const categoryColors: Record<string, string> = {
     announcement: "default",
@@ -187,7 +187,7 @@ export default function NewsPage() {
                   <div className="flex items-center gap-4">
                     <FormField
                       control={form.control}
-                      name="published"
+                      name="isPublished"
                       render={({ field }) => (
                         <FormItem className="flex items-center gap-2">
                           <FormControl>
@@ -323,7 +323,7 @@ export default function NewsPage() {
                     <Badge variant={categoryColors[post.category || 'announcement'] as any} data-testid={`badge-category-${post.id}`}>
                       {post.category?.toUpperCase()}
                     </Badge>
-                    {!post.published && (
+                    {!post.isPublished && (
                       <Badge variant="secondary" data-testid={`badge-draft-${post.id}`}>Draft</Badge>
                     )}
                   </div>
@@ -342,10 +342,10 @@ export default function NewsPage() {
                         {new Date(post.createdAt!).toLocaleDateString()}
                       </span>
                     </div>
-                    {post.views !== undefined && (
+                    {post.viewCount !== undefined && (
                       <div className="flex items-center gap-1" data-testid={`text-views-${post.id}`}>
                         <Eye className="h-4 w-4" />
-                        {post.views}
+                        {post.viewCount}
                       </div>
                     )}
                   </div>
@@ -365,7 +365,7 @@ export default function NewsPage() {
                 <Badge variant={categoryColors[selectedPost.category || 'announcement'] as any}>
                   {selectedPost.category?.toUpperCase()}
                 </Badge>
-                {!selectedPost.published && <Badge variant="secondary">Draft</Badge>}
+                {!selectedPost.isPublished && <Badge variant="secondary">Draft</Badge>}
               </div>
               <DialogTitle className="text-2xl">{selectedPost.title}</DialogTitle>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -373,10 +373,10 @@ export default function NewsPage() {
                   <Calendar className="h-4 w-4" />
                   {new Date(selectedPost.createdAt!).toLocaleDateString()}
                 </div>
-                {selectedPost.views !== undefined && (
+                {selectedPost.viewCount !== undefined && (
                   <div className="flex items-center gap-1">
                     <Eye className="h-4 w-4" />
-                    {selectedPost.views} views
+                    {selectedPost.viewCount} views
                   </div>
                 )}
               </div>

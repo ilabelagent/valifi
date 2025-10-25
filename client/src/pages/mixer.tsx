@@ -117,7 +117,7 @@ export default function MixerPage() {
   const completedRequests = requests?.filter(r => r.status === "completed").length || 0;
   const mixingRequests = requests?.filter(r => r.status === "mixing").length || 0;
   const totalVolume = requests?.reduce((sum, r) => sum + Number(r.amount || 0), 0) || 0;
-  const totalFees = requests?.reduce((sum, r) => sum + Number(r.fee || 0), 0) || 0;
+  const totalFees = requests?.reduce((sum, r) => sum + Number(((r as any).metadata)?.fee || 0), 0) || 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -407,7 +407,7 @@ export default function MixerPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" data-testid={`badge-coin-${request.id}`}>
-                        {request.coin}
+                        {request.network}
                       </Badge>
                       <Badge
                         variant={getStatusBadgeVariant(request.status || 'pending')}
@@ -428,21 +428,21 @@ export default function MixerPage() {
                     <div>
                       <p className="text-muted-foreground">Amount</p>
                       <p className="font-mono font-semibold" data-testid={`text-amount-${request.id}`}>
-                        {request.amount} {request.coin}
+                        {request.amount} {request.network}
                       </p>
                     </div>
-                    {request.fee && (
+                    {((request as any).metadata)?.fee && (
                       <div>
                         <p className="text-muted-foreground">Fee</p>
                         <p className="font-mono" data-testid={`text-fee-${request.id}`}>
-                          {request.fee} {request.coin}
+                          {((request as any).metadata).fee} {request.network}
                         </p>
                       </div>
                     )}
                     <div>
                       <p className="text-muted-foreground">Delay</p>
                       <p className="font-mono" data-testid={`text-delay-${request.id}`}>
-                        {request.delayHours}h
+                        {((request as any).metadata)?.delayHours || 0}h
                       </p>
                     </div>
                   </div>
@@ -464,12 +464,12 @@ export default function MixerPage() {
                     </div>
                   )}
 
-                  {request.mixingTransactionHash && (
+                  {request.inputTxHash && (
                     <div className="flex items-center gap-2 text-sm">
                       <Lock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Transaction:</span>
                       <code className="text-xs font-mono" data-testid={`text-tx-${request.id}`}>
-                        {request.mixingTransactionHash.slice(0, 16)}...
+                        {request.inputTxHash.slice(0, 16)}...
                       </code>
                     </div>
                   )}

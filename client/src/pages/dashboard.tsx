@@ -99,11 +99,7 @@ export default function Dashboard() {
 
   const saveConfigMutation = useMutation({
     mutationFn: async (config: any) => {
-      return await apiRequest("/api/dashboard/config", {
-        method: "POST",
-        body: JSON.stringify(config),
-        headers: { "Content-Type": "application/json" },
-      });
+      return await apiRequest("/api/dashboard/config", "POST", config);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/config"] });
@@ -123,11 +119,7 @@ export default function Dashboard() {
 
   const savePreferenceMutation = useMutation({
     mutationFn: async (pref: any) => {
-      return await apiRequest("/api/dashboard/preferences", {
-        method: "POST",
-        body: JSON.stringify(pref),
-        headers: { "Content-Type": "application/json" },
-      });
+      return await apiRequest("/api/dashboard/preferences", "POST", pref);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/preferences"] });
@@ -136,9 +128,7 @@ export default function Dashboard() {
 
   const deletePreferenceMutation = useMutation({
     mutationFn: async (widgetId: string) => {
-      return await apiRequest(`/api/dashboard/preferences/${widgetId}`, {
-        method: "DELETE",
-      });
+      return await apiRequest(`/api/dashboard/preferences/${widgetId}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/preferences"] });
@@ -146,8 +136,8 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    if (dashboardConfig?.layout) {
-      setLayout(dashboardConfig.layout);
+    if ((dashboardConfig as any)?.layout) {
+      setLayout((dashboardConfig as any).layout);
     } else {
       const defaultLayout: Layout[] = DEFAULT_WIDGETS.slice(0, 4).map((widget, index) => ({
         i: widget.id,

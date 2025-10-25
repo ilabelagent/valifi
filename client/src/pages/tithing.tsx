@@ -17,6 +17,57 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Heart, TrendingUp, FileText, Download, DollarSign, CheckCircle, Clock, XCircle, Gift } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
+interface Charity {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+}
+
+interface TithingConfig {
+  percentage: string;
+  charityId: string;
+  enabled: boolean;
+  autoExecute: boolean;
+  minProfitThreshold: string;
+}
+
+interface CharityBreakdown {
+  name: string;
+  amount: string;
+  percentage: number;
+}
+
+interface MonthlyGiving {
+  month: string;
+  amount: string;
+}
+
+interface TithingImpact {
+  totalGiven: string;
+  totalTransactions: number;
+  transactionCount: number;
+  currentPercentage: number;
+  autoTithingEnabled: boolean;
+  currentCharity?: Charity;
+  charityBreakdown?: CharityBreakdown[];
+  monthlyGiving?: MonthlyGiving[];
+}
+
+interface TithingHistory {
+  id: number;
+  amount: string;
+  date: string;
+  status: string;
+  charityName: string;
+}
+
+interface TaxReport {
+  totalGiven: string;
+  transactionCount: number;
+  charities: CharityBreakdown[];
+}
+
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
 export default function TithingPage() {
@@ -25,23 +76,23 @@ export default function TithingPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [manualAmount, setManualAmount] = useState("");
 
-  const { data: charities, isLoading: charitiesLoading } = useQuery({
+  const { data: charities, isLoading: charitiesLoading } = useQuery<Charity[]>({
     queryKey: ["/api/tithing/charities"],
   });
 
-  const { data: config, isLoading: configLoading } = useQuery({
+  const { data: config, isLoading: configLoading } = useQuery<TithingConfig>({
     queryKey: ["/api/tithing/config"],
   });
 
-  const { data: history, isLoading: historyLoading } = useQuery({
+  const { data: history, isLoading: historyLoading } = useQuery<TithingHistory[]>({
     queryKey: ["/api/tithing/history"],
   });
 
-  const { data: impact, isLoading: impactLoading } = useQuery({
+  const { data: impact, isLoading: impactLoading } = useQuery<TithingImpact>({
     queryKey: ["/api/tithing/impact"],
   });
 
-  const { data: taxReport } = useQuery({
+  const { data: taxReport } = useQuery<TaxReport>({
     queryKey: ["/api/tithing/tax-report", selectedYear],
     enabled: !!selectedYear,
   });

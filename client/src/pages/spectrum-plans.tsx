@@ -41,6 +41,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface User {
+  id: number;
+  kycStatus?: string;
+  kingdomFeaturesEnabled?: string[];
+}
+
+interface SpectrumPosition {
+  id: number;
+  stakedAmount: string;
+  tier: string;
+  currentApy: number;
+  totalEarned: string;
+  accruedRewards: string;
+  totalValue: string;
+}
+
+interface SpectrumPlan {
+  id: number;
+  tier: string;
+  minimumStake: string;
+  apy: number;
+}
+
+interface SpectrumEarning {
+  id: number;
+  amount: string;
+  date: string;
+  type: string;
+}
+
 const TIER_ICONS: any = {
   royal_bronze: Shield,
   royal_silver: Coins,
@@ -139,22 +169,22 @@ export default function SpectrumPlansPage() {
   const [compoundYears, setCompoundYears] = useState("5");
 
   // Fetch user info for KYC status
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
 
   // Fetch all plans
-  const { data: plans = [], isLoading: plansLoading } = useQuery({
+  const { data: plans = [], isLoading: plansLoading } = useQuery<SpectrumPlan[]>({
     queryKey: ["/api/spectrum/plans"],
   });
 
   // Fetch user's current position
-  const { data: position, isLoading: positionLoading } = useQuery({
+  const { data: position, isLoading: positionLoading } = useQuery<SpectrumPosition>({
     queryKey: ["/api/spectrum/positions"],
   });
 
   // Fetch earnings history
-  const { data: earnings = [] } = useQuery({
+  const { data: earnings = [] } = useQuery<SpectrumEarning[]>({
     queryKey: ["/api/spectrum/earnings"],
   });
 
@@ -307,7 +337,7 @@ export default function SpectrumPlansPage() {
           <AlertTitle className="text-yellow-800 dark:text-yellow-200">KYC Verification Required</AlertTitle>
           <AlertDescription className="text-yellow-700 dark:text-yellow-300">
             You must complete KYC verification before you can stake in Spectrum plans.
-            <Button variant="link" className="p-0 ml-2 text-yellow-600 hover:text-yellow-700" asChild>
+            <Button variant="ghost" className="p-0 ml-2 text-yellow-600 hover:text-yellow-700" asChild>
               <a href="/kyc">Complete KYC Now →</a>
             </Button>
           </AlertDescription>
@@ -534,7 +564,7 @@ export default function SpectrumPlansPage() {
                           {position.currentApy}%
                         </span>
                       </div>
-                      <Progress value={parseFloat(position.currentApy)} max={35} className="h-2" />
+                      <Progress value={position.currentApy} max={35} className="h-2" />
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Your investment is growing at {position.currentApy}% annually with daily compounding.

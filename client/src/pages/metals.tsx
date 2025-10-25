@@ -112,7 +112,7 @@ export default function MetalsPage() {
 
   // Calculate stats
   const totalInventory = inventory?.reduce((sum, i) => sum + Number(i.weight || 0), 0) || 0;
-  const totalValue = inventory?.reduce((sum, i) => sum + Number(i.currentValue || 0), 0) || 0;
+  const totalValue = inventory?.reduce((sum, i) => sum + Number((i as any).marketValue || 0), 0) || 0;
   const totalTrades = trades?.length || 0;
   const buyTrades = trades?.filter(t => t.tradeType === "buy").length || 0;
   const sellTrades = trades?.filter(t => t.tradeType === "sell").length || 0;
@@ -397,7 +397,7 @@ export default function MetalsPage() {
                         <Crown className="h-5 w-5 text-yellow-500" />
                         {item.metalType?.toUpperCase()}
                       </CardTitle>
-                      <Badge variant="outline">{item.storageLocation || 'Vault'}</Badge>
+                      <Badge variant="outline">{(((item as any).metadata)?.storageLocation) || 'Vault'}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -411,19 +411,19 @@ export default function MetalsPage() {
                       <div>
                         <p className="text-muted-foreground">Purchase Price</p>
                         <p className="font-mono" data-testid={`text-purchase-price-${item.id}`}>
-                          ${Number(item.purchasePrice || 0).toFixed(2)}/oz
+                          ${Number(item.pricePerOunce || 0).toFixed(2)}/oz
                         </p>
                       </div>
                     </div>
                     <div className="p-3 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground mb-1">Current Value</p>
                       <p className="text-lg font-bold covenant-gradient-text" data-testid={`text-value-${item.id}`}>
-                        ${Number(item.currentValue || 0).toLocaleString()}
+                        ${Number((item as any).marketValue || 0).toLocaleString()}
                       </p>
                     </div>
-                    {item.certificateNumber && (
+                    {item.certificateUrl && (
                       <p className="text-xs text-muted-foreground" data-testid={`text-cert-${item.id}`}>
-                        Certificate: {item.certificateNumber}
+                        Certificate: {item.certificateUrl}
                       </p>
                     )}
                   </CardContent>
@@ -464,7 +464,7 @@ export default function MetalsPage() {
                         </div>
                         <div>
                           <p className="font-semibold" data-testid={`text-trade-metal-${trade.id}`}>
-                            {trade.metalType?.toUpperCase()}
+                            {(((trade as any).metadata)?.metalType || 'Unknown')?.toUpperCase()}
                           </p>
                           <p className="text-xs text-muted-foreground" data-testid={`text-trade-date-${trade.id}`}>
                             {new Date(trade.createdAt!).toLocaleString()}

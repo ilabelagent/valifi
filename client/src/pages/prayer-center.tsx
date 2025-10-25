@@ -17,7 +17,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { BookOpen, Heart, TrendingUp, Calendar, Clock, Send, Sparkles, Crown, Award, Target } from "lucide-react";
-import type { Prayer } from "@shared/schema";
+import type { Prayer, Scripture, PrayerTradeCorrelation } from "@shared/schema";
+
+interface Insights {
+  totalPrayers: number;
+  prayersWithTrades: number;
+  successRate: number;
+  categoryStats: Record<string, number>;
+  recentCorrelations: PrayerTradeCorrelation[];
+  currentCharity?: { name: string; description: string; category: string };
+  autoTithingEnabled?: boolean;
+  currentPercentage?: number;
+  monthlyGiving?: { month: string; amount: number }[];
+  charityBreakdown?: { name: string; amount: number }[];
+}
 
 const prayerCategories = [
   { value: "trade_guidance", label: "Trade Guidance", icon: TrendingUp },
@@ -42,7 +55,7 @@ export default function PrayerCenterPage() {
   const [meditationActive, setMeditationActive] = useState(false);
   const [meditationDuration, setMeditationDuration] = useState(5);
 
-  const { data: dailyScripture, isLoading: scriptureLoading } = useQuery({
+  const { data: dailyScripture, isLoading: scriptureLoading } = useQuery<Scripture>({
     queryKey: ["/api/prayers/daily-scripture"],
   });
 
@@ -50,11 +63,11 @@ export default function PrayerCenterPage() {
     queryKey: ["/api/prayers"],
   });
 
-  const { data: prayerHistory } = useQuery({
+  const { data: prayerHistory } = useQuery<PrayerTradeCorrelation[]>({
     queryKey: ["/api/prayers/history"],
   });
 
-  const { data: insights } = useQuery({
+  const { data: insights } = useQuery<Insights>({
     queryKey: ["/api/prayers/insights"],
   });
 

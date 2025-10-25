@@ -32,6 +32,7 @@ import {
   Mic2
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import type { JesusCartelRelease, JesusCartelEvent } from "@shared/schema";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -49,7 +50,7 @@ const staggerContainer = {
 
 // Jesus Cartel Releases Component
 function JesusCartelReleases() {
-  const { data: releases, isLoading } = useQuery({
+  const { data: releases, isLoading } = useQuery<JesusCartelRelease[]> ({
     queryKey: ["/api/jesus-cartel/releases"],
   });
 
@@ -82,7 +83,7 @@ function JesusCartelReleases() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {releases.map((release: any) => (
+      {releases.map((release) => (
         <motion.div
           key={release.id}
           initial={{ opacity: 0, scale: 0.95 }}
@@ -138,7 +139,7 @@ function JesusCartelReleases() {
 
 // Jesus Cartel Events Component
 function JesusCartelEvents() {
-  const { data: events, isLoading } = useQuery({
+  const { data: events, isLoading } = useQuery<JesusCartelEvent[]> ({
     queryKey: ["/api/jesus-cartel/events"],
   });
 

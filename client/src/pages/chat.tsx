@@ -128,7 +128,7 @@ export default function ChatPage() {
 
   // Calculate stats
   const totalSessions = sessions?.length || 0;
-  const activeSessions = sessions?.filter(s => s.status === "active").length || 0;
+  const activeSessions = sessions?.filter(s => s.isActive === true).length || 0;
   const totalMessages = messages?.length || 0;
   const aiMessages = messages?.filter(m => m.role === "assistant").length || 0;
 
@@ -245,8 +245,8 @@ export default function ChatPage() {
                           <CardTitle className="text-sm" data-testid={`text-session-title-${session.id}`}>
                             {session.title || `Chat ${session.id.slice(0, 8)}`}
                           </CardTitle>
-                          <Badge variant={session.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                            {session.status}
+                          <Badge variant={session.isActive ? 'default' : 'secondary'} className="text-xs">
+                            {session.isActive ? 'active' : 'inactive'}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1" data-testid={`text-session-date-${session.id}`}>

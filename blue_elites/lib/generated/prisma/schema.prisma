@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceCategory {
+  luxury_stays
+  private_chefs
+  yacht_charters
+  private_jets
+  event_planning
+  personal_shopping
+  security_services
+  wellness_retreats
+  concierge_services
+  exclusive_access
+  automotive_detailing
+  home_services
+  beauty_wellness
+  fashion
+  tech_lifestyle
+  mobility
+  real_estate
+  investment
+  auction
+  // Add other categories as needed from the SERVICE_MARKETPLACE_SUMMARY.md
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+  disputed // Added disputed status
+}
+
+enum VerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id                       String             @id @default(uuid()) @map("id")
+  email                    String             @unique
+  password                 String // In a real app, this would be hashed
+  full_name                String
+  avatar_url               String?
+  role                     String             @default("client") // Added from QUICK_START.md
+  kyc_verified             Boolean            @default(false) // Added from QUICK_START.md
+  kyc_status               VerificationStatus @default(pending) // Inferred from app/admin/users/page.tsx
+  total_donated            Float              @default(0) // Added for increment_user_donations RPC
+  auto_tithing_enabled     Boolean            @default(false) // Added for auto-tithing
+  auto_tithing_percentage  Int                @default(10) // Added for auto-tithing
+  kingdom_features_enabled Json? // Changed from Boolean to Json for array of strings
+  created_at               DateTime           @default(now()) @map("created_at")
+  updated_at               DateTime           @updatedAt @map("updated_at")
+
+  serviceProviders     ServiceProvider[]
+  clientBookings       Booking[]             @relation("ClientBookings")
+  reviews              Review[]
+  providerApplications ProviderApplication[]
+  donations            Donation[]            @relation("UserDonations") // Added relation
+  raisedDisputes       Dispute[]             @relation("RaisedByDisputes") // Added relation
+  againstDisputes      Dispute[]             @relation("AgainstDisputes") // Added relation
+  conversations        Conversation[]
+}
+
+model ServiceProvider {
+  id                      String             @id @default(uuid()) @map("id")
+  user_id                 String             @unique @map("user_id") // Added @unique
+  user                    User               @relation(fields: [user_id], references: [id])
+  business_name           String
+  category                ServiceCategory
+  subcategory             String? // Added from SERVICE_MARKETPLACE_SUMMARY.md
+  description             String
+  contact_email           String? // Inferred, not explicitly in SQL but good to have
+  phone_number            String? // Inferred, not explicitly in SQL but good to have
+  address                 String? // Inferred, not explicitly in SQL but good to have
+  city                    String? // Inferred, not explicitly in SQL but good to have
+  state                   String? // Inferred, not explicitly in SQL but good to have
+  zip_code                String? // Inferred, not explicitly in SQL but good to have
+  verification_status     VerificationStatus @default(pending)
+  rating                  Float              @default(0)
+  total_bookings          Int                @default(0)
+  total_reviews           Int                @default(0)
+  background_check_passed Boolean            @default(false)
+  background_check_date   DateTime?
+  nda_signed              Boolean            @default(false)
+  service_areas           String // Changed from String[]
+  price_range_min         Float?
+  price_range_max         Float?
+  images                  String // Changed from String[]
+  certifications          String // Changed from String[]
+  duration_minutes        Int                @default(60) // Added from app/provider/services/page.tsx
+  is_active               Boolean            @default(true) // Added from app/provider/services/page.tsx
+  created_at              DateTime           @default(now()) @map("created_at")
+  updated_at              DateTime           @updatedAt @map("updated_at")
+
+  bookings Booking[] @relation("ProviderBookings")
+  reviews  Review[]
+}
+
+model Booking {
+  id                       String          @id @default(uuid()) @map("id")
+  client_id                String          @map("client_id")
+  client                   User            @relation("ClientBookings", fields: [client_id], references: [id])
+  provider_id              String          @map("provider_id")
+  provider                 ServiceProvider @relation("ProviderBookings", fields: [provider_id], references: [id])
+  service_category         ServiceCategory
+  service_title            String
+  service_description      String
+  booking_date             DateTime        @map("booking_date")
+  start_time               String?
+  end_time                 String?
+  status                   BookingStatus   @default(pending)
+  amount                   Float
+  currency                 String          @default("USD")
+  commission_percentage    Float           @default(30)
+  platform_fee             Float           @default(0)
+  escrow_released          Boolean         @default(false)
+  stripe_payment_intent_id String?
+  completion_confirmed_at  DateTime?
+  cancellation_reason      String?
+  special_instructions     String?
+  created_at               DateTime        @default(now()) @map("created_at")
+  updated_at               DateTime        @updatedAt @map("updated_at")
+
+  reviews  Review[]
+  payments Payment[]
+  disputes Dispute[]
+}
+
+model Review {
+  id            String          @id @default(uuid()) @map("id")
+  booking_id    String          @unique @map("booking_id") // One review per booking
+  booking       Booking         @relation(fields: [booking_id], references: [id])
+  reviewer_id   String          @map("reviewer_id")
+  reviewer      User            @relation(fields: [reviewer_id], references: [id])
+  provider_id   String          @map("provider_id")
+  provider      ServiceProvider @relation(fields: [provider_id], references: [id])
+  rating        Int
+  title         String?
+  comment       String
+  response      String?
+  response_date DateTime?
+  is_verified   Boolean         @default(false)
+  helpful_count Int             @default(0)
+  created_at    DateTime        @default(now()) @map("created_at")
+}
+
+model ProviderApplication {
+  id            String   @id @default(uuid())
+  user_id       String   @unique
+  user          User     @relation(fields: [user_id], references: [id])
+  status        String   @default("draft")
+  business_data Json // Store as JSON
+  services_data Json // Store as JSON
+  step          Int
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+model Donation {
+  id                 String   @id @default(uuid())
+  donor_id           String   @map("donor_id")
+  donor              User     @relation("UserDonations", fields: [donor_id], references: [id])
+  amount             Float
+  currency           String // Added from makeDonation function
+  cause              String? // Added from makeDonation function
+  ngo_id             String? // Added from makeDonation function
+  is_anonymous       Boolean  @default(false) // Added from makeDonation function
+  is_auto_tithe      Boolean  @default(false) // Added from app/api/bookings/[id]/complete/route.ts
+  source_booking_id  String? // Added from app/api/bookings/[id]/complete/route.ts
+  verified           Boolean  @default(false) // Added from makeDonation function
+  blockchain_tx_hash String? // Added from app/api/donations/recent/route.ts
+  blockchain_network String? // Added from app/api/donations/recent/route.ts
+  created_at         DateTime @default(now())
+}
+
+model Payment {
+  id                       String    @id @default(uuid())
+  booking_id               String?
+  booking                  Booking?  @relation(fields: [booking_id], references: [id])
+  stripe_payment_intent_id String    @unique
+  amount                   Float
+  currency                 String
+  status                   String // e.g., 'pending', 'completed', 'failed', 'refunded'
+  metadata                 Json?
+  refunded_amount          Float?
+  refunded_at              DateTime?
+  escrow_released_at       DateTime? // Added from app/api/bookings/[id]/complete/route.ts
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+}
+
+model Dispute {
+  id           String   @id @default(uuid())
+  booking_id   String
+  booking      Booking  @relation(fields: [booking_id], references: [id])
+  raised_by    String
+  raisedByUser User     @relation("RaisedByDisputes", fields: [raised_by], references: [id])
+  against      String
+  againstUser  User     @relation("AgainstDisputes", fields: [against], references: [id])
+  reason       String?
+  description  String?
+  status       String // e.g., 'open', 'resolved', 'closed'
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model ImpactReport {
+  id                  String    @id @default(uuid())
+  title               String
+  description         String
+  amount_used         Float
+  beneficiaries_count Int?
+  images              String // Storing as string, assuming comma-separated or JSON string
+  location            String?
+  completion_date     DateTime?
+  verified            Boolean   @default(false)
+  created_at          DateTime  @default(now())
+}
+
+model Conversation {
+  id         String    @id @default(uuid())
+  user_id    String
+  user       User      @relation(fields: [user_id], references: [id])
+  title      String? // Added title field
+  channel    String?   @default("web") // Added channel field
+  status     String?   @default("active") // Added status field
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  messages   Message[]
+}
+
+model Message {
+  id              String       @id @default(uuid())
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  role            String // 'user' or 'assistant'
+  content         String
+  metadata        Json? // Added metadata field
+  timestamp       DateTime     @default(now())
+}
+
+model RealEstateListing {
+  id            String   @id @default(uuid())
+  status        String   @default("available") // e.g., 'available', 'sold', 'rented'
+  verified      Boolean  @default(false)
+  location      String?
+  city          String?
+  property_type String? // e.g., 'house', 'apartment', 'land'
+  price         Float?
+  bedrooms      Int?
+  // Add other fields as needed based on the application's requirements
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  admin_id    String // Added admin_id
+  action_type String
+  target_type String?
+  target_id   String?
+  details     Json?
+  created_at  DateTime @default(now())
+}

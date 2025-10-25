@@ -470,14 +470,14 @@ export default function TradingBotsPage() {
                           </p>
                         </div>
                       </div>
-                      {bot.config && (
+                      {bot.config ? (
                         <div className="p-3 bg-muted rounded-lg">
                           <p className="text-xs text-muted-foreground mb-1">Configuration</p>
                           <code className="text-xs font-mono" data-testid={`text-config-${bot.id}`}>
                             {typeof bot.config === 'string' ? bot.config : JSON.stringify(bot.config)}
                           </code>
                         </div>
-                      )}
+                      ) : null}
                     </CardContent>
                   </Card>
                 );

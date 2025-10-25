@@ -48,17 +48,14 @@ export default function WalletConnect() {
   });
 
   const connectMutation = useMutation({
-    mutationFn: async (walletData: { 
-      walletAddress: string; 
-      chainId: number; 
-      walletType: string; 
+    mutationFn: async (walletData: {
+      walletAddress: string;
+      chainId: number;
+      walletType: string;
       network: string;
       sessionData?: any;
     }) => {
-      return await apiRequest("/api/walletconnect/sessions", {
-        method: "POST",
-        body: JSON.stringify(walletData),
-      });
+      return await apiRequest("POST", "/api/walletconnect/sessions", walletData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/walletconnect/sessions"] });
@@ -78,9 +75,7 @@ export default function WalletConnect() {
 
   const disconnectMutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      return await apiRequest(`/api/walletconnect/sessions/${sessionId}/disconnect`, {
-        method: "POST",
-      });
+      return await apiRequest("POST", `/api/walletconnect/sessions/${sessionId}/disconnect`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/walletconnect/sessions"] });

@@ -8,7 +8,9 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(chmod:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git apply:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix TypeScript errors and update .gitignore\n\nTypeScript Fixes:\n- landing.tsx: Fixed missing closing div tag in Jesus Cartel releases section  \n- wallet-connect.tsx: Fixed apiRequest call signature (method, url, data)\n- spectrum-plans.tsx: Added proper TypeScript interfaces for User, SpectrumPosition, SpectrumPlan, SpectrumEarning\n- tithing.tsx: Added proper TypeScript interfaces for Charity, TithingConfig, TithingImpact, TithingHistory, TaxReport\n- trading-bots.tsx: Fixed conditional rendering to use ternary operator\n\n.gitignore Updates:\n- Exclude .next/ and blue_elites/.next/ (build cache)\n- Exclude agents/training/checkpoints/ and *.ckpt (large ML models)\n- Exclude logs, session files, and Python cache\n- Exclude .env files\n\nAll TypeScript type checking errors resolved.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

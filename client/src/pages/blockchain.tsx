@@ -107,7 +107,7 @@ export default function BlockchainPage() {
 
   const importWalletForm = useForm({
     resolver: zodResolver(importWalletSchema),
-    defaultValues: { network: "ethereum", importType: "mnemonic" as const, mnemonic: "", privateKey: "" },
+    defaultValues: { network: "ethereum", importType: "mnemonic" as "mnemonic" | "privateKey", mnemonic: "", privateKey: "" },
   });
 
   const sendTxForm = useForm({
@@ -403,7 +403,7 @@ export default function BlockchainPage() {
                         </FormItem>
                       )}
                     />
-                    {importWalletForm.watch("importType") === ("mnemonic" as const) && (
+                    {importWalletForm.watch("importType") === "mnemonic" && (
                       <FormField
                         control={importWalletForm.control}
                         name="mnemonic"
@@ -419,7 +419,7 @@ export default function BlockchainPage() {
                         )}
                       />
                     )}
-                    {importWalletForm.watch("importType") === ("privateKey" as const) && (
+                    {importWalletForm.watch("importType") === "privateKey" && (
                       <FormField
                         control={importWalletForm.control}
                         name="privateKey"
