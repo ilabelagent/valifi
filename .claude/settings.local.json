@@ -31,7 +31,8 @@
       "Bash(/dev/null)",
       "Bash(/tmp/valifi_monitor.sh)",
       "Bash(git commit:*)",
-      "Bash(timeout 20 npm run dev:*)"
+      "Bash(timeout 20 npm run dev:*)",
+      "Bash(printf:*)"
     ],
     "deny": [],
     "ask": []
