@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import LoginPage from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import TradingPage from "@/pages/trading";
 import TerminalPage from "@/pages/terminal";
@@ -56,6 +57,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/login" component={LoginPage} />
         <Route path="/terminal" component={TerminalPage} />
         <Route component={NotFound} />
       </Switch>
@@ -76,7 +78,10 @@ function Router() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => (window.location.href = "/api/logout")}
+                onClick={() => {
+                  localStorage.removeItem("auth_token");
+                  window.location.href = "/";
+                }}
                 data-testid="button-logout"
               >
                 Logout

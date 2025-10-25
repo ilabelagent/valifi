@@ -19,7 +19,14 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.sendStatus(403); // Invalid token
+    // Set both formats for compatibility
     (req as any).userId = user.userId;
+    // Set Replit Auth compatible format for existing routes
+    (req as any).user = {
+      claims: {
+        sub: user.userId
+      }
+    };
     next();
   });
 };

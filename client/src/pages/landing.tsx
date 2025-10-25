@@ -245,7 +245,7 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   const handleEnterKingdom = () => {
-    window.location.href = "/api/login";
+    setLocation("/login");
   };
 
   const handleLearnMore = () => {
