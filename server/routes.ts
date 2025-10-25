@@ -2,6 +2,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { authenticateToken as isAuthenticated } from "./authService";
+import { storage } from "./storage";
 
 import {
   insertWalletSchema,
