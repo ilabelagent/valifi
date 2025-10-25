@@ -111,13 +111,15 @@ export const sessions = pgTable(
 // Users table - Compatible with Replit Auth
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password").notNull(), // Bcrypt hashed password
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
   kycStatus: kycStatusEnum("kyc_status").default("pending"),
   kycUserId: text("kyc_user_id"), // Sumsub user ID
   isAdmin: boolean("is_admin").default(false),
+  kingdomFeaturesEnabled: jsonb("kingdom_features_enabled").$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
