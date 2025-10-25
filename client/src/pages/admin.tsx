@@ -13,8 +13,9 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Bot, TrendingUp, MessageSquare, Shield, Activity, Zap, Trophy, Heart, Sparkles } from "lucide-react";
+import { Users, Bot, TrendingUp, MessageSquare, Shield, Activity, Zap, Trophy, Heart, Sparkles, BrainCircuit } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import AgentChat from "@/components/agent-chat";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -372,8 +373,12 @@ export default function AdminPage() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue="agents" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="agents" data-testid="tab-agents">
+            <BrainCircuit className="mr-2 h-4 w-4" />
+            AI Agents
+          </TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">
             <Users className="mr-2 h-4 w-4" />
             User Management
@@ -395,6 +400,11 @@ export default function AdminPage() {
             Ethereal Elements
           </TabsTrigger>
         </TabsList>
+
+        {/* AI Agent Conversational Interface */}
+        <TabsContent value="agents" className="space-y-4">
+          <AgentChat />
+        </TabsContent>
 
         {/* User Management */}
         <TabsContent value="users" className="space-y-4">

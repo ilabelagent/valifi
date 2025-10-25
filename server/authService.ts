@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { insertUserSchema, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwtkey"; // TODO: Use a strong secret from .env
+const JWT_SECRET = process.env.JWT_SECRET || "a-much-more-secure-secret-key-that-is-at-least-32-characters-long";
 
 export const generateToken = (userId: string) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "1h" });
@@ -48,7 +48,7 @@ export async function setupAuth(app: Express) {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const newUser = await storage.createUser({
+      const newUser = await storage.upsertUser({
         email,
         password: hashedPassword,
         firstName,
@@ -87,8 +87,9 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Placeholder for logout - JWTs are stateless, client just discards token
-  app.post("/api/auth/logout", (req, res) => {
-    res.json({ message: "Logged out successfully (token discarded by client)" });
+  app.post("/api/auth/logout", (_req, res) => {
+    // On the client side, the token should be removed from localStorage.
+    // This endpoint is mostly for acknowledging the logout action.
+    res.json({ message: "Logged out successfully" });
   });
 }

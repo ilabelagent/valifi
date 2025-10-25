@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Crown } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -42,7 +43,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       // Store token in localStorage
       if (data.token) {
-        localStorage.setItem("auth_token", data.token);
+        storage.setToken(data.token);
       }
 
       toast({
@@ -81,7 +82,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       // Store token in localStorage
       if (data.token) {
-        localStorage.setItem("auth_token", data.token);
+        storage.setToken(data.token);
       }
 
       toast({

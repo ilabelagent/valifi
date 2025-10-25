@@ -1,16 +1,39 @@
-// Replit Auth hook - blueprint: javascript_log_in_with_replit
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "@shared/schema";
+import { storage } from "@/lib/storage";
+
+async function getAuthUser() {
+  const token = storage.getToken();
+  if (!token) return null;
+
+  const res = await fetch("/api/auth/user", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    storage.clearToken();
+    throw new Error("Failed to fetch user");
+  }
+
+  return await res.json();
+}
 
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["user"],
+    queryFn: getAuthUser,
     retry: false,
+    refetchOnWindowFocus: false,
   });
 
   return {
     user,
+    isAuthenticated: !!user && !isError,
     isLoading,
-    isAuthenticated: !!user,
   };
 }

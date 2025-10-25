@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { storage } from "@/lib/storage";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import LoginPage from "@/pages/login";
@@ -79,7 +80,7 @@ function Router() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  localStorage.removeItem("auth_token");
+                  storage.clearToken();
                   window.location.href = "/";
                 }}
                 data-testid="button-logout"
