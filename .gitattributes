@@ -118,3 +118,4 @@
 /valifi/othersxs/bin/ollama filter=lfs diff=lfs merge=lfs -text
 /valifi/othersxs/jesus-cartel-production/audiobot.egg-info/PKG-INFO filter=lfs diff=lfs merge=lfs -text
 *.err filter=lfs diff=lfs merge=lfs -text
+*.flake8 filter=lfs diff=lfs merge=lfs -text
