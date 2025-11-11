@@ -1,0 +1,7 @@
+query,intent
+"list all the files in the current directory","terminal_command"
+"how do I install a new package?","terminal_command"
+"what is the meaning of life?","general_conversation"
+"who are you?","general_conversation"
+"how do I use the lightning ai sdk?","sdk_question"
+"give me an example of how to use litserve","sdk_question"
