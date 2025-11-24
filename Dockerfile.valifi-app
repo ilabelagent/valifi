@@ -1,0 +1,83 @@
+# ============================================================================
+# Valifi Kingdom - Main Application Dockerfile
+# Multi-stage build for production optimization
+# ============================================================================
+# "Whatever you do, work at it with all your heart" - Colossians 3:23
+# ============================================================================
+
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat python3 make g++ curl
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (single package.json at root)
+RUN npm install --legacy-peer-deps
+
+# Stage 2: Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy package.json (needed for npm run build)
+COPY package*.json ./
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code (client, server, shared)
+COPY client ./client
+COPY server ./server
+COPY shared ./shared
+COPY tsconfig*.json ./
+COPY vite.config.* ./
+COPY drizzle.config.ts ./
+
+# Build frontend (Vite builds from ./client root)
+RUN npm run build
+
+# Stage 3: Production
+FROM node:20-alpine AS production
+WORKDIR /app
+
+# Install production system dependencies
+RUN apk add --no-cache curl postgresql-client
+
+# Install tsx globally for TypeScript execution
+RUN npm install -g tsx
+
+# Copy package files and install production dependencies only
+COPY package*.json ./
+RUN npm install --legacy-peer-deps --production
+
+# Copy built frontend
+COPY --from=builder /app/client/dist ./client/dist
+
+# Copy server source (needed for tsx)
+COPY server ./server
+COPY shared ./shared
+
+# Copy necessary config files
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+COPY drizzle.config.ts ./
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Expose port
+EXPOSE 5000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
+  CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Start application
+CMD ["tsx", "server/index.ts"]
