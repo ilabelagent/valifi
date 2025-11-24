@@ -1,0 +1,3 @@
+[submodule "fintech-deploy"]
+	path = fintech-deploy
+	url = ./fintech-deploy
