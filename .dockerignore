@@ -1,0 +1,95 @@
+# Node modules
+node_modules
+**/node_modules
+npm-debug.log
+
+# Build outputs
+dist
+client/dist
+*.log
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Claude Code
+.claude
+.claude.json
+.claude.json.backup
+
+# Gemini
+.gemini
+
+# Codex
+.codex
+
+# Environment files (will be provided via docker-compose)
+.env
+.env.*
+!.env.example
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+.Python
+*.so
+.pytest_cache
+
+# Logs
+logs
+*.log
+
+# Test coverage
+coverage
+
+# Docker files in subdirectories
+**/Dockerfile*
+**/docker-compose*
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Development scripts
+*.sh
+
+# NPM
+.npm
+
+# Lightning Studio
+.lightning_studio
+.lightningignore
+
+# Large directories to exclude
+blue_elites/
+deployment_unified/agents/
+deployment_unified/api/
+deployment_unified/lightning/
+deployment_unified/manifests/
+deployment_unified/memory/
+deployment_unified/orchestration/
+deployment_unified/scripts/
+cyber-lab-production/
+chat-automator/
+standalone_bots/
+JESUS_CARTEL_BOT/
+JESUS_IAM_BOT/

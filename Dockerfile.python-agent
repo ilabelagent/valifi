@@ -1,0 +1,59 @@
+# ============================================================================
+# Valifi Kingdom - Python Agent Dockerfile
+# For Terminal Agent, SDK Agent, and Master Orchestrator
+# ============================================================================
+# "The Lord will perfect that which concerns me" - Psalm 138:8
+# ============================================================================
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    postgresql-client \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt* ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -U pip setuptools wheel && \
+    pip install --no-cache-dir \
+    litserve \
+    openai \
+    anthropic \
+    google-generativeai \
+    sqlalchemy \
+    psycopg2-binary \
+    pytorch-lightning \
+    torch \
+    psutil \
+    rpyc \
+    requests \
+    pydantic \
+    python-dotenv \
+    || pip install --no-cache-dir -r requirements.txt 2>/dev/null || true
+
+# Copy agent code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/training
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Expose port (will be overridden by environment variable)
+EXPOSE ${AGENT_PORT:-8001}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=30s \
+  CMD curl -f http://localhost:${AGENT_PORT:-8001}/health || exit 1
+
+# Run agent server
+CMD python3 -u server.py || python3 -u main.py
